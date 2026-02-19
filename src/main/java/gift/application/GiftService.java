@@ -12,18 +12,21 @@ import org.springframework.transaction.annotation.Transactional;
 public class GiftService {
     private final OptionRepository optionRepository;
     private final GiftDelivery giftDelivery;
+    private final InventoryService inventoryService;  // ← 새로 추가
 
     public GiftService(
-        final OptionRepository optionRepository,
-        final GiftDelivery giftDelivery
+            final OptionRepository optionRepository,
+            final GiftDelivery giftDelivery, InventoryService inventoryService
     ) {
         this.optionRepository = optionRepository;
         this.giftDelivery = giftDelivery;
+        this.inventoryService = inventoryService;
     }
 
     public void give(final GiveGiftRequest request, final Long memberId) {
+        inventoryService.decreaseStock(memberId, request.getQuantity());
+        
         final Option option = optionRepository.findById(request.getOptionId()).orElseThrow();
-        option.decrease(request.getQuantity());
         final Gift gift = new Gift(
             memberId,
             request.getReceiverId(),
