@@ -34,30 +34,7 @@
   - 상품이 있으면 전체 목록 반환 (카테고리 정보 포함)
   - 상품이 없으면 빈 리스트 반환
 
-### 5. 옵션 생성 (컨트롤러 미노출)
-
-- **행위:** 특정 상품에 옵션(색상, 사이즈 등)을 추가한다.
-- **입력:** name (String), quantity (int), productId (Long)
-- **정상 시나리오:**
-  - 존재하는 상품에 옵션을 추가하면 재고(quantity)와 함께 생성된다.
-- **예외 시나리오:**
-  - 존재하지 않는 productId → `NoSuchElementException`
-
-### 6. 옵션 전체 조회 (컨트롤러 미노출)
-
-- **행위:** 등록된 모든 옵션 목록을 조회한다.
-
-### 7. 위시리스트에 상품 추가 (컨트롤러 미노출)
-
-- **행위:** 회원이 원하는 상품을 위시리스트에 담는다.
-- **입력:** memberId (Long), productId (Long)
-- **정상 시나리오:**
-  - 존재하는 회원과 상품이면 위시가 생성된다.
-- **예외 시나리오:**
-  - 존재하지 않는 memberId → `NoSuchElementException`
-  - 존재하지 않는 productId → `NoSuchElementException`
-
-### 8. 선물 보내기
+### 5. 선물 보내기
 
 - **행위:** 회원이 다른 회원에게 특정 옵션의 상품을 선물한다.
 - **입력:** optionId (Long), quantity (int), receiverId (Long), message (String) + Header: Member-Id (Long)
