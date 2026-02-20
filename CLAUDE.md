@@ -5,7 +5,7 @@ Spring Boot 3.5.8 기반 선물하기(Gift) API. 카테고리/상품/옵션 관�
 
 ## 기술 스택
 - Java 17, Spring Boot 3.5.8, Spring Data JPA, H2 (in-memory DB)
-- 테스트: JUnit 5, Mockito, AssertJ, MockMvc (`spring-boot-starter-test`)
+- 테스트: JUnit 5, RestAssured (`spring-boot-starter-test`, `io.rest-assured:rest-assured`)
 
 ## 프로젝트 구조
 ```
@@ -40,23 +40,21 @@ src/main/java/gift/
 
 ## 테스트 작성 시 주의사항
 
-### 컨트롤러 바인딩 방식
-- `CategoryRestController.create()`, `ProductRestController.create()`: **`@RequestBody` 없음** → 폼 파라미터로 바인딩됨. 테스트에서 `.param("name", "값")` 사용.
-- `GiftRestController.give()`: **`@RequestBody` 있음** + `@RequestHeader("Member-Id")` → JSON body + 커스텀 헤더로 전송.
+### 인수테스트 방식
+- `@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)` + RestAssured로 실제 HTTP 요청을 보내는 인수테스트를 작성한다.
+- `@LocalServerPort`로 할당된 포트를 받아 `RestAssured.port`에 설정한다.
 
-### DTO 생성
-- Request DTO에 setter가 없으므로, 서비스 테스트에서 DTO를 생성할 때 `ObjectMapper.convertValue(Map, Class)`를 사용한다.
+### 컨트롤러 바인딩 방식
+- `CategoryRestController.create()`, `ProductRestController.create()`: **`@RequestBody` 없음** → 폼 파라미터로 바인딩됨. RestAssured에서 `.formParam("name", "값")` 사용.
+- `GiftRestController.give()`: **`@RequestBody` 있음** + `@RequestHeader("Member-Id")` → `.contentType(JSON).header("Member-Id", id).body(map)` 사용.
 
 ### GiftDelivery 의존성
 - `GiftService`는 `GiftDelivery` 인터페이스에 의존. 테스트 시 `@MockitoBean`으로 대체하여 외부 의존성(카카오 API 등)을 격리한다.
 
 ### 테스트 데이터 관리
-- `@Transactional`을 테스트 클래스에 적용하면 각 테스트 후 자동 롤백.
-- `MockMvc`는 같은 트랜잭션 내에서 동작하므로 `@Transactional` 롤백과 호환됨.
-- `TestRestTemplate`은 별도 스레드에서 HTTP 요청을 보내므로 `@Transactional` 롤백 불가 — 이 프로젝트에서는 `MockMvc` 사용.
-
-### 핵심 도메인 로직
-- `Option.decrease(int quantity)`: 재고가 부족하면 `IllegalStateException`을 던짐. 이 로직은 순수 단위 테스트로 검증.
+- RestAssured는 별도 스레드에서 실제 HTTP 요청을 보내므로 **`@Transactional` 롤백이 동작하지 않는다.**
+- `@BeforeEach`에서 `RestAssured.port` 설정 및 필요한 사전 데이터를 생성한다.
+- `@AfterEach`에서 Repository의 `deleteAllInBatch()`를 호출하여 테스트 데이터를 정리한다. 외래키 의존 순서에 주의하여 자식 엔티티부터 삭제한다.
 
 ## 사용자 행위 목록 (테스트 대상)
 1. 카테고리를 생성한다
@@ -68,5 +66,10 @@ src/main/java/gift/
 ## 코드 컨벤션
 - 테스트 메서드명: `행위_조건_기대결과` 패턴 (예: `decrease_insufficientStock_throwsException`)
 - `@DisplayName`으로 한글 설명 추가
-- Given-When-Then 구조로 테스트 본문 작성
-- AssertJ 사용 (`assertThat`, `assertThatThrownBy`)
+- RestAssured BDD 스타일 사용: `given().when().then()`
+
+## build.gradle 테스트 의존성
+```gradle
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+testImplementation 'io.rest-assured:rest-assured'
+```
