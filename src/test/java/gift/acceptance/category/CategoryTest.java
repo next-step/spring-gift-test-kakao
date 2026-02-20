@@ -47,14 +47,12 @@ class CategoryTest {
 
     @Test
     void 카테고리를_생성하면_조회_목록에_포함된다() {
-        // given
         given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", "간식"))
         .when()
                 .post("/api/categories");
 
-        // when & then
         given()
         .when()
                 .get("/api/categories")
