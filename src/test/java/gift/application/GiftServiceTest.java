@@ -2,8 +2,8 @@ package gift.application;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
-import gift.model.Gift;
-import gift.model.GiftDelivery;
+import gift.model.Member;
+import gift.model.MemberRepository;
 import gift.model.Option;
 import gift.model.OptionRepository;
 import gift.model.Product;
@@ -13,108 +13,141 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
+import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
 class GiftServiceTest {
 
     @Autowired
-    private GiftService giftService;
+    private MockMvc mockMvc;
 
     @Autowired
     private OptionRepository optionRepository;
 
     @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
-    private CategoryRepository categoryRepository;
+    private MemberRepository memberRepository;
 
-    @MockitoBean
-    private GiftDelivery giftDelivery;
-
-    private Category category;
-    private Product product;
+    private Member sender;
+    private Member receiver;
     private Option option;
 
     @BeforeEach
     void setUp() {
-        optionRepository.deleteAll();
-        productRepository.deleteAll();
-        categoryRepository.deleteAll();
-
-        category = categoryRepository.save(new Category("테스트 카테고리"));
-        product = productRepository.save(new Product("테스트 상품", 10000, "http://image.url", category));
+        Category category = categoryRepository.save(new Category("테스트 카테고리"));
+        Product product = productRepository.save(new Product("테스트 상품", 10000, "http://image.url", category));
         option = optionRepository.save(new Option("기본 옵션", 10, product));
+        sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
+        receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
+    }
+
+    private String giftRequestJson(Long optionId, int quantity, Long receiverId, String message) {
+        return """
+                {
+                    "optionId": %d,
+                    "quantity": %d,
+                    "receiverId": %d,
+                    "message": "%s"
+                }
+                """.formatted(optionId, quantity, receiverId, message);
     }
 
     @Nested
-    @DisplayName("give: 선물 전송")
+    @DisplayName("POST /api/gifts: 선물 전송")
     class Give {
 
         @Test
-        void 선물_전송_성공_시_재고가_감소한다() throws Exception {
+        void 선물_전송_성공_시_200을_반환한다() throws Exception {
             // given
-            doNothing().when(giftDelivery).deliver(any(Gift.class));
-            GiveGiftRequest request = createRequest(option.getId(), 3, 2L, "축하해");
+            String body = giftRequestJson(option.getId(), 3, receiver.getId(), "선물입니다");
+
+            // when & then
+            mockMvc.perform(post("/api/gifts")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header("Member-Id", sender.getId())
+                            .content(body))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        void 선물_전송_성공_시_재고가_차감된다() throws Exception {
+            // given
+            String body = giftRequestJson(option.getId(), 3, receiver.getId(), "선물입니다");
 
             // when
-            giftService.give(request, 1L);
+            mockMvc.perform(post("/api/gifts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Member-Id", sender.getId())
+                    .content(body));
 
             // then
-            Option updated = optionRepository.findById(option.getId()).orElseThrow();
-            assertThat(updated.getQuantity()).isEqualTo(7);
+            Option found = optionRepository.findById(option.getId()).orElseThrow();
+            assertThat(found.getQuantity()).isEqualTo(7);
         }
 
         @Test
-        void 선물_전달_실패_시_재고가_롤백된다() throws Exception {
+        void 존재하지_않는_옵션으로_전송하면_예외가_발생한다() {
             // given
-            doThrow(new RuntimeException("전달 실패"))
-                    .when(giftDelivery).deliver(any(Gift.class));
-            GiveGiftRequest request = createRequest(option.getId(), 3, 2L, "축하해");
-            int initialQuantity = option.getQuantity();
+            String body = giftRequestJson(999L, 1, receiver.getId(), "선물입니다");
 
             // when & then
-            assertThatThrownBy(() -> giftService.give(request, 1L))
-                    .isInstanceOf(RuntimeException.class);
-
-            // 트랜잭션 롤백 확인
-            Option updated = optionRepository.findById(option.getId()).orElseThrow();
-            assertThat(updated.getQuantity()).isEqualTo(initialQuantity);
+            assertThatThrownBy(() -> mockMvc.perform(post("/api/gifts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Member-Id", sender.getId())
+                    .content(body)))
+                    .rootCause()
+                    .isInstanceOf(NoSuchElementException.class);
         }
 
         @Test
-        void 존재하지_않는_옵션이면_예외가_발생한다() throws Exception {
+        void 재고_부족_시_예외가_발생한다() {
             // given
-            GiveGiftRequest request = createRequest(999L, 1, 2L, "축하해");
+            String body = giftRequestJson(option.getId(), 11, receiver.getId(), "선물입니다");
 
             // when & then
-            assertThatThrownBy(() -> giftService.give(request, 1L))
-                    .isInstanceOf(RuntimeException.class);
+            assertThatThrownBy(() -> mockMvc.perform(post("/api/gifts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Member-Id", sender.getId())
+                    .content(body)))
+                    .rootCause()
+                    .isInstanceOf(IllegalStateException.class);
         }
-    }
 
-    private GiveGiftRequest createRequest(Long optionId, int quantity, Long receiverId, String message) throws Exception {
-        GiveGiftRequest request = new GiveGiftRequest();
-        setField(request, "optionId", optionId);
-        setField(request, "quantity", quantity);
-        setField(request, "receiverId", receiverId);
-        setField(request, "message", message);
-        return request;
-    }
+        @Test
+        void 재고_부족_시_재고가_변경되지_않는다() {
+            // given
+            String body = giftRequestJson(option.getId(), 11, receiver.getId(), "선물입니다");
 
-    private void setField(Object target, String fieldName, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
+            // when
+            try {
+                mockMvc.perform(post("/api/gifts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Member-Id", sender.getId())
+                        .content(body));
+            } catch (Exception ignored) {
+            }
+
+            // then
+            Option found = optionRepository.findById(option.getId()).orElseThrow();
+            assertThat(found.getQuantity()).isEqualTo(10);
+        }
     }
 }
