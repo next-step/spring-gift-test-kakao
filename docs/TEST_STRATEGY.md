@@ -42,17 +42,18 @@ class SomeAcceptanceTest {
 
 ## 테스트 데이터 준비
 
-API 우선, Repository 보조 원칙을 따른다.
+모든 엔티티를 Repository로 직접 생성한다.
 
 | 엔티티 | 준비 방법 | 이유 |
 |--------|----------|------|
-| Category | **API** (`POST /api/categories`) | REST 컨트롤러 존재. 시스템 경계를 통과하여 생성 |
-| Product | **API** (`POST /api/products`) | REST 컨트롤러 존재. 폼 바인딩 → 서비스 → DB 전 구간 검증 |
+| Category | **Repository** (`categoryRepository.save()`) | 테스트 대상이 아닌 API의 버그로 테스트가 실패하는 것을 방지 |
+| Product | **Repository** (`productRepository.save()`) | 테스트 대상이 아닌 API의 버그로 테스트가 실패하는 것을 방지 |
 | Option | **Repository** (`optionRepository.save()`) | REST 컨트롤러 없음. Repository로 직접 삽입 |
 | Member | **Repository** (`memberRepository.save()`) | REST 컨트롤러 없음. Repository로 직접 삽입 |
 
-- API가 있는 엔티티는 API로 생성하여 인수 테스트 철학(시스템 경계 사용)에 충실한다
-- API가 없는 엔티티만 Repository로 보조한다. 이것은 Mock이 아니라 단순한 데이터 삽입이다
+- 테스트 대상 API가 아닌 다른 API로 데이터를 준비하면, 해당 API의 버그로 인해 테스트가 실패할 수 있다
+- 테스트 실패 원인이 "테스트 대상 로직"인지 "데이터 준비 API"인지 구분할 수 없게 된다
+- 따라서 테스트 데이터는 모두 Repository로 직접 삽입하여 격리한다
 
 ## 테스트 격리
 

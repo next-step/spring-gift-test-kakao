@@ -174,6 +174,12 @@ GET /api/products
 → 응답: [{ "id": 1, "name": "아이폰 16", "price": 1500000, "imageUrl": "https://...", "category": { "id": 1, "name": "전자기기" } }, ...]
 ```
 
+## 3. TEST_STATEGY.md 작성
+
+## 4. claude code skill 작성
+
+## 5. 테스트 코드 작성
+
 
 # 프롬프트 기록
 
@@ -212,4 +218,6 @@ GET /api/products
   위 내용에 대해서 어떻게 생각하는지 알려줘. 우리가 테스트할때 어떻게 하면 좋을까?
 - Mocking이나 Stubbing을 활용할 수 있는 방법은 없어?
 - 그럼 아까 말한대로 반영해줘
+
+- /bdd @docs/TEST_STRATEGY.md 여기서 행위1에 대해서만 먼저 테스트코드를 작성해줘
 - 
