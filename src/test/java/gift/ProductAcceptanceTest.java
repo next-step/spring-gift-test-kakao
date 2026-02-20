@@ -17,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
 // 발견된 프로덕션 버그:
@@ -134,6 +135,9 @@ class ProductAcceptanceTest {
         // then — 현재 동작: @RequestBody 누락 → categoryId=null → findById(null) → 500 에러
         response.then()
             .statusCode(500);
+
+        // DB에 상품이 저장되지 않았는지 확인 (500 에러로 트랜잭션 롤백)
+        assertThat(productRepository.findAll()).isEmpty();
         // TODO: 프로덕션 수정 후 이 테스트를 삭제하고 '상품_생성_성공' 활성화
     }
 

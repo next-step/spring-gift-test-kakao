@@ -16,6 +16,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
 // 발견된 프로덕션 버그:
@@ -116,5 +117,25 @@ class CategoryAcceptanceTest {
             .body("id", notNullValue())
             .body("name", nullValue());  // @RequestBody 누락 → JSON 역직렬화 안 됨 → name=null로 저장됨
         // TODO: 프로덕션 수정 후 이 테스트를 삭제하고 '카테고리_생성_성공' 활성화
+    }
+
+    @Test
+    void 카테고리_생성_후_DB_저장_확인() {
+        // given
+        var request = Map.of("name", "전자기기");
+
+        // when
+        given()
+            .contentType(ContentType.JSON)
+            .body(request)
+        .when()
+            .post("/api/categories");
+
+        // then — DB에 실제로 저장되었는지 확인
+        var categories = categoryRepository.findAll();
+        assertThat(categories).hasSize(1);
+        assertThat(categories.get(0).getId()).isNotNull();
+        assertThat(categories.get(0).getName()).isNull();  // @RequestBody 누락 → name=null로 저장됨
+        // TODO: 프로덕션 수정 후 .isEqualTo("전자기기")로 변경
     }
 }
