@@ -96,10 +96,14 @@ Member sender = memberFixture.builder().name("보내는사람").email("sender@te
 ```
 src/test/java/gift/
 ├── acceptance/
-│   ├── CategoryAcceptanceTest.java    # 행위 1, 2
-│   ├── ProductAcceptanceTest.java     # 행위 3, 4
-│   └── GiftAcceptanceTest.java        # 행위 5
-└── fixture/
+│   ├── category/
+│   │   └── CategoryTest.java          # 행위 1, 2
+│   ├── product/
+│   │   └── ProductTest.java           # 행위 3, 4
+│   └── gift/
+│       └── GiftTest.java              # 행위 5
+└── support/
+    ├── DatabaseCleanup.java
     ├── CategoryFixture.java
     ├── ProductFixture.java
     ├── OptionFixture.java
