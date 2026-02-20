@@ -50,6 +50,12 @@ ui (REST Controllers)  →  application (Services + DTOs)  →  model (Entities 
 ./gradlew test   # 4개 클래스, 8개 메서드 모두 통과해야 한다
 ```
 
+## Git Commit
+
+- 커밋 시 반드시 `/commit` 스킬을 사용한다 (AngularJS commit convention 기반).
+- 커밋 메시지 포맷: `<type>(<scope>): <subject>`
+- 허용 type: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
 ## 참조 목록
 
 ```
