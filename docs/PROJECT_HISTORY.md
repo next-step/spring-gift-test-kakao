@@ -114,6 +114,66 @@ GET /api/categories
 → 응답: [{ "id": 1, "name": "식품" }, { "id": 2, "name": "전자기기" }, ...]
 ```
 
+### 3) 상품 등록 기능 분석
+
+#### 요청
+
+```
+POST /api/products
+Body: {
+  "name": "아이폰 16",         ← 상품 이름
+  "price": 1500000,            ← 가격
+  "imageUrl": "https://...",   ← 상품 이미지 URL
+  "categoryId": 1              ← 소속 카테고리 ID
+}
+```
+
+#### 처리 흐름 (4단계)
+
+```
+① ProductRestController.create()
+   │  CreateProductRequest로 요청 파싱 (@RequestBody 없음 — 폼 바인딩)
+   ▼
+② ProductService.create()              ← @Transactional (클래스 레벨)
+   │
+   ├─③ categoryRepository.findById(categoryId)
+   │     → Category 엔티티 조회. 없으면 NoSuchElementException
+   │
+   └─④ productRepository.save(new Product(name, price, imageUrl, category))
+         → Product 엔티티 생성 후 DB 저장
+         → 저장된 Product 객체 반환 (id 자동 생성)
+
+트랜잭션 커밋 → Product가 DB에 반영됨
+```
+
+#### 성공 시
+
+- **응답:** `200 OK` + 저장된 Product JSON (`{ "id": 1, "name": "아이폰 16", "price": 1500000, "imageUrl": "https://...", "category": { "id": 1, "name": "전자기기" } }`)
+- **DB 변경:** Product 테이블에 새 행 추가 (category_id FK 포함)
+
+#### 실패 케이스
+
+| 상황 | 예외 | 결과 |
+|------|------|------|
+| categoryId가 존재하지 않음 | `NoSuchElementException` | 500 에러, 상품 생성 안 됨 |
+| categoryId가 null | `InvalidDataAccessApiUsageException` | 500 에러, 상품 생성 안 됨 |
+
+#### 주요 특징
+
+- **카테고리 의존** — 상품 등록 시 반드시 유효한 categoryId가 필요. `categoryRepository.findById().orElseThrow()`로 검증
+- **`@RequestBody` 누락** — 카테고리와 동일하게 폼 바인딩으로 동작
+- **입력 검증 없음** — name, price, imageUrl에 대한 Bean Validation 없음. price가 `int`이므로 값을 안 보내면 기본값 0으로 바인딩됨
+- **응답이 엔티티 직접 반환** — Product가 Category를 `@ManyToOne`으로 참조하므로, 응답 JSON에 Category 객체가 중첩되어 포함됨
+- **조회 API도 존재** — `GET /api/products`로 전체 상품 목록 조회 가능 (`productRepository.findAll()`)
+- **Option 없이 등록** — 상품 등록 시 Option(상품 변형)은 함께 생성되지 않음. Option은 별도로 추가해야 함
+
+#### 조회 요청
+
+```
+GET /api/products
+→ 응답: [{ "id": 1, "name": "아이폰 16", "price": 1500000, "imageUrl": "https://...", "category": { "id": 1, "name": "전자기기" } }, ...]
+```
+
 
 # 프롬프트 기록
 
@@ -135,3 +195,12 @@ GET /api/categories
 - @docs/PROJECT_HISTORY.md 에 카테고리 등록 기능을 1)선물하기 기능 밑에 2)카테고리 등록 기능으로 분석해서 적어줘
 - 방금 작성한 내용을 바탕으로 @docs/TEST_STRATEGY.md 파일에 행위 2로 작성해줘
 - 2-4로 중복등록 불가 테스트도 넣어줘
+
+- @docs/PROJECT_HISTORY.md 에 상품 등록 기능을 2)카테고리 등록 기능 밑에 3)상품 등록 기능으로 분석해서 적어줘
+- 방금 작성한 내용을 바탕으로 @docs/TEST_STRATEGY.md 파일에 행위 3으로 작성해줘
+
+- 현재 /GET 엔드포인트는 findall로 전체 DB를 조회해오는 건데, 이건 어떤식으로 테스트코드를 작성할 수 있을까?
+  단, 기존에 있는 api명세를 바꾸면 안돼.
+- 현재 @docs/TEST_STRATEGY.md에 행위 3개가 있는데 여기에 /GET 하는 api 두개도 새로운 행위로 등록하려고 해. 이때
+  인수테스트를 작성하려면 기능을 어떻게 나눠야할까?
+- 
