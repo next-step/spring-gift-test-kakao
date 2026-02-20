@@ -2,15 +2,109 @@
 
 시스템 경계(HTTP API)에서 사용자 시나리오 기준으로 테스트하며, 최종 DB 상태를 검증한다.
 
+## 테스트 기술 스택
+
+```
+@SpringBootTest(webEnvironment = RANDOM_PORT) + RestAssured
+```
+
+- **`@SpringBootTest(webEnvironment = RANDOM_PORT)`** — 실제 서블릿 컨테이너를 랜덤 포트로 기동
+- **RestAssured** — 실제 HTTP 요청을 보내는 인수 테스트 클라이언트
+- **`@LocalServerPort`** — 기동된 포트를 주입받아 `RestAssured.port`에 설정
+- DB 검증이 필요한 경우 `Repository`를 `@Autowired`로 주입하여 직접 조회
+
+### Gradle 의존성
+
+```groovy
+testImplementation 'io.rest-assured:rest-assured'
+```
+
+Spring Boot BOM이 버전을 관리하므로 버전 명시 불필요.
+
+### 테스트 클래스 기본 구조
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class SomeAcceptanceTest {
+
+    @LocalServerPort
+    int port;
+
+    @BeforeEach
+    void setUp() {
+        RestAssured.port = port;
+    }
+}
+```
+
+- 각 행위별로 테스트 클래스를 분리한다 (예: `GiftAcceptanceTest`, `CategoryAcceptanceTest`)
+- `@BeforeEach`에서 `RestAssured.port` 설정 + DB 초기화
+
+## 테스트 데이터 준비
+
+API 우선, Repository 보조 원칙을 따른다.
+
+| 엔티티 | 준비 방법 | 이유 |
+|--------|----------|------|
+| Category | **API** (`POST /api/categories`) | REST 컨트롤러 존재. 시스템 경계를 통과하여 생성 |
+| Product | **API** (`POST /api/products`) | REST 컨트롤러 존재. 폼 바인딩 → 서비스 → DB 전 구간 검증 |
+| Option | **Repository** (`optionRepository.save()`) | REST 컨트롤러 없음. Repository로 직접 삽입 |
+| Member | **Repository** (`memberRepository.save()`) | REST 컨트롤러 없음. Repository로 직접 삽입 |
+
+- API가 있는 엔티티는 API로 생성하여 인수 테스트 철학(시스템 경계 사용)에 충실한다
+- API가 없는 엔티티만 Repository로 보조한다. 이것은 Mock이 아니라 단순한 데이터 삽입이다
+
+## 테스트 격리
+
+`@SpringBootTest(RANDOM_PORT)`에서는 테스트와 서버가 별도 스레드에서 실행된다.
+테스트 클래스의 `@Transactional`은 서버의 트랜잭션과 무관하므로 **자동 롤백이 불가능**하다.
+
+따라서 `@BeforeEach`에서 명시적으로 DB를 초기화한다.
+
+### DatabaseCleaner
+
+```java
+@Component
+class DatabaseCleaner {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    void clear() {
+        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
+        jdbcTemplate.execute("TRUNCATE TABLE wish");
+        jdbcTemplate.execute("TRUNCATE TABLE option");
+        jdbcTemplate.execute("TRUNCATE TABLE product");
+        jdbcTemplate.execute("TRUNCATE TABLE category");
+        jdbcTemplate.execute("TRUNCATE TABLE member");
+        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+    }
+}
+```
+
+- `SET REFERENTIAL_INTEGRITY FALSE` (H2 전용)로 FK 순서를 무시하고 일괄 TRUNCATE
+- `repository.deleteAll()`은 FK 역순을 직접 관리해야 하므로 엔티티 추가 시 깨지기 쉬움
+- 각 테스트 클래스에서 `@Autowired DatabaseCleaner` + `@BeforeEach`에서 `cleaner.clear()` 호출
+
+## 외부 의존성 격리 (Stub)
+
+| 컴포넌트 | 실제 vs 대체 | 설명 |
+|----------|-------------|------|
+| DB | H2 인메모리 | 실제 DB 대신 H2가 대체 |
+| 카카오 API | `FakeGiftDelivery` (Stub) | `GiftDelivery` 인터페이스의 유일한 구현체. 콘솔 출력만 수행 |
+| Controller → Service → Repository | **실제** | 인수 테스트의 핵심 — 전 구간을 실제로 통과해야 의미 있음 |
+
+- `FakeGiftDelivery`는 포트/어댑터 패턴의 Stub으로, 외부 시스템(카카오 API) 경계를 대체한다
+- 내부 컴포넌트에 `@MockBean`을 사용하지 않는다. Mock하면 해당 구간이 검증에서 빠진다
+
 ## 공통 의사결정
 
 | 의사결정 | 근거 |
 |----------|------|
-| `@SpringBootTest` + 실제 HTTP 요청 | 인수 테스트 = 시스템 경계 테스트. MockMvc도 가능하지만 실제 서블릿 환경이 더 현실적 |
+| `@SpringBootTest(RANDOM_PORT)` + RestAssured | 인수 테스트 = 시스템 경계 테스트. 실제 HTTP 요청으로 서블릿 환경을 현실적으로 검증 |
 | DB 최종 상태 검증 우선 | CLAUDE.md 원칙: 최종 결과를 보호. `verify(mock)` 사용하지 않음 |
 | 각 테스트가 자체 데이터 생성 | `data.sql`에 의존하면 테스트 간 결합이 생김. 각 테스트가 독립적으로 데이터 준비 |
 | FakeGiftDelivery를 그대로 사용 | 유일한 구현체이며 콘솔 출력만 하므로 테스트에 부작용 없음. 별도 Mock 불필요 |
-| BDD 도구 미사용 | 제약 조건에 명시. JUnit 5 + Spring Boot Test만 사용 |
+| BDD 도구 미사용 | 제약 조건에 명시. JUnit 5 + Spring Boot Test + RestAssured만 사용 |
 | findAll() 테스트 시 DB 초기화 후 정확한 검증 | `@BeforeEach`에서 테이블 truncate → 테스트가 데이터 생성 → 정확한 건수/내용 단언 가능 |
 
 ## 미구현 기능 (테스트 대상 아님)
