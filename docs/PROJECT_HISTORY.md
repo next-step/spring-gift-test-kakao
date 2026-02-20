@@ -1,5 +1,8 @@
 # 개발과정
 ## 1. claude.md 생성
+- /init으로 claude.md 생성
+- 프로젝트 요구사항 분석 및 정리
+- 개발 제약사항 정리
 
 ## 2. 프로젝트 분석
 ### 1) 선물하기 기능 분석
@@ -174,12 +177,104 @@ GET /api/products
 → 응답: [{ "id": 1, "name": "아이폰 16", "price": 1500000, "imageUrl": "https://...", "category": { "id": 1, "name": "전자기기" } }, ...]
 ```
 
+### 4) 카테고리 목록 조회 기능 분석
+
+#### 요청
+
+```
+GET /api/categories
+```
+
+#### 처리 흐름 (2단계)
+
+```
+① CategoryRestController.retrieve()
+   │  파라미터 없음
+   ▼
+② CategoryService.retrieve()              ← @Transactional (클래스 레벨)
+   │
+   └─③ categoryRepository.findAll()
+         → Category 전체 목록 조회
+         → List<Category> 반환
+
+트랜잭션 커밋 → 읽기 전용, DB 변경 없음
+```
+
+#### 성공 시
+
+- **응답:** `200 OK` + Category 배열 JSON (`[{ "id": 1, "name": "식품" }, { "id": 2, "name": "전자기기" }]`)
+- **DB 변경:** 없음 (조회만 수행)
+- **데이터가 없을 때:** `200 OK` + 빈 배열 (`[]`)
+
+#### 주요 특징
+
+- **항상 성공** — 데이터 유무와 관계없이 `200 OK` 반환. 빈 테이블이면 빈 배열
+- **엔티티 직접 반환** — DTO 없이 `List<Category>` JPA 엔티티를 그대로 JSON 직렬화
+- **페이징 없음** — `findAll()`로 전체 데이터를 한 번에 반환. 데이터 증가 시 성능 이슈 가능
+- **정렬 미지정** — JPA 기본 정렬(id 순)에 의존
+
+### 5) 상품 목록 조회 기능 분석
+
+#### 요청
+
+```
+GET /api/products
+```
+
+#### 처리 흐름 (2단계)
+
+```
+① ProductRestController.retrieve()
+   │  파라미터 없음
+   ▼
+② ProductService.retrieve()              ← @Transactional (클래스 레벨)
+   │
+   └─③ productRepository.findAll()
+         → Product 전체 목록 조회
+         → List<Product> 반환 (Category 연관 엔티티 포함)
+
+트랜잭션 커밋 → 읽기 전용, DB 변경 없음
+```
+
+#### 성공 시
+
+- **응답:** `200 OK` + Product 배열 JSON (`[{ "id": 1, "name": "아이폰 16", "price": 1500000, "imageUrl": "https://...", "category": { "id": 1, "name": "전자기기" } }]`)
+- **DB 변경:** 없음 (조회만 수행)
+- **데이터가 없을 때:** `200 OK` + 빈 배열 (`[]`)
+
+#### 주요 특징
+
+- **카테고리 중첩 응답** — Product가 `@ManyToOne`으로 Category를 참조하므로, JSON 응답에 Category 객체가 중첩되어 포함됨
+- **`open-in-view=false` 영향** — 트랜잭션 외부에서 지연 로딩 불가. `@ManyToOne`은 기본이 `EAGER`이므로 `findAll()` 시점에 Category도 함께 로딩됨
+- **엔티티 직접 반환** — DTO 없이 `List<Product>` JPA 엔티티를 그대로 JSON 직렬화
+- **페이징 없음** — `findAll()`로 전체 데이터를 한 번에 반환
+- **정렬 미지정** — JPA 기본 정렬(id 순)에 의존
+
 ## 3. TEST_STATEGY.md 작성
+### 작성 전략
+- 검증할 행위 목록: 어떤 행위를 선택했는가? 기준은?
+- 테스트 데이터 전략: 어떻게 준비하고 정리하는가?
+- 검증 전략: 무엇을 어떻게 검증하는가?
+- 주요 의사결정: 논의 과정에서 중요한 선택과 이유
+
+### 헹위 목록
+1. 선물하기 기능 (`POST /api/gifts`)
+2. 카테고리 등록 기능 (`POST /api/categories`)
+3. 상품 등록 기능 (`POST /api/products`)
+4. 카테고리 목록 조회 기능 (`GET /api/categories`)
+5. 상품 목록 조회 기능 (`GET /api/products`)
 
 ## 4. claude code skill 작성
+- behavior-driven development (BDD) 원칙에 따라 테스트 작성 규칙과 리팩터링 안전 기준을 명시하는 `bdd` 스킬 작성
 
 ## 5. 테스트 코드 작성
+- TEST_STRATEGY.md에 작성된 시나리오에 따라 `@SpringBootTest`와 `RestAssured`를 활용한 인수 테스트 코드 작성
+- BDD skill의 Given/When/Then 구조를 활용하여 각 테스트 시나리오를 명확하게 표현
 
+### 이슈 사항
+- [ ] `CreateCategoryRequest`와 `CreateProductRequest`에 `@RequestBody`가 누락되어 있어, JSON 요청이 폼 데이터로 바인딩되는 문제. 테스트 코드 작성 시 이 점을 고려하여 요청을 구성해야 함
+- [ ] `Category` 엔티티에 unique 제약 조건이 없으므로, 중복 등록 테스트는 현재 실패할 것으로 예상됨. 이 테스트는 향후 중복 방지 로직이 추가될 때 통과해야 하는 시나리오로 작성해야 함
+- [ ] `Category` 등록 시 입력 검증이 없으므로, null이나 잘못된 데이터로 요청할 때 시스템이 어떻게 반응하는지에 대한 테스트도 필요할 수 있음 (현재는 500 에러 예상)
 
 # 프롬프트 기록
 
@@ -220,4 +315,7 @@ GET /api/products
 - 그럼 아까 말한대로 반영해줘
 
 - /bdd @docs/TEST_STRATEGY.md 여기서 행위1에 대해서만 먼저 테스트코드를 작성해줘
-- 
+- /bdd @docs/TEST_STRATEGY.md 행위2도 테스트코드 만들어줘
+- /bdd @docs/TEST_STRATEGY.md 행위3도 테스트코드 만들어줘
+- /bdd @docs/TEST_STRATEGY.md 행위4도 테스트코드 만들어줘
+- /bdd @docs/TEST_STRATEGY.md 행위5도 테스트코드 만들어줘
