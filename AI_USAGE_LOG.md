@@ -147,6 +147,7 @@
 | C8 | POST /api/products 테스트 작성 | `/acceptance-test-writer POST /api/products` | POST 성공/실패 테스트 | 3개 테스트 추가: 현재 동작(500) 1개 활성 + @Disabled 2개(성공, 존재하지 않는 카테고리). Category와 달리 categoryId=null → findById(null) → 500 | 채택 | 검증력: Category 버그와 다른 실패 경로(500 vs 200+null) 문서화. 유지보수성: @Disabled로 기대 동작 보존 | 테스트 실행 결과 |
 | C9 | POST /api/gifts 테스트 작성 | `/acceptance-test-writer POST /api/gifts` | Gift 전송 성공/실패 테스트 | 5개 테스트 작성(모두 활성): 성공(200+재고 감소), 헤더 누락(400), 옵션 미존재(500), 재고 부족(500+롤백), 발신자 미존재(500+롤백) | 채택 | 검증력: Layer 3(DB 상태 변화) 검증 포함. 트랜잭션 롤백까지 확인 | 테스트 실행 결과, git 8300e41 |
 | C10 | 테스트 간 FK 충돌 해결 | GiftAcceptanceTest 추가 후 ProductAcceptanceTest 실패 → setUp 분석 | 모든 테스트 통과 | Category/Product 테스트의 setUp에 optionRepository.deleteAll() 추가. 테스트 클래스 간 DB 공유로 인한 FK 제약 충돌 해결 | 채택 | 재현성: 모든 테스트 클래스에서 전체 FK 역순 삭제로 격리 보장. 비용: import + 3행 추가 | git d679878, ./gradlew test 전체 통과 |
+| C11 | Category/Product POST 후 DB 저장 검증 | 사용자: `DB로 조회해서 실제로 데이터가 저장 되어있는지 검증` | Layer 3 DB 검증 테스트 | Category: 1건 저장 + name=null 확인. Product: 500 에러로 저장 안 됨(isEmpty) 확인. 같은 @RequestBody 버그지만 DB 결과가 다름 | 채택 | 검증력: HTTP 응답만으로는 DB 저장 여부 확신 불가. Layer 3 검증으로 실제 상태 확인 | git 23731c6, ./gradlew test 전체 통과 |
 
 ### 접근법 요약
 
@@ -183,6 +184,7 @@
 | 테스트 클래스 간 DB 공유 문제 | 같은 Spring Context를 공유하면 다른 테스트 클래스의 데이터가 남아 FK 제약 충돌 발생. 모든 테스트 클래스에서 전체 테이블 FK 역순 삭제 필요 |
 | GiftRestController는 @RequestBody 정상 | Category/Product와 달리 Gift API는 @RequestBody 있음. 프로덕션 버그 없이 정상 동작하여 5개 테스트 모두 활성 상태 |
 | @Transactional 롤백 검증 | 재고 부족/발신자 미존재 시 예외 발생 → @Transactional에 의해 option.decrease()도 롤백됨. DB에서 재고 미변경 확인으로 검증 |
+| 같은 버그, 다른 DB 결과 | Category POST: 200 + name=null로 저장됨. Product POST: 500 + 저장 안 됨(트랜잭션 롤백). 응답 코드뿐 아니라 DB 상태도 검증해야 차이 확인 가능 |
 
 ### 최종 가이드
 
