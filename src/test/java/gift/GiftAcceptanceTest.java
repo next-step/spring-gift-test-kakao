@@ -49,12 +49,22 @@ class GiftAcceptanceTest {
     void setUp() {
         RestAssured.port = port;
         RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
-        sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
-        receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
-        category = categoryRepository.save(new Category("테스트 카테고리"));
+
+        sender = memberRepository.save(
+                new Member("보내는사람", "sender@test.com")
+        );
+        receiver = memberRepository.save(
+                new Member("받는사람", "receiver@test.com")
+        );
+        category = categoryRepository.save(
+                new Category("테스트 카테고리")
+        );
         product = productRepository.save(
-                new Product("테스트 상품", 1000, "https://test.com/image.jpg", category));
-        option = optionRepository.save(new Option("기본 옵션", 10, product));
+                new Product("테스트 상품", 1000, "https://test.com/image.jpg", category)
+        );
+        option = optionRepository.save(
+                new Option("기본 옵션", 10, product)
+        );
     }
 
     @AfterEach

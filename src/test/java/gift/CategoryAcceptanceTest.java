@@ -3,6 +3,7 @@ package gift;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.notNullValue;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
@@ -59,7 +60,10 @@ class CategoryAcceptanceTest {
         // Then: 상태 코드 200, 응답에 핵심 필드 포함
         response.then()
                 .statusCode(200)
-                .body("name", equalTo("음료"));
+                .body(
+                        "name", equalTo("음료"),
+                        "id", notNullValue()
+                );
     }
 
     @Test
@@ -85,7 +89,7 @@ class CategoryAcceptanceTest {
         // Given: 없음
 
         // When: 카테고리를 추가한다
-        RestAssured.given()
+        int addedCategoryId = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "name", "디저트"
@@ -93,7 +97,9 @@ class CategoryAcceptanceTest {
                 .when()
                 .post("/api/categories")
                 .then()
-                .statusCode(200);
+                .statusCode(200)
+                .extract()
+                .jsonPath().getInt("id");
 
         // When: 카테고리를 조회한다
         var response = RestAssured.given()
@@ -103,6 +109,7 @@ class CategoryAcceptanceTest {
         // Then: 방금 추가한 카테고리가 목록에 포함되어 있다
         response.then()
                 .statusCode(200)
+                .body("id", hasItem(addedCategoryId))
                 .body("name", hasItem("디저트"));
     }
 }

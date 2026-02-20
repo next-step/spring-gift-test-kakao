@@ -33,20 +33,25 @@ class ProductAcceptanceTest {
     @Autowired
     ProductRepository productRepository;
 
-    Category category;
+    Category alreadyExsitingCategory;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+
+        // 요청 날렸을 때 url, query param, request body 확인하기 위한 구성품들
         RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
 
-        category = categoryRepository.save(new Category("테스트 카테고리"));
+        // 이미 존재하는 카테고리
+        alreadyExsitingCategory = categoryRepository.save(new Category("테스트 카테고리"));
     }
 
     @AfterEach
     void tearDown() {
+        // 데이터 clean up
         productRepository.deleteAll();
         categoryRepository.deleteAll();
+        alreadyExsitingCategory = null;
     }
 
     @Test
@@ -61,7 +66,7 @@ class ProductAcceptanceTest {
                         "name", "아메리카노",
                         "price", 4500,
                         "imageUrl", "https://example.com/image.jpg",
-                        "categoryId", category.getId()
+                        "categoryId", alreadyExsitingCategory.getId()
                 ))
                 .when()
                 .post("/api/products");
@@ -76,7 +81,9 @@ class ProductAcceptanceTest {
     @DisplayName("사용자가 상품을 조회한다")
     void retrieveProducts() {
         // Given: 상품이 존재한다
-        productRepository.save(new Product("테스트 상품", 1000, "https://test.com/image.jpg", category));
+        productRepository.save(
+                new Product("테스트 상품", 1000, "https://test.com/image.jpg", alreadyExsitingCategory)
+        );
 
         // When: 상품 조회 API를 호출한다
         var response = RestAssured.given()
@@ -101,7 +108,7 @@ class ProductAcceptanceTest {
                         "name", "카페라떼",
                         "price", 5000,
                         "imageUrl", "https://example.com/latte.jpg",
-                        "categoryId", category.getId()
+                        "categoryId", alreadyExsitingCategory.getId()
                 ))
                 .when()
                 .post("/api/products")
@@ -171,7 +178,7 @@ class ProductAcceptanceTest {
                         "name", "음수 가격 상품",
                         "price", -1000,
                         "imageUrl", "https://example.com/negative.jpg",
-                        "categoryId", category.getId()
+                        "categoryId", alreadyExsitingCategory.getId()
                 ))
                 .when()
                 .post("/api/products");
