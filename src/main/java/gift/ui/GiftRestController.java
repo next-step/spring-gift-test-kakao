@@ -20,7 +20,7 @@ public class GiftRestController {
     }
 
     @PostMapping
-    public void give(@RequestBody GiveGiftRequest request, @RequestHeader("Member-Id") Long memberId) {
-        giftService.give(request, memberId);
+    public Gift give(@RequestBody GiveGiftRequest request, @RequestHeader("Member-Id") Long memberId) {
+        return giftService.give(request, memberId);
     }
 }

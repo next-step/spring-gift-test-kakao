@@ -35,7 +35,7 @@ public class GiftService {
         return giftRepository.findById(id).orElseThrow();
     }
 
-    public void give(final GiveGiftRequest request, final Long memberId) {
+    public Gift give(final GiveGiftRequest request, final Long memberId) {
         final Member sender = memberRepository.findById(memberId).orElseThrow();
         final Member receiver = memberRepository.findById(request.getReceiverId()).orElseThrow();
         final Option option = optionRepository.findById(request.getOptionId()).orElseThrow();
@@ -43,5 +43,6 @@ public class GiftService {
         final Gift gift = new Gift(sender, receiver, option, request.getQuantity(), request.getMessage());
         giftRepository.save(gift);
         giftDelivery.deliver(gift);
+        return gift;
     }
 }
