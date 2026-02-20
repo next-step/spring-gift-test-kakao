@@ -99,4 +99,37 @@ class GiftBehaviorTest {
         var unchangedOption = optionRepository.findById(1L).orElseThrow();
         assertThat(unchangedOption.getQuantity()).isEqualTo(2);
     }
+
+    /**
+     * Behavior 3: 존재하지 않는 옵션으로 선물하면 실패한다
+     *
+     * Given: 테이블이 비어 있는 상태 (옵션 ID 9999는 존재하지 않음)
+     * When:  POST /api/gifts + Body { optionId: 9999, ... }
+     * Then:  HTTP 500
+     */
+    @Test
+    @Sql("/sql/cleanup.sql")
+    void should_fail_when_option_does_not_exist() {
+        // When
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Member-Id", "1");
+
+        Map<String, Object> body = Map.of(
+            "optionId", 9999,
+            "quantity", 1,
+            "receiverId", 2,
+            "message", "선물입니다"
+        );
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+            "/api/gifts",
+            HttpMethod.POST,
+            new HttpEntity<>(body, headers),
+            Void.class
+        );
+
+        // Then — HTTP 응답 검증 (실패)
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
