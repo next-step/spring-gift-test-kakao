@@ -155,6 +155,17 @@ Category ←── Product ←── Option
 /generate-test 선물전송 acceptance
 ```
 
+### /commit [메시지]
+Angular.js 커밋 컨벤션으로 변경사항을 분석하고 커밋합니다.
+- 메시지 생략 시 변경사항을 분석하여 자동 생성
+- type: feat, fix, docs, style, refactor, perf, test, chore
+- 커밋 전 반드시 사용자 확인
+
+```
+/commit
+/commit Option 재고 부족 테스트 추가
+```
+
 ### 자동 스킬 호출
 
 **`/summarize` 자동 호출:**
@@ -171,6 +182,10 @@ Category ←── Product ←── Option
 - "XXX 테스트 코드 짜줘", "XXX 테스트 작성해줘" 라고 하면
 - "XXX 단위/통합/인수 테스트 만들어줘" 라고 하면
 - 테스트 코드 생성을 명시적으로 요청하면
+
+**`/commit` 자동 호출:**
+- "커밋해줘", "커밋 만들어줘" 라고 하면
+- "변경사항 커밋해줘" 라고 하면
 
 ---
 
