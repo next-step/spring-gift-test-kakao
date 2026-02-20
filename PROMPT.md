@@ -70,3 +70,17 @@
 TEST_STRATEGY.md를 참고해서 필요한 내용을 CLAUDE.md로 간결하게 작성해줘.
 ```
 
+```
+해당 프로젝트에서 사용하면 좋을 Claude skill이 있을까?
+```
+
+```
+https://code.claude.com/docs/ko/skills 이거 참고해서 skill을 만들어줘.
+현재 프로젝트에 있는 모든 테스트를 실행시키고, 테스트 나온 결과를 요약해서 PDF로 만들어주는 스킬 생성해줘.
+```
+
+```
+https://code.claude.com/docs/ko/skills 이거 참고해서 skill을 만들어줘.
+현재 수정된 파일들을 분석하고 적절한 커밋 메시지를 생성해서 Git 커밋하는 스킬을 생성해줘.
+수정된 파일이 많을 경우 변경된 내용을 그룹화해서 커밋을 여러번 해줘.
+```
