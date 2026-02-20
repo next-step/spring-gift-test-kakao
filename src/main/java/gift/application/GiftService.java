@@ -30,6 +30,11 @@ public class GiftService {
         this.giftDelivery = giftDelivery;
     }
 
+    @Transactional(readOnly = true)
+    public Gift retrieveById(final Long id) {
+        return giftRepository.findById(id).orElseThrow();
+    }
+
     public void give(final GiveGiftRequest request, final Long memberId) {
         final Member sender = memberRepository.findById(memberId).orElseThrow();
         final Member receiver = memberRepository.findById(request.getReceiverId()).orElseThrow();
