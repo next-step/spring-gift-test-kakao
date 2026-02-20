@@ -103,6 +103,37 @@ class CategoryRestControllerTest {
     }
 
     @Test
+    @DisplayName("카테고리 목록을 조회한다")
+    void retrieve_categories_returnsList() {
+        // given
+        given()
+            .contentType(ContentType.JSON)
+            .body(Map.of("name", "교환권"))
+        .when()
+            .post("/api/categories")
+        .then()
+            .statusCode(200);
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(Map.of("name", "상품권"))
+        .when()
+            .post("/api/categories")
+        .then()
+            .statusCode(200);
+
+        // when & then
+        given()
+        .when()
+            .get("/api/categories")
+        .then()
+            .statusCode(200)
+            .body("size()", equalTo(2))
+            .body("name", hasItem("교환권"))
+            .body("name", hasItem("상품권"));
+    }
+
+    @Test
     @DisplayName("동일한 이름의 카테고리를 여러 개 생성할 수 있다")
     void create_duplicateName_allowsMultiple() {
         // given
