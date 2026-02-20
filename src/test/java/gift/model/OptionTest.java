@@ -82,4 +82,51 @@ class OptionTest {
             assertThat(option.getQuantity()).isEqualTo(10);
         }
     }
+
+    @Nested
+    @DisplayName("decrease: 재고 부족 예외")
+    class DecreaseInsufficientStock {
+
+        @Test
+        void 재고가_0일_때_양수_차감_시_예외가_발생한다() {
+            // given
+            Option option = new Option("기본 옵션", 0, product);
+
+            // when & then
+            assertThatThrownBy(() -> option.decrease(1))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        void 재고보다_1개_많은_수량_요청_시_예외가_발생한다() {
+            // given
+            Option option = new Option("기본 옵션", 5, product);
+
+            // when & then
+            assertThatThrownBy(() -> option.decrease(6))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        void 예외_발생_후_재고가_변경되지_않는다() {
+            // given
+            Option option = new Option("기본 옵션", 3, product);
+
+            // when & then
+            assertThatThrownBy(() -> option.decrease(5))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(option.getQuantity()).isEqualTo(3);
+        }
+
+        @Test
+        void 여러_번_차감_후_남은_재고보다_많이_요청하면_예외가_발생한다() {
+            // given
+            Option option = new Option("기본 옵션", 10, product);
+            option.decrease(7);
+
+            // when & then
+            assertThatThrownBy(() -> option.decrease(4))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+    }
 }
