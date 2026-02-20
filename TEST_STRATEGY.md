@@ -55,9 +55,11 @@
 | **낮음** | `CategoryService` | 단순 CRUD, 별도 검증 없음 |
 | **낮음** | `OptionService.create()` | 상품 존재 검증 후 옵션 생성 (ProductService와 패턴 동일) |
 
-## 인수 테스트 데이터 세팅 전략
+## 인수 테스트 설계 결정사항
 
-### 비교
+### 1. 데이터 세팅 전략
+
+#### 비교
 
 | 방식 | 장점 | 단점 |
 |---|---|---|
@@ -65,17 +67,45 @@
 | **JPA Repository 직접 주입** | 타입 안전, 리팩터링에 강함 | 내부 구현(엔티티/리포지토리)에 결합, API 레이어를 우회하여 버그를 놓칠 수 있음 |
 | **API 호출 (POST)** | 풀스택 검증, 내부 구현과 무관 | 생성 API가 깨지면 조회 테스트도 같이 실패 (cascade) |
 
-### 선택: JPA Repository 직접 주입
+#### 선택: JPA Repository 직접 주입
 
 - 데이터 세팅과 API 검증의 관심사를 분리할 수 있다. 세팅이 실패하면 세팅 문제, API가 실패하면 API 문제로 원인이 명확하다.
 - API 호출 방식은 생성 API가 깨지면 조회 테스트까지 cascade 실패하여, 실제 실패 원인을 파악하기 어렵다.
 - 타입 안전하고 컴파일 타임에 오류를 잡을 수 있어 리팩터링에 강하다.
 - SQL 방식과 달리 DB 스키마에 직접 결합하지 않으므로, 엔티티 변경에 유연하게 대응할 수 있다.
 
-## 테스트 레벨 가이드
+### 2. 테스트 격리 전략
 
-| 레벨 | 대상 | 방식 |
+#### 비교
+
+| 방식 | 장점 | 단점 |
 |---|---|---|
-| **단위 테스트** | `Option.decrease()` | 순수 Java 테스트, Spring 불필요 |
-| **서비스 테스트** | `GiftService`, `ProductService`, `WishService` 등 | `@SpringBootTest` 또는 Mock 활용 |
-| **API 테스트** | 컨트롤러 엔드포인트 | `MockMvc` 또는 `@SpringBootTest` + `TestRestTemplate` |
+| **@Transactional** | 자동 롤백, 코드 간결 | RestAssured는 별도 스레드라 롤백이 적용되지 않음 |
+| **@BeforeEach deleteAll** | 명시적이고 확실한 정리 | 삭제 순서(FK 제약)를 직접 관리해야 함 |
+| **@DirtiesContext** | 컨텍스트 재생성으로 완벽한 격리 | 매 테스트마다 스프링 재기동이라 느림 |
+
+#### 선택: @BeforeEach deleteAll
+
+- RestAssured는 실제 HTTP 요청을 별도 스레드에서 보내므로 @Transactional 롤백이 동작하지 않는다.
+- @DirtiesContext는 확실하지만, 매 테스트마다 스프링 컨텍스트를 재생성하여 테스트 속도가 크게 저하된다.
+- deleteAll은 FK 제약 순서만 지켜주면 (자식 → 부모: wish → option → product → category → member) 확실하고 빠르게 격리된다.
+
+### 3. 검증 범위 전략
+
+API 응답 코드만 확인하면 실제 부수효과(재고 차감 등)가 정상 반영됐는지 보장할 수 없다.
+따라서 **API 응답 + DB 상태를 함께 검증**한다.
+
+- API 응답: HTTP 상태 코드, 응답 본문의 필드 값 확인
+- DB 상태: Repository로 엔티티를 다시 조회하여 부수효과 검증 (예: 선물 후 재고 차감 확인)
+
+### 4. 발견된 버그
+
+테스트 작성 과정에서 다음 버그를 발견했다:
+
+- `CategoryRestController.create()`와 `ProductRestController.create()`에 `@RequestBody`가 누락되어 있어, JSON 요청 시 필드가 바인딩되지 않고 null로 저장된다.
+- 현재 테스트는 이 버그를 감지하여 실패하는 상태로 유지하고 있다.
+
+### 5. 네이밍 컨벤션
+
+- **테스트 메서드**: 한글로 작성하여 시나리오를 명확히 표현한다. (예: `카테고리를_생성한다`)
+- **유틸 메서드**: 영문으로 작성한다. (예: `createCategory`, `giveGift`)
