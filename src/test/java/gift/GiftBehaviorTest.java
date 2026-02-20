@@ -62,4 +62,41 @@ class GiftBehaviorTest {
         var updatedOption = optionRepository.findById(1L).orElseThrow();
         assertThat(updatedOption.getQuantity()).isEqualTo(7);
     }
+
+    /**
+     * Behavior 2: 재고 부족 시 선물하기가 거부되고 재고가 유지된다
+     *
+     * Given: 카테고리, 상품, 옵션(수량=2), 보내는 회원, 받는 회원이 존재
+     * When:  POST /api/gifts + Body { optionId, quantity: 5, ... } (재고 초과)
+     * Then:  HTTP 500 / 옵션 수량이 2로 유지 (변화 없음)
+     */
+    @Test
+    @Sql({"/sql/cleanup.sql", "/sql/gift-setup-low-stock.sql"})
+    void should_reject_gift_and_keep_stock_when_quantity_exceeds_inventory() {
+        // When
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Member-Id", "1");
+
+        Map<String, Object> body = Map.of(
+            "optionId", 1,
+            "quantity", 5,
+            "receiverId", 2,
+            "message", "선물입니다"
+        );
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+            "/api/gifts",
+            HttpMethod.POST,
+            new HttpEntity<>(body, headers),
+            Void.class
+        );
+
+        // Then — HTTP 응답 검증 (실패)
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        // Then — DB 상태 변화 검증 (재고 불변 확인 — 트랜잭션 롤백 보장)
+        var unchangedOption = optionRepository.findById(1L).orElseThrow();
+        assertThat(unchangedOption.getQuantity()).isEqualTo(2);
+    }
 }
