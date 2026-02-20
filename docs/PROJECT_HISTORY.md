@@ -63,6 +63,56 @@ Body: {
 - **GiftDelivery는 전략 패턴** — 인터페이스로 추상화되어 있고, 현재는 `FakeGiftDelivery`(콘솔 출력)만 존재
 - **받는 사람(receiverId) 검증 없음** — 존재하지 않는 회원 ID를 넣어도 에러가 나지 않음 (FakeGiftDelivery가 receiver를 조회하지 않으므로)
 
+### 2) 카테고리 등록 기능 분석
+
+#### 요청
+
+```
+POST /api/categories
+Body: {
+  "name": "식품"       ← 카테고리 이름
+}
+```
+
+#### 처리 흐름 (3단계)
+
+```
+① CategoryRestController.create()
+   │  CreateCategoryRequest로 요청 파싱 (@RequestBody 없음 — 폼 바인딩)
+   ▼
+② CategoryService.create()              ← @Transactional (클래스 레벨)
+   │
+   └─③ categoryRepository.save(new Category(name))
+         → Category 엔티티 생성 후 DB 저장
+         → 저장된 Category 객체 반환 (id 자동 생성)
+
+트랜잭션 커밋 → Category가 DB에 반영됨
+```
+
+#### 성공 시
+
+- **응답:** `200 OK` + 저장된 Category JSON (`{ "id": 1, "name": "식품" }`)
+- **DB 변경:** Category 테이블에 새 행 추가
+
+#### 실패 케이스
+
+| 상황 | 예외 | 결과 |
+|------|------|------|
+| name이 null | DB 제약 조건 위반 가능 | 500 에러, 카테고리 생성 안 됨 |
+
+#### 주요 특징
+
+- **`@RequestBody` 누락** — 컨트롤러의 `create()` 메서드에 `@RequestBody`가 없어 JSON이 아닌 폼 파라미터(`application/x-www-form-urlencoded`)로 바인딩됨
+- **입력 검증 없음** — name에 대한 `@NotNull`, `@NotBlank` 등 Bean Validation이 없음
+- **응답이 엔티티 직접 반환** — DTO 없이 `Category` JPA 엔티티를 그대로 JSON 직렬화하여 반환
+- **조회 API도 존재** — `GET /api/categories`로 전체 카테고리 목록 조회 가능 (`categoryRepository.findAll()`)
+
+#### 조회 요청
+
+```
+GET /api/categories
+→ 응답: [{ "id": 1, "name": "식품" }, { "id": 2, "name": "전자기기" }, ...]
+```
 
 
 # 프롬프트 기록
@@ -81,4 +131,7 @@ Body: {
 
   위의 포맷대로 생각해서 몇 가지 알려줘
 - 정리된 시나리오를 TEST_STRATEGY.md 파일로 만들어줘
-- 
+
+- @docs/PROJECT_HISTORY.md 에 카테고리 등록 기능을 1)선물하기 기능 밑에 2)카테고리 등록 기능으로 분석해서 적어줘
+- 방금 작성한 내용을 바탕으로 @docs/TEST_STRATEGY.md 파일에 행위 2로 작성해줘
+- 2-4로 중복등록 불가 테스트도 넣어줘
