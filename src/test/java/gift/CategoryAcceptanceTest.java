@@ -29,6 +29,36 @@ class CategoryAcceptanceTest {
         assertThat(response.jsonPath().getString("name")).isEqualTo("식품");
     }
 
+    @DisplayName("카테고리를 전체 조회한다")
+    @Test
+    void 카테고리를_전체_조회한다() {
+        createCategory("식품");
+        createCategory("패션");
+
+        var response = retrieveCategories();
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getList("name")).contains("식품", "패션");
+    }
+
+    @DisplayName("카테고리가 없으면 빈 리스트를 반환한다")
+    @Test
+    void 카테고리가_없으면_빈_리스트를_반환한다() {
+        var response = retrieveCategories();
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getList("$")).isEmpty();
+    }
+
+    ExtractableResponse<Response> retrieveCategories() {
+        return RestAssured.given().log().all()
+                .port(port)
+                .when()
+                .get("/api/categories")
+                .then().log().all()
+                .extract();
+    }
+
     ExtractableResponse<Response> createCategory(String name) {
         return RestAssured.given().log().all()
                 .port(port)
