@@ -42,6 +42,37 @@ class ProductAcceptanceTest {
         assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 
+    @DisplayName("상품을 전체 조회한다")
+    @Test
+    void 상품을_전체_조회한다() {
+        Long categoryId = createCategory("식품").jsonPath().getLong("id");
+        createProduct("아메리카노", 4500, "http://example.com/a.png", categoryId);
+        createProduct("카페라떼", 5000, "http://example.com/b.png", categoryId);
+
+        var response = retrieveProducts();
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getList("name")).contains("아메리카노", "카페라떼");
+    }
+
+    @DisplayName("상품이 없으면 빈 리스트를 반환한다")
+    @Test
+    void 상품이_없으면_빈_리스트를_반환한다() {
+        var response = retrieveProducts();
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getList("$")).isEmpty();
+    }
+
+    ExtractableResponse<Response> retrieveProducts() {
+        return RestAssured.given().log().all()
+                .port(port)
+                .when()
+                .get("/api/products")
+                .then().log().all()
+                .extract();
+    }
+
     ExtractableResponse<Response> createProduct(String name, int price, String imageUrl, Long categoryId) {
         return RestAssured.given().log().all()
                 .port(port)
