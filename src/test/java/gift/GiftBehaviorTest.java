@@ -132,4 +132,45 @@ class GiftBehaviorTest {
         // Then — HTTP 응답 검증 (실패)
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    /**
+     * Behavior 7: 보내는 회원 미존재 시 선물하기가 실패하고 재고가 롤백된다
+     *
+     * 코드 실행 순서: option.decrease() → giftDelivery.deliver() (회원 조회)
+     * 존재하지 않는 회원 ID로 선물 시, decrease() 이후 deliver()에서 실패하면
+     * 트랜잭션 롤백으로 재고가 원복되어야 한다.
+     *
+     * Given: 카테고리, 상품, 옵션(수량=10), 받는 회원이 존재 / 보내는 회원(ID=9999) 미존재
+     * When:  POST /api/gifts + Header Member-Id: 9999 + Body { optionId, quantity: 3, ... }
+     * Then:  HTTP 500 / 옵션 수량이 10으로 유지 (트랜잭션 원자성 보장)
+     */
+    @Test
+    @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
+    void should_fail_and_rollback_stock_when_sender_does_not_exist() {
+        // When — 존재하지 않는 회원(ID=9999)으로 선물 시도
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Member-Id", "9999");
+
+        Map<String, Object> body = Map.of(
+            "optionId", 1,
+            "quantity", 3,
+            "receiverId", 2,
+            "message", "선물입니다"
+        );
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+            "/api/gifts",
+            HttpMethod.POST,
+            new HttpEntity<>(body, headers),
+            Void.class
+        );
+
+        // Then — HTTP 응답 검증 (실패)
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        // Then — DB 상태 변화 검증 (재고 원복 확인 — 트랜잭션 롤백 보장)
+        var unchangedOption = optionRepository.findById(1L).orElseThrow();
+        assertThat(unchangedOption.getQuantity()).isEqualTo(10);
+    }
 }
