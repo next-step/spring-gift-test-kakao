@@ -94,6 +94,33 @@ class OptionServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("retrieve: 옵션 조회")
+    class Retrieve {
+
+        @Test
+        void 데이터가_없으면_빈_리스트를_반환한다() {
+            // when
+            List<Option> options = optionService.retrieve();
+
+            // then
+            assertThat(options).isEmpty();
+        }
+
+        @Test
+        void 여러_옵션을_조회할_수_있다() throws Exception {
+            // given
+            optionService.create(createRequest("옵션1", 10, product.getId()));
+            optionService.create(createRequest("옵션2", 20, product.getId()));
+
+            // when
+            List<Option> options = optionService.retrieve();
+
+            // then
+            assertThat(options).hasSize(2);
+        }
+    }
+
     private CreateOptionRequest createRequest(String name, int quantity, Long productId) throws Exception {
         CreateOptionRequest request = new CreateOptionRequest();
         setField(request, "name", name);

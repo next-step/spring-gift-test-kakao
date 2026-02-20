@@ -76,6 +76,20 @@ class CategoryServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("retrieve: 카테고리 조회")
+    class Retrieve {
+
+        @Test
+        void 데이터가_없으면_빈_리스트를_반환한다() {
+            // when
+            List<Category> categories = categoryService.retrieve();
+
+            // then
+            assertThat(categories).isEmpty();
+        }
+    }
+
     private CreateCategoryRequest createRequest(String name) throws Exception {
         CreateCategoryRequest request = new CreateCategoryRequest();
         setField(request, "name", name);

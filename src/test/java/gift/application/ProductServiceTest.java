@@ -86,6 +86,33 @@ class ProductServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("retrieve: 상품 조회")
+    class Retrieve {
+
+        @Test
+        void 데이터가_없으면_빈_리스트를_반환한다() {
+            // when
+            List<Product> products = productService.retrieve();
+
+            // then
+            assertThat(products).isEmpty();
+        }
+
+        @Test
+        void 여러_상품을_조회할_수_있다() throws Exception {
+            // given
+            productService.create(createRequest("상품1", 10000, "http://image1.url", category.getId()));
+            productService.create(createRequest("상품2", 20000, "http://image2.url", category.getId()));
+
+            // when
+            List<Product> products = productService.retrieve();
+
+            // then
+            assertThat(products).hasSize(2);
+        }
+    }
+
     private CreateProductRequest createRequest(String name, int price, String imageUrl, Long categoryId) throws Exception {
         CreateProductRequest request = new CreateProductRequest();
         setField(request, "name", name);
