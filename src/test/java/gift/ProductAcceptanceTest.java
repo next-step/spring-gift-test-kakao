@@ -76,7 +76,7 @@ class ProductAcceptanceTest {
 		ExtractableResponse<Response> response = 상품을_등록한다("아메리카노", 500, "/img/ame", invalidCategoryId);
 
 		// then
-		assertThat(response.statusCode()).isNotEqualTo(HttpStatus.OK.value());
+		assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
 	}
 
 	private Long 카테고리를_생성한다(String name) {

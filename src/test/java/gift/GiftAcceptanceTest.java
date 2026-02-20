@@ -65,7 +65,7 @@ class GiftAcceptanceTest {
 		ExtractableResponse<Response> response = 선물을_보낸다(sender.getId(), optionId, 2, sender.getId(), "수량 초과");
 
 		// then
-		assertThat(response.statusCode()).isNotEqualTo(HttpStatus.OK.value());
+		assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 
 		int remainingQuantity = 옵션을_조회한다(optionId).jsonPath().getInt("quantity");
 		assertThat(remainingQuantity).isEqualTo(1);
