@@ -52,11 +52,6 @@
   - 단일 단어 프롬프트(`login`)는 의도 파악 실패 → 목적과 범위를 함께 전달할 것
   - .claude/skills/ 만으로는 슬래시 명령어 미동작 → .claude/commands/에도 배치 필요
   - MockMvc vs RestAssured 선택은 데이터 격리 방식에 영향 → 초기에 명시적으로 결정할 것
-- 다음 세션 TODO:
-  - [ ] Category API E2E 테스트 작성 (Sprint 1 시작)
-  - [ ] @RequestBody 누락 버그 수정 (CategoryRestController, ProductRestController)
-  - [ ] 테스트 픽스처/헬퍼 구조 설계
-
 ---
 
 ## SessionID: 470361d1-9ba3-41dd-9e95-6b219c6e8926
@@ -118,11 +113,6 @@
   - Skills는 반드시 디렉토리 구조(`skills/이름/SKILL.md`) — 플랫 파일은 인식 안 됨
   - frontmatter의 `description`이 없으면 Claude 자동 선택 불가
   - commands/와 skills/에 같은 이름이 있으면 skills가 우선
-
-- 다음 세션 TODO:
-  - [ ] commands/ 폴더 중복 파일 정리 여부 결정
-  - [ ] `/acceptance-test-writer`로 Category API E2E 테스트 작성
-  - [ ] @RequestBody 누락 버그 수정
 
 ---
 
@@ -196,9 +186,3 @@
   - 프로덕션 버그 주석은 요청→응답 인과 체인 전체를 기술할 것 (한쪽만 언급하면 혼란)
   - `notNullValue()` 대신 `equalTo(구체값)` 사용 — 사용자 피드백: "무책임한 검증"
   - 같은 @RequestBody 누락이라도 엔티티별 실패 양상이 다름 → 각각 현재 동작 테스트 필요
-
-- 다음 세션 TODO:
-  - [ ] 테스트 픽스처/헬퍼 공통화 리팩토링 (데이터 생성 중복 제거)
-  - [ ] setUp 전체 삭제 로직을 공통 베이스 클래스로 추출
-  - [ ] @RequestBody 누락 프로덕션 버그 수정 (CategoryRestController, ProductRestController)
-  - [ ] 프로덕션 수정 후 @Disabled 테스트 활성화
