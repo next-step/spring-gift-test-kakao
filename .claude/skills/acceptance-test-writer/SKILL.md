@@ -5,8 +5,9 @@ description: >
   TEST_STRATEGY.md와 CLAUDE.md의 시나리오 매트릭스를 기반으로
   성공/실패 케이스를 given-when-then 구조로 생성한다.
   대상 API를 인자로 받거나, 미지정 시 전체 API를 순서대로 진행한다.
+  이 스킬은 테스트 코드만 작성하며 프로덕션 코드를 절대 수정하지 않는다.
 argument-hint: "[API endpoint, e.g. POST /api/categories]"
-allowed-tools: Read, Grep, Glob, Edit, Write, Bash
+allowed-tools: Read, Grep, Glob, Bash(./gradlew *)
 ---
 
 # acceptance-test-writer
@@ -174,17 +175,53 @@ Option option = createOption("기본 옵션", 10, product);
 ```
 1. 대상 API 확인 (사용자 지정 또는 Scenario Matrix 순서)
 2. 전제 조건 확인 (build.gradle, application.properties, 기반 클래스)
-3. 대상 컨트롤러 · 서비스 · 엔티티 코드 읽기
-4. 테스트 클래스 생성 (또는 기존 파일에 추가)
-5. 성공 시나리오 작성 → ./gradlew test 실행
-6. 실패 시 버그 수정 (Red → Green)
-7. 실패 시나리오 작성 → ./gradlew test 실행
-8. 중복 발견 시 헬퍼 추출 (Refactor)
+3. 대상 컨트롤러 · 서비스 · 엔티티 코드 읽기 (Read only)
+4. 테스트 클래스 생성 (또는 기존 파일에 추가) — src/test/ 경로만 허용
+5. 프로덕션 코드의 현재 동작을 기준으로 테스트 작성
+6. ./gradlew test 실행
+7. 테스트 실패 시 → 아래 "테스트 실패 대응" 규칙 적용
+8. 중복 발견 시 헬퍼 추출 (Refactor) — src/test/ 경로만 허용
 9. 최종 ./gradlew test 전체 통과 확인
 ```
 
+## 테스트 실패 대응
+
+테스트가 실패했을 때 **프로덕션 코드를 수정하지 않는다.** 대신:
+
+1. **테스트 코드 오류인 경우**: 테스트 코드를 수정한다 (src/test/ 내에서만)
+2. **프로덕션 버그 발견인 경우**: 아래 절차를 따른다
+   - 테스트의 기대값을 프로덕션의 **현재 동작**에 맞춘다
+     (예: 201이 아닌 200을 반환하면 `.statusCode(200)`)
+   - `@Disabled("BUG: @RequestBody 누락으로 JSON 바인딩 안 됨")` 로 마킹하거나,
+     현재 동작 기준으로 테스트를 통과시킨 뒤 주석으로 기대 동작을 남긴다
+   - 발견된 버그를 **테스트 파일 상단 주석** 또는 별도 섹션에 기록한다
+
+```java
+// 발견된 프로덕션 버그:
+// - CategoryRestController.create(): @RequestBody 누락 → JSON 바인딩 안 됨
+// - CategoryRestController.create(): @ResponseStatus(CREATED) 없음 → 200 반환
+
+@Test
+@Disabled("BUG: @RequestBody 누락으로 name이 null로 저장됨. 프로덕션 수정 후 활성화")
+void 카테고리_생성_성공() { ... }
+```
+
+## 파일 수정 범위 제약 (CRITICAL)
+
+### 수정 가능 경로
+- `src/test/**/*` — 테스트 코드 생성/수정
+- `build.gradle` — 테스트 의존성 추가만 허용 (`testImplementation` 행만)
+- `src/test/resources/**/*` — 테스트 설정 파일
+
+### 절대 수정 금지 경로
+- `src/main/**/*` — 프로덕션 코드 일체
+- `src/main/resources/**/*` — 프로덕션 설정 파일
+
+이 규칙은 어떤 상황에서도 예외 없이 적용된다.
+프로덕션 버그를 발견해도 테스트 코드에 기록만 하고, 수정은 사용자에게 위임한다.
+
 ## 금지 사항
-- 프로덕션 코드 변경
+- `src/main/` 하위 파일 생성/수정/삭제 (CRITICAL — 절대 금지)
 - 한 번에 여러 API 테스트를 동시 작성 (하나씩 점진적으로)
 - 테스트 코드에서 프로덕션 로직 복제
 - `@Transactional`로 테스트 격리 시도 (RestAssured는 별도 HTTP 요청)
