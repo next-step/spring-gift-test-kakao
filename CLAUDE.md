@@ -73,3 +73,7 @@ src/main/java/gift/
 3. **테스트 전략 문서를 반드시 따른다.**
    - 테스트 코드를 작성하기 전에 `TEST_STRATEGY.md`를 반드시 읽고 확인한다.
    - 테스트 전략 문서에 정의된 규칙과 패턴을 준수한다.
+
+4. **TEST_ANALYSIS.md의 행위 목록과 테스트 케이스를 기준으로 작성한다.**
+   - 5개 행위(카테고리 생성/조회, 상품 생성/조회, 선물 전달)에 대해 총 10개 TC를 구현한다.
+   - 테스트 클래스는 `CategoryAcceptanceTest`, `ProductAcceptanceTest`, `GiftAcceptanceTest`로 나눈다.
