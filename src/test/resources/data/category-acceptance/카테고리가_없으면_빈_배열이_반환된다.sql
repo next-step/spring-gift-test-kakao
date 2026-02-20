@@ -1,0 +1,10 @@
+-- 데이터 초기화 (자식 테이블부터 역순 삭제)
+SET REFERENTIAL_INTEGRITY FALSE;
+TRUNCATE TABLE wish;
+TRUNCATE TABLE option;
+TRUNCATE TABLE product;
+TRUNCATE TABLE category;
+TRUNCATE TABLE member;
+SET REFERENTIAL_INTEGRITY TRUE;
+
+-- 카테고리 없는 빈 상태 테스트 (INSERT 없음)
