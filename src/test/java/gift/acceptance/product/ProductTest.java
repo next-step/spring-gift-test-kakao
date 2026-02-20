@@ -12,6 +12,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.notNullValue;
@@ -86,6 +87,16 @@ class ProductTest {
         .then()
                 .statusCode(200)
                 .body("name", hasItem("아메리카노"));
+    }
+
+    @Test
+    void 상품이_없으면_빈_목록을_반환한다() {
+        given()
+        .when()
+                .get("/api/products")
+        .then()
+                .statusCode(200)
+                .body("$", empty());
     }
 
     @Test
