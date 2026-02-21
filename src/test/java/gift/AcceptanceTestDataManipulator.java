@@ -1,13 +1,9 @@
 package gift;
 
 import gift.model.Category;
-import gift.model.CategoryRepository;
 import gift.model.Member;
-import gift.model.MemberRepository;
 import gift.model.Option;
-import gift.model.OptionRepository;
 import gift.model.Product;
-import gift.model.ProductRepository;
 import jakarta.annotation.PostConstruct;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class AcceptanceTestDataManipulator implements TestDataManipulator {
 
     @Autowired
-    private MemberRepository memberRepo;
+    private TestMemberRepository memberRepo;
 
     @Autowired
-    private CategoryRepository categoryRepo;
+    private TestCategoryRepository categoryRepo;
 
     @Autowired
-    private ProductRepository productRepo;
+    private TestProductRepository productRepo;
 
     @Autowired
-    private OptionRepository optionRepo;
+    private TestOptionRepository optionRepo;
 
     @Override
     public Member addMember(String name, String email) {
