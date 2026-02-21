@@ -1,13 +1,13 @@
 package gift.application;
 
+import gift.application.request.CreateProductRequest;
 import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.Product;
 import gift.model.ProductRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Transactional
 @Service
@@ -21,8 +21,14 @@ public class ProductService {
     }
 
     public Product create(final CreateProductRequest request) {
-        final Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
-        final Product product = new Product(request.getName(), request.getPrice(), request.getImageUrl(), category);
+
+        Long categoryId = request.categoryId();
+        final Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new CategoryNotFoundException(categoryId));
+
+        final Product product = new Product(request.name(), request.price(), request.imageUrl(),
+                category);
+
         return productRepository.save(product);
     }
 

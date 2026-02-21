@@ -1,5 +1,6 @@
 package gift.application;
 
+import gift.application.request.CreateWishRequest;
 import gift.model.Member;
 import gift.model.MemberRepository;
 import gift.model.Product;
@@ -27,8 +28,14 @@ public class WishService {
     }
 
     public Wish create(final Long memberId, final CreateWishRequest request) {
-        final Member member = memberRepository.findById(memberId).orElseThrow();
-        final Product product = productRepository.findById(request.getProductId()).orElseThrow();
+
+        final Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+
+        Long productId = request.productId();
+        final Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException(productId));
+
         return wishRepository.save(new Wish(member, product));
     }
 }

@@ -1,13 +1,13 @@
 package gift.application;
 
+import gift.application.request.CreateOptionRequest;
 import gift.model.Option;
 import gift.model.OptionRepository;
 import gift.model.Product;
 import gift.model.ProductRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Transactional
 @Service
@@ -21,8 +21,12 @@ public class OptionService {
     }
 
     public Option create(final CreateOptionRequest request) {
-        final Product product = productRepository.findById(request.getProductId()).orElseThrow();
-        return optionRepository.save(new Option(request.getName(), request.getQuantity(), product));
+        Long productId = request.productId();
+
+        final Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException(productId));
+
+        return optionRepository.save(new Option(request.name(), request.quantity(), product));
     }
 
     public List<Option> retrieve() {
