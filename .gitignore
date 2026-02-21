@@ -38,3 +38,6 @@ out/
 
 ### macOS ###
 .DS_Store
+
+행위리스트.md
+*.txt
