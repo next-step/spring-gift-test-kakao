@@ -17,7 +17,7 @@ public class CategoryService {
     }
 
     public Category create(final CreateCategoryRequest request) {
-        return categoryRepository.save(new Category(request.getName()));
+        return categoryRepository.save(new Category(request.name()));
     }
 
     public List<Category> retrieve() {
