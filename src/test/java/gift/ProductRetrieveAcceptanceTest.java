@@ -2,12 +2,12 @@ package gift;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
-import gift.model.Product;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static gift.Fixtures.product;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -32,8 +32,8 @@ class ProductRetrieveAcceptanceTest extends AcceptanceTest {
     @Test
     void 등록한_상품이_목록에_포함_카테고리_중첩_응답() {
         var category = categoryRepository.save(new Category("식품"));
-        var product1 = productRepository.save(new Product("케이크", 30000, "https://example.com/cake.jpg", category));
-        var product2 = productRepository.save(new Product("초콜릿", 15000, "https://example.com/choco.jpg", category));
+        productRepository.save(product("케이크", category));
+        productRepository.save(product("초콜릿", category));
 
         RestAssured.given()
                 .when()
