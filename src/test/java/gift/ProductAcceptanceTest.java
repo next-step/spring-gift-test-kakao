@@ -8,7 +8,6 @@ import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -17,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -99,13 +99,15 @@ class ProductAcceptanceTest {
             .post("/api/products");
 
         // then
-        response.then()
+        var id = response.then()
             .statusCode(200)
-            .body("id", notNullValue())
             .body("name", equalTo("노트북"))
             .body("price", equalTo(1_500_000))
             .body("imageUrl", equalTo("https://example.com/notebook.png"))
-            .body("category.name", equalTo("전자기기"));
+            .body("category.name", equalTo("전자기기"))
+            .extract().jsonPath().getLong("id");
+
+        assertThat(productRepository.findById(id)).isPresent();
     }
 
     @Test

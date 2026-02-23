@@ -58,8 +58,8 @@ class CategoryAcceptanceTest {
     @Test
     void 카테고리_목록_조회_N개_존재() {
         // given
-        categoryRepository.save(new Category("전자기기"));
-        categoryRepository.save(new Category("식품"));
+        var cat1 = categoryRepository.save(new Category("전자기기"));
+        var cat2 = categoryRepository.save(new Category("식품"));
 
         // when & then
         given()
@@ -68,10 +68,10 @@ class CategoryAcceptanceTest {
         .then()
             .statusCode(200)
             .body("size()", equalTo(2))
-            .body("[0].id", notNullValue())
-            .body("[0].name", notNullValue())
-            .body("[1].id", notNullValue())
-            .body("[1].name", notNullValue());
+            .body("[0].id", equalTo(cat1.getId().intValue()))
+            .body("[0].name", equalTo("전자기기"))
+            .body("[1].id", equalTo(cat2.getId().intValue()))
+            .body("[1].name", equalTo("식품"));
     }
 
     @Test
@@ -87,47 +87,12 @@ class CategoryAcceptanceTest {
             .post("/api/categories");
 
         // then
-        response.then()
+        var id = response.then()
             .statusCode(200)
-            .body("id", notNullValue())
-            .body("name", equalTo("전자기기"));
-    }
+            .body("name", equalTo("전자기기"))
+            .extract().jsonPath().getLong("id");
 
-    @Test
-    void 카테고리_생성_현재_동작_확인() {
-        // given
-        var request = Map.of("name", "전자기기");
-
-        // when
-        var response = given()
-            .contentType(ContentType.JSON)
-            .body(request)
-        .when()
-            .post("/api/categories");
-
-        // then — 현재 동작 확인
-        response.then()
-            .statusCode(200)  // @ResponseStatus(CREATED) 없어서 기본값 200
-            .body("id", notNullValue())
-            .body("name", equalTo("전자기기"));
-    }
-
-    @Test
-    void 카테고리_생성_후_DB_저장_확인() {
-        // given
-        var request = Map.of("name", "전자기기");
-
-        // when
-        given()
-            .contentType(ContentType.JSON)
-            .body(request)
-        .when()
-            .post("/api/categories");
-
-        // then — DB에 실제로 저장되었는지 확인
-        var categories = categoryRepository.findAll();
-        assertThat(categories).hasSize(1);
-        assertThat(categories.get(0).getId()).isNotNull();
-        assertThat(categories.get(0).getName()).isEqualTo("전자기기");
+        var saved = categoryRepository.findById(id).orElseThrow();
+        assertThat(saved.getName()).isEqualTo("전자기기");
     }
 }
