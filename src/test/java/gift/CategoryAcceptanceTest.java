@@ -1,7 +1,6 @@
 package gift;
 
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.jdbc.Sql;
 
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,11 +33,7 @@ class CategoryAcceptanceTest {
     @Test
     void 카테고리를_생성하고_목록에서_확인한다() {
         // when — 카테고리 생성
-        ExtractableResponse<Response> createResponse = RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(Map.of("name", "디저트"))
-                .when().post("/api/categories")
-                .then().log().all().extract();
+        ExtractableResponse<Response> createResponse = AcceptanceTestSupport.카테고리를_생성한다("디저트");
 
         // then — 생성 응답 확인
         assertThat(createResponse.statusCode()).isEqualTo(200);

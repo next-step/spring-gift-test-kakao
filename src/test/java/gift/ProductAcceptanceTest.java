@@ -35,12 +35,7 @@ class ProductAcceptanceTest {
     @Test
     void 상품을_생성하고_목록에서_확인한다() {
         // given — 카테고리를 API로 먼저 생성
-        ExtractableResponse<Response> categoryResponse = RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(Map.of("name", "간식"))
-                .when().post("/api/categories")
-                .then().log().all().extract();
-        long categoryId = categoryResponse.jsonPath().getLong("id");
+        long categoryId = AcceptanceTestSupport.카테고리를_생성한다("간식").jsonPath().getLong("id");
 
         // when — 상품 생성
         ExtractableResponse<Response> createResponse = RestAssured.given().log().all()
@@ -62,9 +57,7 @@ class ProductAcceptanceTest {
         assertThat(createResponse.jsonPath().getString("category.name")).isEqualTo("간식");
 
         // when — 목록 조회로 생성 결과 검증 (시나리오 체이닝)
-        ExtractableResponse<Response> listResponse = RestAssured.given().log().all()
-                .when().get("/api/products")
-                .then().log().all().extract();
+        ExtractableResponse<Response> listResponse = 상품을_조회한다();
 
         // then — 목록에 방금 생성한 상품 포함
         assertThat(listResponse.statusCode()).isEqualTo(200);
@@ -79,9 +72,7 @@ class ProductAcceptanceTest {
     @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void 상품_목록을_조회한다() {
         // when
-        ExtractableResponse<Response> response = RestAssured.given().log().all()
-                .when().get("/api/products")
-                .then().log().all().extract();
+        ExtractableResponse<Response> response = 상품을_조회한다();
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
@@ -89,5 +80,11 @@ class ProductAcceptanceTest {
                 .containsExactlyInAnyOrder("초콜릿", "커피");
         assertThat(response.jsonPath().getList("category.name", String.class))
                 .containsExactlyInAnyOrder("간식", "음료");
+    }
+
+    private ExtractableResponse<Response> 상품을_조회한다() {
+        return RestAssured.given().log().all()
+                .when().get("/api/products")
+                .then().log().all().extract();
     }
 }
