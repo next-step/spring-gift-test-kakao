@@ -40,4 +40,4 @@ gift/
 3. 테스트 전략 수립 — 인수 테스트 시나리오 및 데이터 준비 전략 설계
 4. 테스트 코드 작성 — `@SpringBootTest` + RestAssured 기반 인수 테스트 구현
 
-상세 개발 과정은 [docs/PROJECT_HISTORY.md](docs/PROJECT_HISTORY.md) 참고
+상세 개발 과정은 [docs/PROJECT_HISTORY.md](step1docs/PROJECT_HISTORY.md) 참고
