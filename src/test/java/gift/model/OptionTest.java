@@ -105,19 +105,14 @@ class OptionTest {
         }
 
         @Test
-        @DisplayName("음수 수량으로 감소하면 재고가 증가하는 버그가 있다")
-        void negativeQuantityIncreasesStock_BUG() {
+        @DisplayName("음수 수량으로 감소하면 예외가 발생한다")
+        void negativeQuantityThrowsException() {
             // given
             Option option = createOption(10);
 
-            // when
-            // 버그: decrease(-5)는 this.quantity -= (-5) = this.quantity += 5
-            option.decrease(-5);
-
-            // then
-            // 버그 문서화: 음수 입력에 대한 방어 로직이 없어 재고가 증가함
-            // 올바른 동작: IllegalArgumentException을 던져야 함
-            assertThat(option.getQuantity()).isEqualTo(15); // 10 + 5 = 15 (버그!)
+            // when / then
+            assertThatThrownBy(() -> option.decrease(-5))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 }

@@ -202,12 +202,12 @@ class GiftAcceptanceTest {
     }
 
     @Nested
-    @DisplayName("행위 8: 음수 수량으로 선물 시도 (버그 검출)")
+    @DisplayName("행위 8: 음수 수량으로 선물 시도")
     class GiftWithNegativeQuantity {
 
         @Test
-        @DisplayName("음수 수량으로 선물하면 재고가 증가하는 버그가 있다")
-        void negativeQuantityIncreasesStock_BUG() {
+        @DisplayName("음수 수량으로 선물하면 실패하고 재고가 유지된다")
+        void negativeQuantityFailsAndStockUnchanged() {
             // given
             Option option = createOptionWithStock(10);
 
@@ -215,11 +215,8 @@ class GiftAcceptanceTest {
             ResponseEntity<Void> response = sendGift(option.getId(), -5);
 
             // then
-            // 버그 문서화: 현재 구현에서 음수 수량은 재고를 증가시킨다
-            // decrease(-5) -> this.quantity -= (-5) -> this.quantity += 5
-            // 이 테스트는 버그를 발견하고 문서화하는 역할
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(getStock(option.getId())).isEqualTo(15); // 10 + 5 = 15 (버그!)
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(getStock(option.getId())).isEqualTo(10);
         }
     }
 
