@@ -10,22 +10,12 @@ import gift.model.Product;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GiftAcceptanceTest {
-
-    @LocalServerPort
-    int port;
-
-    @Autowired
-    DatabaseCleaner databaseCleaner;
+class GiftAcceptanceTest extends AcceptanceTest {
 
     @Autowired
     CategoryRepository categoryRepository;
@@ -38,12 +28,6 @@ class GiftAcceptanceTest {
 
     @Autowired
     MemberRepository memberRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-        databaseCleaner.clear();
-    }
 
     @Test
     void 정상_선물_보내기() {

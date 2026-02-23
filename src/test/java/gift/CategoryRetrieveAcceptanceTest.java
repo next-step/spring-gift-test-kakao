@@ -3,32 +3,16 @@ package gift;
 import gift.model.Category;
 import gift.model.CategoryRepository;
 import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CategoryRetrieveAcceptanceTest {
-
-    @LocalServerPort
-    int port;
-
-    @Autowired
-    DatabaseCleaner databaseCleaner;
+class CategoryRetrieveAcceptanceTest extends AcceptanceTest {
 
     @Autowired
     CategoryRepository categoryRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-        databaseCleaner.clear();
-    }
 
     @Test
     void 데이터가_없을_때_빈_목록_반환() {

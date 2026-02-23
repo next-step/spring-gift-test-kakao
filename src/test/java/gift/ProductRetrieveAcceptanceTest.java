@@ -5,35 +5,19 @@ import gift.model.CategoryRepository;
 import gift.model.Product;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ProductRetrieveAcceptanceTest {
-
-    @LocalServerPort
-    int port;
-
-    @Autowired
-    DatabaseCleaner databaseCleaner;
+class ProductRetrieveAcceptanceTest extends AcceptanceTest {
 
     @Autowired
     CategoryRepository categoryRepository;
 
     @Autowired
     ProductRepository productRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-        databaseCleaner.clear();
-    }
 
     @Test
     void 데이터가_없을_때_빈_목록_반환() {
