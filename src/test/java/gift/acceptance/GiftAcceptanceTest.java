@@ -1,4 +1,4 @@
-package gift;
+package gift.acceptance;
 
 import gift.application.GiveGiftRequest;
 import gift.fixture.GiftFixture;

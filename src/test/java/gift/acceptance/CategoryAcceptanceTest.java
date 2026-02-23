@@ -1,4 +1,4 @@
-package gift;
+package gift.acceptance;
 
 import gift.application.CreateCategoryRequest;
 import io.restassured.RestAssured;
