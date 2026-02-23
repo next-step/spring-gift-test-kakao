@@ -19,8 +19,6 @@ public class ScenarioContext {
     private final Map<String, Long> optionIds = new HashMap<>();
     private final Map<String, Long> memberIds = new HashMap<>();
 
-    private long categorySeq = 1;
-    private long productSeq = 1;
     private long optionSeq = 1;
     private long memberSeq = 1;
 
@@ -32,20 +30,12 @@ public class ScenarioContext {
         this.response = response;
     }
 
-    public long nextCategoryId() {
-        return categorySeq++;
-    }
-
     public void putCategoryId(String name, long id) {
         categoryIds.put(name, id);
     }
 
     public long getCategoryId(String name) {
         return categoryIds.get(name);
-    }
-
-    public long nextProductId() {
-        return productSeq++;
     }
 
     public void putProductId(String name, long id) {

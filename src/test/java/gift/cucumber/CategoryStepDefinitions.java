@@ -3,7 +3,6 @@ package gift.cucumber;
 import io.cucumber.java.ko.만일;
 import io.cucumber.java.ko.조건;
 import io.cucumber.java.ko.그러면;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,17 +11,21 @@ import static org.hamcrest.Matchers.hasSize;
 public class CategoryStepDefinitions {
 
     private final ScenarioContext scenarioContext;
-    private final JdbcTemplate jdbcTemplate;
 
-    public CategoryStepDefinitions(ScenarioContext scenarioContext, JdbcTemplate jdbcTemplate) {
+    public CategoryStepDefinitions(ScenarioContext scenarioContext) {
         this.scenarioContext = scenarioContext;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     @조건("{string} 카테고리가 등록되어 있다")
     public void 카테고리가_등록되어_있다(String name) {
-        long id = scenarioContext.nextCategoryId();
-        jdbcTemplate.update("INSERT INTO category (id, name) VALUES (?, ?)", id, name);
+        long id = given()
+                .queryParam("name", name)
+                .when()
+                .post("/api/categories")
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath().getLong("id");
         scenarioContext.putCategoryId(name, id);
     }
 

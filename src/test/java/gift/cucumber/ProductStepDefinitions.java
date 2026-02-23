@@ -3,7 +3,6 @@ package gift.cucumber;
 import io.cucumber.java.ko.만일;
 import io.cucumber.java.ko.조건;
 import io.cucumber.java.ko.그러면;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,21 +11,25 @@ import static org.hamcrest.Matchers.hasSize;
 public class ProductStepDefinitions {
 
     private final ScenarioContext scenarioContext;
-    private final JdbcTemplate jdbcTemplate;
 
-    public ProductStepDefinitions(ScenarioContext scenarioContext, JdbcTemplate jdbcTemplate) {
+    public ProductStepDefinitions(ScenarioContext scenarioContext) {
         this.scenarioContext = scenarioContext;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     @조건("{string} 카테고리에 {string} 상품이 등록되어 있다")
     public void 상품이_등록되어_있다(String categoryName, String productName) {
         long categoryId = scenarioContext.getCategoryId(categoryName);
-        long id = scenarioContext.nextProductId();
-        jdbcTemplate.update(
-                "INSERT INTO product (id, name, price, image_url, category_id) VALUES (?, ?, ?, ?, ?)",
-                id, productName, 4500, "https://example.com/img.jpg", categoryId
-        );
+        long id = given()
+                .queryParam("name", productName)
+                .queryParam("price", 4500)
+                .queryParam("imageUrl", "https://example.com/img.jpg")
+                .queryParam("categoryId", categoryId)
+                .when()
+                .post("/api/products")
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath().getLong("id");
         scenarioContext.putProductId(productName, id);
     }
 
