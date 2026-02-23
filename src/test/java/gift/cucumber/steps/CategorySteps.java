@@ -1,0 +1,86 @@
+package gift.cucumber.steps;
+
+import gift.cucumber.support.CategoryApiClient;
+import gift.cucumber.support.CategoryRepositorySupport;
+import gift.cucumber.support.CategoryResponseAssertions;
+import gift.cucumber.support.CategoryScenarioContext;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+
+import java.util.List;
+
+public class CategorySteps {
+    private final CategoryApiClient categoryApiClient;
+    private final CategoryRepositorySupport categoryRepositorySupport;
+    private final CategoryResponseAssertions categoryResponseAssertions;
+    private final CategoryScenarioContext categoryScenarioContext;
+
+    public CategorySteps(
+        final CategoryApiClient categoryApiClient,
+        final CategoryRepositorySupport categoryRepositorySupport,
+        final CategoryResponseAssertions categoryResponseAssertions,
+        final CategoryScenarioContext categoryScenarioContext
+    ) {
+        this.categoryApiClient = categoryApiClient;
+        this.categoryRepositorySupport = categoryRepositorySupport;
+        this.categoryResponseAssertions = categoryResponseAssertions;
+        this.categoryScenarioContext = categoryScenarioContext;
+    }
+
+    @Given("카테고리가 존재하지 않는다")
+    public void 카테고리가_존재하지_않는다() {
+        categoryRepositorySupport.assertEmpty();
+    }
+
+    @Given("다음 카테고리들이 등록되어 있다:")
+    public void 다음_카테고리들이_등록되어_있다(DataTable dataTable) {
+        final List<String> names = dataTable
+            .asMaps(String.class, String.class)
+            .stream()
+            .map(row -> row.get("name"))
+            .toList();
+        categoryRepositorySupport.seedCategories(names);
+    }
+
+    @When("관리자가 카테고리 목록을 조회한다")
+    public void 관리자가_카테고리_목록을_조회한다() {
+        categoryScenarioContext.setLastResponse(categoryApiClient.retrieveCategories());
+    }
+
+    @When("관리자가 {string} 카테고리를 생성한다")
+    public void 관리자가_카테고리를_생성한다(String name) {
+        categoryScenarioContext.setLastResponse(categoryApiClient.createCategory(name));
+    }
+
+    @Then("응답 상태 코드는 {int}이다")
+    public void 응답_상태_코드는_N이다(int statusCode) {
+        categoryResponseAssertions.assertStatus(categoryScenarioContext.getLastResponse(), statusCode);
+    }
+
+    @Then("카테고리 목록은 비어있다")
+    public void 카테고리_목록은_비어있다() {
+        categoryResponseAssertions.assertEmptyList(categoryScenarioContext.getLastResponse());
+    }
+
+    @Then("카테고리 목록의 크기는 {int}이다")
+    public void 카테고리_목록의_크기는_N이다(int size) {
+        categoryResponseAssertions.assertListSize(categoryScenarioContext.getLastResponse(), size);
+    }
+
+    @Then("카테고리 목록에 {string} 카테고리가 포함되어 있다")
+    public void 카테고리_목록에_카테고리가_포함되어_있다(String name) {
+        categoryResponseAssertions.assertContainsCategory(categoryScenarioContext.getLastResponse(), name);
+    }
+
+    @Then("응답에 {string} 카테고리 이름이 포함되어 있다")
+    public void 응답에_카테고리_이름이_포함되어_있다(String name) {
+        categoryResponseAssertions.assertCreatedName(categoryScenarioContext.getLastResponse(), name);
+    }
+
+    @Then("데이터베이스에 {string} 카테고리가 저장되어 있다")
+    public void 데이터베이스에_카테고리가_저장되어_있다(String name) {
+        categoryRepositorySupport.assertSaved(name);
+    }
+}
