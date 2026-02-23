@@ -1,5 +1,6 @@
 package gift;
 
+import gift.application.GiveGiftRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,20 +33,13 @@ class GiftAcceptanceTest {
     @Test
     void 선물하기가_정상적으로_처리되면_옵션_재고가_차감된다() {
         // given
-        String body = """
-                {
-                    "optionId": 1,
-                    "quantity": 3,
-                    "receiverId": 2,
-                    "message": "생일 축하해!"
-                }
-                """;
+        GiveGiftRequest request = new GiveGiftRequest(1L, 3, 2L, "생일 축하해!");
 
         // when
         RestAssured.given().log().all()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", 1L)
-                .body(body)
+                .body(request)
                 .when()
                 .post("/api/gifts")
                 .then().log().all()
@@ -62,20 +56,13 @@ class GiftAcceptanceTest {
     @Test
     void 재고보다_많은_수량을_선물하면_실패하고_재고는_변경되지_않는다() {
         // given
-        String body = """
-                {
-                    "optionId": 1,
-                    "quantity": 100,
-                    "receiverId": 2,
-                    "message": "선물"
-                }
-                """;
+        GiveGiftRequest request = new GiveGiftRequest(1L, 100, 2L, "선물");
 
         // when
         RestAssured.given().log().all()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", 1L)
-                .body(body)
+                .body(request)
                 .when()
                 .post("/api/gifts")
                 .then().log().all()
@@ -93,20 +80,13 @@ class GiftAcceptanceTest {
     void 존재하지_않는_옵션으로_선물하면_실패한다() {
         // given
         Long nonExistentOptionId = 999L;
-        String body = """
-                {
-                    "optionId": %d,
-                    "quantity": 1,
-                    "receiverId": 2,
-                    "message": "선물"
-                }
-                """.formatted(nonExistentOptionId);
+        GiveGiftRequest request = new GiveGiftRequest(nonExistentOptionId, 1, 2L, "선물");
 
         // when & then
         RestAssured.given().log().all()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", 1L)
-                .body(body)
+                .body(request)
                 .when()
                 .post("/api/gifts")
                 .then().log().all()
@@ -119,20 +99,13 @@ class GiftAcceptanceTest {
     void 존재하지_않는_발신자로_선물하면_실패한다() {
         // given
         Long nonExistentMemberId = 999L;
-        String body = """
-                {
-                    "optionId": 1,
-                    "quantity": 1,
-                    "receiverId": 2,
-                    "message": "선물"
-                }
-                """;
+        GiveGiftRequest request = new GiveGiftRequest(1L, 1, 2L, "선물");
 
         // when & then
         RestAssured.given().log().all()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", nonExistentMemberId)
-                .body(body)
+                .body(request)
                 .when()
                 .post("/api/gifts")
                 .then().log().all()

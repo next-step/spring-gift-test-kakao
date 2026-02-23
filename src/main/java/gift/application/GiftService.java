@@ -22,14 +22,14 @@ public class GiftService {
     }
 
     public void give(final GiveGiftRequest request, final Long memberId) {
-        final Option option = optionRepository.findById(request.getOptionId()).orElseThrow();
-        option.decrease(request.getQuantity());
+        final Option option = optionRepository.findById(request.optionId()).orElseThrow();
+        option.decrease(request.quantity());
         final Gift gift = new Gift(
             memberId,
-            request.getReceiverId(),
+            request.receiverId(),
             option,
-            request.getQuantity(),
-            request.getMessage()
+            request.quantity(),
+            request.message()
         );
         giftDelivery.deliver(gift);
     }
