@@ -1,5 +1,6 @@
-package gift;
+package gift.restassured;
 
+import gift.DatabaseCleaner;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package gift;
+package gift.restassured;
 
 import gift.model.CategoryRepository;
 import io.restassured.RestAssured;

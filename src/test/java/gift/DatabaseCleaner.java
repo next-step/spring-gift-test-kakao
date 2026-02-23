@@ -5,12 +5,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-class DatabaseCleaner {
+public class DatabaseCleaner {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    void clear() {
+    public void clear() {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.execute("TRUNCATE TABLE wish");
         jdbcTemplate.execute("TRUNCATE TABLE option");

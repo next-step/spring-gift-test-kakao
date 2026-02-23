@@ -1,4 +1,4 @@
-package gift;
+package gift.restassured;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
@@ -26,8 +26,8 @@ class CategoryRetrieveAcceptanceTest extends AcceptanceTest {
 
     @Test
     void 등록한_카테고리가_목록에_포함() {
-        var category1 = categoryRepository.save(new Category("식품"));
-        var category2 = categoryRepository.save(new Category("전자기기"));
+        categoryRepository.save(new Category("식품"));
+        categoryRepository.save(new Category("전자기기"));
 
         RestAssured.given()
                 .when()
