@@ -10,13 +10,13 @@ $ARGUMENTS 도메인에 대한 Cucumber BDD 인수 테스트를 생성한다.
 ## 실행 절차
 
 1. **대상 도메인의 소스 코드를 분석한다.**
-   - Controller, Service, Entity를 읽어 API 스펙과 비즈니스 로직을 파악한다.
+    - Controller, Service, Entity를 읽어 API 스펙과 비즈니스 로직을 파악한다.
 2. **기존 테스트가 있으면 분석한다.**
-   - 기존 테스트 시나리오와 검증 항목을 파악한다.
+    - 기존 테스트 시나리오와 검증 항목을 파악한다.
 3. **Feature 파일을 생성한다.** (`src/test/resources/features/{도메인}.feature`)
 4. **StepDefinitions 클래스를 생성한다.** (`src/test/java/gift/acceptance/{도메인}/{도메인}StepDefinitions.java`)
 5. **CommonStepDefinitions에 새로운 공통 스텝이 필요하면 추가한다.**
-6. **기존 테스트 파일이 있으면 삭제한다.**
+6. **기존 테스트 파일은 삭제하지 않는다.**
 7. **`./gradlew test`로 전체 테스트 통과를 확인한다.**
 
 ## Feature 파일 패턴
@@ -52,9 +52,9 @@ public class CategoryStepDefinitions {
         given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
-        .when()
+                .when()
                 .post("/api/categories")
-        .then()
+                .then()
                 .statusCode(200);
     }
 
@@ -64,9 +64,9 @@ public class CategoryStepDefinitions {
         var response = given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
-        .when()
+                .when()
                 .post("/api/categories")
-        .then()
+                .then()
                 .extract();
 
         context.setResponse(response);
