@@ -12,3 +12,28 @@ services:
       interval: 3s
       timeout: 3s
       retries: 10
+
+  app:
+    build: .
+    ports:
+      - "28080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gift_test
+      SPRING_DATASOURCE_USERNAME: gift
+      SPRING_DATASOURCE_PASSWORD: gift1234
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_OPEN_IN_VIEW: "false"
+      KAKAO_MESSAGE_TOKEN: ACCESS_TOKEN
+      KAKAO_MESSAGE_URL: https://kapi.kakao.com/v1/api/talk
+      KAKAO_SOCIAL_TOKEN: ACCESS_TOKEN
+      KAKAO_SOCIAL_URL: https://kapi.kakao.com/v1/api/talk
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/api/categories"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s

@@ -8,12 +8,8 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 public class GiftSteps {
-
-    @LocalServerPort
-    private int port;
 
     @Autowired
     private TestContext testContext;
@@ -23,7 +19,6 @@ public class GiftSteps {
     @먼저("재고가 {int}인 옵션을 생성한다")
     public void 옵션을_생성한다(int quantity) {
         Long optionId = RestAssured.given()
-                .port(port)
                 .contentType(ContentType.JSON)
                 .body(String.format("""
                         {"name": "블랙", "quantity": %d, "productId": %d}
@@ -39,7 +34,6 @@ public class GiftSteps {
     @먼저("보내는 회원을 생성한다")
     public void 보내는_회원을_생성한다() {
         Long senderId = RestAssured.given()
-                .port(port)
                 .contentType(ContentType.JSON)
                 .body("""
                         {"name": "홍길동", "email": "hong@example.com"}
@@ -55,7 +49,6 @@ public class GiftSteps {
     @먼저("받는 회원을 생성한다")
     public void 받는_회원을_생성한다() {
         Long receiverId = RestAssured.given()
-                .port(port)
                 .contentType(ContentType.JSON)
                 .body("""
                         {"name": "김철수", "email": "kim@example.com"}
@@ -71,7 +64,6 @@ public class GiftSteps {
     @만일("{int}개의 선물을 보낸다")
     public void N개의_선물을_보낸다(int quantity) {
         lastGiftResponse = RestAssured.given()
-                .port(port)
                 .contentType(ContentType.JSON)
                 .header("Member-Id", testContext.getSenderId())
                 .body(String.format("""

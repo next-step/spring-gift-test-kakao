@@ -35,26 +35,44 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-tasks.register('cucumberTest', Test) {
-	description = 'Runs Cucumber acceptance tests with PostgreSQL'
-	group = 'verification'
+tasks.register('dockerBuild') {
+	description = 'Builds the Docker image for the application'
+	group = 'docker'
+	doLast {
+		exec {
+			commandLine 'docker', 'compose', 'build'
+		}
+	}
+}
 
-	useJUnitPlatform()
-	include 'gift/acceptance/CucumberTest.class'
-
-	doFirst {
+tasks.register('dockerUp') {
+	description = 'Starts all Docker Compose services'
+	group = 'docker'
+	dependsOn 'dockerBuild'
+	doLast {
 		exec {
 			commandLine 'docker', 'compose', 'up', '-d', '--wait'
 		}
 	}
-
-	finalizedBy 'dockerComposeDown'
 }
 
-tasks.register('dockerComposeDown') {
+tasks.register('dockerDown') {
+	description = 'Stops and removes all Docker Compose services'
+	group = 'docker'
 	doLast {
 		exec {
 			commandLine 'docker', 'compose', 'down', '-v'
 		}
 	}
+}
+
+tasks.register('cucumberTest', Test) {
+	description = 'Runs Cucumber acceptance tests against containerized application'
+	group = 'verification'
+
+	useJUnitPlatform()
+	include 'gift/acceptance/CucumberTest.class'
+
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
 }

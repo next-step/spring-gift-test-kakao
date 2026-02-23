@@ -9,15 +9,11 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 
 public class ProductSteps {
-
-    @LocalServerPort
-    private int port;
 
     @Autowired
     private TestContext testContext;
@@ -27,7 +23,6 @@ public class ProductSteps {
     @먼저("카테고리에 이름이 {string}이고 가격이 {int}인 상품을 생성한다")
     public void 상품을_생성한다(String name, int price) {
         Long productId = RestAssured.given()
-                .port(port)
                 .contentType(ContentType.JSON)
                 .body(String.format("""
                         {"name": "%s", "price": %d, "imageUrl": "https://example.com/image.jpg", "categoryId": %d}
@@ -43,7 +38,6 @@ public class ProductSteps {
     @만일("상품 목록을 조회한다")
     public void 상품_목록을_조회한다() {
         response = RestAssured.given()
-                .port(port)
                 .when()
                 .get("/api/products");
     }

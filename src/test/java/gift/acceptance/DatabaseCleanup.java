@@ -1,6 +1,7 @@
 package gift.acceptance;
 
 import io.cucumber.java.Before;
+import io.restassured.RestAssured;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -10,7 +11,8 @@ public class DatabaseCleanup {
     private JdbcTemplate jdbcTemplate;
 
     @Before(order = 0)
-    public void cleanDatabase() {
+    public void setUp() {
+        RestAssured.port = 28080;
         jdbcTemplate.execute("TRUNCATE TABLE wish, option, product, category, member RESTART IDENTITY CASCADE");
     }
 }
