@@ -36,6 +36,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Cucumber 테스트는 cucumberTest 태스크에서 PostgreSQL과 함께 실행
+	exclude 'gift/cucumber/**'
 }
 
 // --- Docker Compose + Cucumber 통합 ---
