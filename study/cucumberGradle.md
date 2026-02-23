@@ -45,12 +45,11 @@ tasks.register('cucumberTest', Test) {
 
 ```Groovy
 useJUnitPlatform {
-    includeTags 'cucumber'
+    includeEngines 'cucumber'
 }
 ```
 
-- useJUnitPlatform: JUnit 5 엔진으로 테스트 수행
-- 코드에 @Tag('cucumber') 또는 @IncludeTags("cucumber")가 붙은 테스트만 실행
+- .feature 파일들의 시나리오를 모두 실행한다.
 
 4. 실행 순서
 - shouldRunAfter test: ./gradlew build 처럼 전체를 빌드할 때, 기본 단위 테스트가 다 끝나고 성공한 뒤에 cucumberTest 실행
