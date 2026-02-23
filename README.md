@@ -19,8 +19,9 @@
 ## 실행
 
 ```bash
-./gradlew bootRun        # 애플리케이션 실행
-./gradlew test           # 전체 테스트 실행 (RestAssured + Cucumber)
+./gradlew bootRun          # 애플리케이션 실행
+./gradlew test             # Cucumber 인수 테스트 실행
+./gradlew restAssuredTest  # RestAssured 인수 테스트 실행
 ```
 
 ## 프로젝트 구조
@@ -126,3 +127,7 @@ var sender = memberRepository.save(member("보내는사람"));
 2. Gherkin Feature 파일 작성 (한글 Given-When-Then)
 3. Step Definitions 구현 (ScenarioContext로 상태 공유)
 4. 테스트 패키지 분리 (`restassured/`, `cucumber/`)
+
+## 참고 문서
+
+- [Cucumber BDD 학습 가이드](step2docs/cucumber.md) — Cucumber 설정, Gherkin 문법, Step Definitions 작성법 정리
