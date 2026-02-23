@@ -35,7 +35,7 @@ class CategoryBehaviorTest {
      */
     @Test
     @Sql("/sql/cleanup.sql")
-    void 카테고리를_생성하면_조회_시_반환된다() {
+    void 카테고리_생성하면_조회_시_반환된다() {
         // When & Then — 생성 성공 (HTTP 200)
         RestAssured.given()
                 .contentType(ContentType.JSON)

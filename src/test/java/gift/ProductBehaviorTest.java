@@ -64,7 +64,7 @@ class ProductBehaviorTest {
      */
     @Test
     @Sql("/sql/cleanup.sql")
-    void 존재하지_않는_카테고리로_상품을_생성하면_실패한다() {
+    void 상품_존재하지_않는_카테고리로_상품을_생성하면_실패한다() {
         // When & Then — 존재하지 않는 카테고리로 생성 실패
         RestAssured.given()
             .formParam("name", "테스트상품")

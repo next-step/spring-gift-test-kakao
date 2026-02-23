@@ -37,7 +37,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
-    void 선물하기_성공_시_옵션_재고가_감소한다() {
+    void 선물_성공_시_옵션_재고가_감소한다() {
         // When
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -67,7 +67,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup-low-stock.sql"})
-    void 재고_부족_시_선물하기가_거부되고_재고가_유지된다() {
+    void 선물_재고_부족_시_선물하기가_거부되고_재고가_유지된다() {
         // When
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -97,7 +97,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql("/sql/cleanup.sql")
-    void 존재하지_않는_옵션으로_선물하면_실패한다() {
+    void 선물_존재하지_않는_옵션으로_선물하면_실패한다() {
         // When & Then
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -127,7 +127,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
-    void 보내는_회원이_존재하지_않으면_선물이_실패하고_재고가_롤백된다() {
+    void 선물_보내는_회원이_존재하지_않으면_선물이_실패하고_재고가_롤백된다() {
         // When
         RestAssured.given()
             .contentType(ContentType.JSON)
