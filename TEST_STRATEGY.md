@@ -34,9 +34,7 @@
 
 ```
 src/test/resources/
-├── cleanup.sql              # 전체 테이블 초기화 (공통)
-├── product-test-data.sql    # 상품 테스트용 (카테고리 1건)
-└── gift-test-data.sql       # 선물 테스트용 (회원 2건, 카테고리 1건, 상품 1건, 옵션 1건)
+└── cleanup.sql              # 전체 테이블 초기화 (공통)
 ```
 
 ### cleanup.sql 전략

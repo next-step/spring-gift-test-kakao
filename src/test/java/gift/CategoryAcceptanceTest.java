@@ -17,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class CategoryAcceptanceTest {
 
     @LocalServerPort
@@ -27,7 +28,6 @@ class CategoryAcceptanceTest {
         RestAssured.port = port;
     }
 
-    @Sql(scripts = "classpath:cleanup.sql")
     @Test
     void 카테고리를_생성하면_목록_조회_시_조회된다() {
         // given
