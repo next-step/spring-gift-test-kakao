@@ -21,8 +21,8 @@ public class ProductService {
     }
 
     public Product create(final CreateProductRequest request) {
-        final Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
-        final Product product = new Product(request.getName(), request.getPrice(), request.getImageUrl(), category);
+        final Category category = categoryRepository.findById(request.categoryId()).orElseThrow();
+        final Product product = new Product(request.name(), request.price(), request.imageUrl(), category);
         return productRepository.save(product);
     }
 
