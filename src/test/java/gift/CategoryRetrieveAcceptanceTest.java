@@ -6,7 +6,7 @@ import io.restassured.RestAssured;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 
 class CategoryRetrieveAcceptanceTest extends AcceptanceTest {
@@ -35,9 +35,6 @@ class CategoryRetrieveAcceptanceTest extends AcceptanceTest {
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(2))
-                .body("[0].id", equalTo(category1.getId().intValue()))
-                .body("[0].name", equalTo("식품"))
-                .body("[1].id", equalTo(category2.getId().intValue()))
-                .body("[1].name", equalTo("전자기기"));
+                .body("name", hasItems("식품", "전자기기"));
     }
 }

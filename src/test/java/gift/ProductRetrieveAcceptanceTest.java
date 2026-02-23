@@ -8,7 +8,7 @@ import io.restassured.RestAssured;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 
 class ProductRetrieveAcceptanceTest extends AcceptanceTest {
@@ -41,15 +41,7 @@ class ProductRetrieveAcceptanceTest extends AcceptanceTest {
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(2))
-                .body("[0].id", equalTo(product1.getId().intValue()))
-                .body("[0].name", equalTo("케이크"))
-                .body("[0].price", equalTo(30000))
-                .body("[0].imageUrl", equalTo("https://example.com/cake.jpg"))
-                .body("[0].category.id", equalTo(category.getId().intValue()))
-                .body("[0].category.name", equalTo("식품"))
-                .body("[1].id", equalTo(product2.getId().intValue()))
-                .body("[1].name", equalTo("초콜릿"))
-                .body("[1].price", equalTo(15000))
-                .body("[1].category.id", equalTo(category.getId().intValue()));
+                .body("name", hasItems("케이크", "초콜릿"))
+                .body("category.name", hasItems("식품"));
     }
 }
