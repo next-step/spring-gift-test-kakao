@@ -2,7 +2,6 @@ package gift;
 
 import gift.model.CategoryRepository;
 import io.restassured.RestAssured;
-import io.restassured.config.EncoderConfig;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,18 +28,18 @@ class CategoryAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.config = RestAssured.config()
-                .encoderConfig(EncoderConfig.encoderConfig()
-                        .defaultCharsetForContentType("UTF-8", ContentType.URLENC));
         databaseCleaner.clear();
     }
 
-    // TODO: CreateCategoryRequest의 setter가 없어서 name 없이 등록 시도하는 테스트가 실패한다. setter 추가 필요
     @Test
     void 정상_카테고리_등록() {
         RestAssured.given()
-                .contentType(ContentType.URLENC)
-                .formParam("name", "식품")
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "name": "식품"
+                        }
+                        """)
                 .when()
                 .post("/api/categories")
                 .then()

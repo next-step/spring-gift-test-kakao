@@ -4,7 +4,6 @@ import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
-import io.restassured.config.EncoderConfig;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,23 +33,23 @@ class ProductAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.config = RestAssured.config()
-                .encoderConfig(EncoderConfig.encoderConfig()
-                        .defaultCharsetForContentType("UTF-8", ContentType.URLENC));
         databaseCleaner.clear();
     }
 
-    // TODO: CreateProductRequest의 setter가 없어서 name 없이 등록 시도하는 테스트가 실패한다. setter 추가 필요
     @Test
     void 정상_상품_등록() {
         var category = categoryRepository.save(new Category("식품"));
 
         RestAssured.given()
-                .contentType(ContentType.URLENC)
-                .formParam("name", "아이폰 16")
-                .formParam("price", 1500000)
-                .formParam("imageUrl", "https://example.com/iphone.jpg")
-                .formParam("categoryId", category.getId())
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "name": "아이폰 16",
+                            "price": 1500000,
+                            "imageUrl": "https://example.com/iphone.jpg",
+                            "categoryId": %d
+                        }
+                        """.formatted(category.getId()))
                 .when()
                 .post("/api/products")
                 .then()
@@ -72,11 +71,15 @@ class ProductAcceptanceTest {
     @Test
     void 존재하지_않는_카테고리로_등록_시도() {
         RestAssured.given()
-                .contentType(ContentType.URLENC)
-                .formParam("name", "아이폰 16")
-                .formParam("price", 1500000)
-                .formParam("imageUrl", "https://example.com/iphone.jpg")
-                .formParam("categoryId", 999999)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "name": "아이폰 16",
+                            "price": 1500000,
+                            "imageUrl": "https://example.com/iphone.jpg",
+                            "categoryId": 999999
+                        }
+                        """)
                 .when()
                 .post("/api/products")
                 .then()
