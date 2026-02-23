@@ -55,7 +55,7 @@ class CategoryAcceptanceTest {
      * - test-data.sql로 준비된 2건(간식, 음료)이 조회된다.
      */
     @Test
-    @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(scripts = {"classpath:cleanup.sql", "classpath:test-data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void 카테고리_목록을_조회한다() {
         // when
         ExtractableResponse<Response> response = RestAssured.given().log().all()

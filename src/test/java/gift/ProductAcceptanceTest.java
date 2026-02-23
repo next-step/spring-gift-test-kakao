@@ -69,7 +69,7 @@ class ProductAcceptanceTest {
      * - test-data.sql로 준비된 2건(초콜릿, 커피)이 올바른 카테고리와 함께 조회된다.
      */
     @Test
-    @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(scripts = {"classpath:cleanup.sql", "classpath:test-data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void 상품_목록을_조회한다() {
         // when
         ExtractableResponse<Response> response = 상품을_조회한다();
