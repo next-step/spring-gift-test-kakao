@@ -37,7 +37,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
-    void should_decrease_option_quantity_when_gift_is_sent_successfully() {
+    void 선물하기_성공_시_옵션_재고가_감소한다() {
         // When
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -67,7 +67,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup-low-stock.sql"})
-    void should_reject_gift_and_keep_stock_when_quantity_exceeds_inventory() {
+    void 재고_부족_시_선물하기가_거부되고_재고가_유지된다() {
         // When
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -97,7 +97,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql("/sql/cleanup.sql")
-    void should_fail_when_option_does_not_exist() {
+    void 존재하지_않는_옵션으로_선물하면_실패한다() {
         // When & Then
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -127,7 +127,7 @@ class GiftBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
-    void should_fail_and_rollback_stock_when_sender_does_not_exist() {
+    void 보내는_회원이_존재하지_않으면_선물이_실패하고_재고가_롤백된다() {
         // When
         RestAssured.given()
             .contentType(ContentType.JSON)
