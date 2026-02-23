@@ -81,6 +81,17 @@ class CategoryAcceptanceTest {
                 .body("name", hasItems("교환권", "상품권"));
     }
 
+    @Test
+    @DisplayName("요청 본문 없이 카테고리를 생성하면 실패한다")
+    void createCategoryWithoutBody() {
+        given()
+                .contentType(ContentType.JSON)
+        .when()
+                .post("/api/categories")
+        .then()
+                .statusCode(400);
+    }
+
     private void 카테고리를_생성한다(String name) {
         given()
                 .contentType(ContentType.JSON)

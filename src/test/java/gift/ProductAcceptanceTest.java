@@ -92,6 +92,22 @@ class ProductAcceptanceTest {
                 .body("name", hasItems("아메리카노", "카페라떼"));
     }
 
+    @Test
+    @DisplayName("존재하지 않는 카테고리로 상품을 등록하면 실패한다")
+    void createProductWithInvalidCategory() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "name", "아메리카노",
+                        "price", 5000,
+                        "imageUrl", "http://img.com/a.jpg",
+                        "categoryId", 9999))
+        .when()
+                .post("/api/products")
+        .then()
+                .statusCode(500);
+    }
+
     private Long 카테고리를_생성한다(String name) {
         Response response = given()
                 .contentType(ContentType.JSON)
