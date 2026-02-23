@@ -421,6 +421,27 @@ java -jar build/libs/spring-gift-test-0.0.1-SNAPSHOT.jar
 
 서버는 `http://localhost:8080`에서 실행됩니다.
 
+### 테스트 실행
+
+```bash
+# 전체 테스트 실행 (Cucumber BDD 시나리오 포함)
+./gradlew test
+```
+
+테스트 결과 리포트: `build/reports/tests/test/index.html`
+
+#### Cucumber BDD 시나리오
+
+Feature 파일 위치: `src/test/resources/features/`
+
+| Feature | 시나리오 수 | 설명 |
+|---------|-----------|------|
+| `category.feature` | 2 | 카테고리 생성 및 목록 조회 |
+| `product.feature` | 2 | 상품 생성/조회, 존재하지 않는 카테고리 실패 |
+| `gift.feature` | 4 | 선물하기, 재고 차감, 재고 초과/옵션 없음 실패 |
+
+시나리오는 한글 Gherkin(조건/만일/그러면)으로 작성되어 있어 비개발자도 읽고 이해할 수 있습니다.
+
 ### H2 콘솔 접속
 
 `application.properties`에 아래 설정을 추가하면 H2 웹 콘솔을 사용할 수 있습니다:

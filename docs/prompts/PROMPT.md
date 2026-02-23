@@ -103,3 +103,57 @@ https://code.claude.com/docs/ko/skills 이거 참고해서 skill을 만들어줘
 @.claude/persona/REVIEWER.md 테스트 코드에 대해서만 리뷰하고 TEST_REVIEW.md 파일로 작성해줘 
 ```
 
+### STEP2 프롬프트
+```
+요구사항 1: Cucumber BDD 적용
+목표
+RestAssured 기반 인수 테스트를 Cucumber BDD 형식으로 전환하여, 비개발자도 이해할 수 있는 테스트 시나리오를 작성합니다.
+
+핵심 요구사항
+Gherkin 형식으로 테스트 시나리오 작성 (한글 Given-When-Then)
+Cucumber와 Spring Boot 통합
+Step Definitions 구현 (Given/When/Then)
+시나리오 간 데이터 격리
+검증
+./gradlew test
+# Cucumber 시나리오가 실행되고 통과해야 함
+제출
+README.md에 실행 방법 추가
+학습 내용을 별도 문서로 기록 (선택사항)
+```
+```
+미션 수행에 도움 되는 질문
+전체 미션
+다른 개발자도 동일한 명령으로 실행 가능한가?
+실행 방법이 충분히 단순한가?
+실패했을 때 원인을 쉽게 파악할 수 있는가?
+요구사항 1 (Cucumber)
+비개발자가 시나리오를 읽고 이해할 수 있는가?
+Step Definitions는 재사용 가능하게 작성되었는가?
+시나리오 간 데이터가 격리되는가?
+
+힌트
+요구사항 1: Cucumber BDD
+핵심 키워드
+
+io.cucumber:cucumber-spring - Spring 통합
+@CucumberContextConfiguration - Spring Boot 설정
+@ScenarioScope - 시나리오별 Bean 생성
+io.cucumber.java.ko - 한글 Step Definitions
+Feature file location: src/test/resources/features/
+JUnit Platform Suite API
+탐구 질문
+
+Gherkin의 Given/When/Then은 무엇을 의미하는가?
+Step Definitions에서 파라미터를 어떻게 추출하는가?
+시나리오 간 Response 객체를 어떻게 공유하는가?
+@Before hook은 언제 실행되는가?
+RestAssured 포트 설정은 어디서 하는가?
+
+참고 자료
+https://cucumber.io/docs/cucumber/
+https://cucumber.io/docs/cucumber/state/#spring
+```
+```
+일단 먼저 실행 계획을 설명해줘.
+```
