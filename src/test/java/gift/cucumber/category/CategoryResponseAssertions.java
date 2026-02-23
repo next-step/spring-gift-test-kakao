@@ -1,4 +1,4 @@
-package gift.cucumber.support;
+package gift.cucumber.category;
 
 import io.restassured.response.Response;
 import org.springframework.stereotype.Component;
@@ -8,10 +8,6 @@ import static org.hamcrest.Matchers.hasItem;
 
 @Component
 public class CategoryResponseAssertions {
-
-    public void assertStatus(final Response response, final int statusCode) {
-        response.then().statusCode(statusCode);
-    }
 
     public void assertEmptyList(final Response response) {
         response.then().body("size()", equalTo(0));

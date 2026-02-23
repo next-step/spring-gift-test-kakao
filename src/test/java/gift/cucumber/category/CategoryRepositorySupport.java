@@ -1,4 +1,4 @@
-package gift.cucumber.support;
+package gift.cucumber.category;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
@@ -14,6 +14,10 @@ public class CategoryRepositorySupport {
 
     public CategoryRepositorySupport(final CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
+    }
+
+    public Category seedCategory(final String name) {
+        return categoryRepository.save(new Category(name));
     }
 
     public void seedCategories(final List<String> names) {
