@@ -22,6 +22,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
 	testImplementation 'io.cucumber:cucumber-java:7.21.1'
@@ -38,4 +39,37 @@ tasks.named('test') {
 tasks.register('restAssuredTest', Test) {
 	useJUnitPlatform()
 	include 'gift/restassured/**'
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker-compose', 'up', '-d'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker-compose', 'down'
+}
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform()
+	exclude 'gift/restassured/**'
+	systemProperty 'spring.profiles.active', 'cucumber'
+	doFirst {
+		exec {
+			commandLine 'docker-compose', 'up', '-d'
+		}
+		// PostgreSQL healthcheck 대기
+		def maxRetries = 20
+		for (int i = 0; i < maxRetries; i++) {
+			try {
+				exec {
+					commandLine 'docker-compose', 'exec', '-T', 'postgres', 'pg_isready', '-U', 'test'
+				}
+				break
+			} catch (Exception e) {
+				if (i == maxRetries - 1) throw e
+				Thread.sleep(2000)
+			}
+		}
+	}
+	finalizedBy 'dockerDown'
 }
