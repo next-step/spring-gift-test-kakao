@@ -51,6 +51,11 @@ public class CommonStepDefinitions {
         assertThat(context.getResponse().jsonPath().getList(fieldName, String.class), hasItem(expectedValue));
     }
 
+    @그리고("응답의 {string} 필드는 정수 {int}이다")
+    public void 응답의_필드는_정수_이다(String fieldName, int expectedValue) {
+        assertThat(context.getResponse().jsonPath().getInt(fieldName), equalTo(expectedValue));
+    }
+
     @그리고("응답은 빈 목록이다")
     public void 응답은_빈_목록이다() {
         assertThat(context.getResponse().jsonPath().getList("$"), empty());

@@ -17,13 +17,16 @@ public class CategoryStepDefinitions {
 
     @조건("이름이 {string}인 카테고리가 등록되어 있다")
     public void 이름이_인_카테고리가_등록되어_있다(String name) {
-        given()
+        var response = given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
         .when()
                 .post("/api/categories")
         .then()
-                .statusCode(200);
+                .statusCode(200)
+                .extract();
+
+        context.setCategoryId(response.jsonPath().getLong("id"));
     }
 
     @만약("이름이 {string}인 카테고리 생성을 요청하면")
