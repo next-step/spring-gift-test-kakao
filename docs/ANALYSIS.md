@@ -185,11 +185,11 @@ public class Gift {
 
 | 메서드 | 경로 | 설명 | 요청 바디 |
 |--------|------|------|----------|
-| POST | `/api/categories` | 카테고리 생성 | `{ "name": "..." }` |
+| POST | `/api/categories` | 카테고리 생성 | JSON `{ "name": "..." }` |
 | GET | `/api/categories` | 카테고리 목록 조회 | - |
-| POST | `/api/products` | 상품 등록 | `{ "name", "price", "imageUrl", "categoryId" }` |
+| POST | `/api/products` | 상품 등록 | JSON `{ "name", "price", "imageUrl", "categoryId" }` |
 | GET | `/api/products` | 상품 목록 조회 | - |
-| POST | `/api/gifts` | 선물 전달 | `{ "optionId", "quantity", "receiverId", "message" }` |
+| POST | `/api/gifts` | 선물 전달 | JSON `{ "optionId", "quantity", "receiverId", "message" }` |
 
 ### 선물 전달 API 상세
 
