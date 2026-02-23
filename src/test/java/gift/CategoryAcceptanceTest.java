@@ -7,7 +7,6 @@ import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,10 +18,6 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
-// 발견된 프로덕션 버그:
-// - CategoryRestController.create(): @RequestBody 누락 → JSON body 바인딩 안 됨
-// - CategoryRestController.create(): @ResponseStatus(CREATED) 없음 → 200 반환
-// 프로덕션 수정 후 @Disabled 테스트를 활성화하고, 현재 동작 테스트를 삭제할 것
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CategoryAcceptanceTest {
 
@@ -80,7 +75,6 @@ class CategoryAcceptanceTest {
     }
 
     @Test
-	@Disabled("BUG: @RequestBody 누락으로 JSON 바인딩 안 됨 + @ResponseStatus(CREATED) 없음. 프로덕션 수정 후 활성화")
     void 카테고리_생성_성공() {
         // given
         var request = Map.of("name", "전자기기");
@@ -92,7 +86,7 @@ class CategoryAcceptanceTest {
         .when()
             .post("/api/categories");
 
-        // then — 기대 동작 (프로덕션 수정 후)
+        // then
         response.then()
             .statusCode(200)
             .body("id", notNullValue())
@@ -115,8 +109,7 @@ class CategoryAcceptanceTest {
         response.then()
             .statusCode(200)  // @ResponseStatus(CREATED) 없어서 기본값 200
             .body("id", notNullValue())
-            .body("name", nullValue());  // @RequestBody 누락 → JSON 역직렬화 안 됨 → name=null로 저장됨
-        // TODO: 프로덕션 수정 후 이 테스트를 삭제하고 '카테고리_생성_성공' 활성화
+            .body("name", equalTo("전자기기"));
     }
 
     @Test
@@ -135,7 +128,6 @@ class CategoryAcceptanceTest {
         var categories = categoryRepository.findAll();
         assertThat(categories).hasSize(1);
         assertThat(categories.get(0).getId()).isNotNull();
-        assertThat(categories.get(0).getName()).isNull();  // @RequestBody 누락 → name=null로 저장됨
-        // TODO: 프로덕션 수정 후 .isEqualTo("전자기기")로 변경
+        assertThat(categories.get(0).getName()).isEqualTo("전자기기");
     }
 }
