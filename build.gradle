@@ -32,4 +32,10 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/restassured/**'
+}
+
+tasks.register('restAssuredTest', Test) {
+	useJUnitPlatform()
+	include 'gift/restassured/**'
 }
