@@ -1,5 +1,6 @@
 package gift;
 
+import gift.application.CreateCategoryRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
@@ -26,18 +27,17 @@ class CategoryAcceptanceTest {
         RestAssured.port = port;
     }
 
-    // NOTE: CreateCategoryRequest에 setter가 없고 @RequestBody 어노테이션이 누락되어
-    // @ModelAttribute 바인딩 시 name 필드가 null로 저장됩니다.
     @Sql(scripts = "classpath:cleanup.sql")
     @Test
     void 카테고리를_생성하면_목록_조회_시_조회된다() {
         // given
-        String categoryName = "교환권";
+        CreateCategoryRequest request = new CreateCategoryRequest("교환권");
 
         // when — 카테고리 생성
-        ExtractableResponse<Response> createResponse = RestAssured.given().log().all()
-                .contentType(ContentType.URLENC)
-                .formParam("name", categoryName)
+        ExtractableResponse<Response> createResponse =
+            RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(request)
                 .when()
                 .post("/api/categories")
                 .then().log().all()
