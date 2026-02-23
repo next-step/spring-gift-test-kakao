@@ -7,6 +7,7 @@ import gift.model.OptionRepository;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -37,24 +38,10 @@ class GiftAcceptanceTest extends AcceptanceTest {
         var sender = memberRepository.save(member("보내는사람"));
         var receiver = memberRepository.save(member("받는사람"));
 
-        RestAssured.given()
-                .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
-                .body("""
-                        {
-                            "optionId": %d,
-                            "quantity": 3,
-                            "receiverId": %d,
-                            "message": "생일 축하해!"
-                        }
-                        """.formatted(opt.getId(), receiver.getId()))
-                .when()
-                .post("/api/gifts")
-                .then()
-                .statusCode(200);
+        선물을_보낸다(sender.getId(), opt.getId(), 3, receiver.getId())
+                .then().statusCode(200);
 
-        var updatedOption = optionRepository.findById(opt.getId()).orElseThrow();
-        assertThat(updatedOption.getQuantity()).isEqualTo(7);
+        assertThat(옵션_재고를_조회한다(opt.getId())).isEqualTo(7);
     }
 
     @Test
@@ -65,24 +52,10 @@ class GiftAcceptanceTest extends AcceptanceTest {
         var sender = memberRepository.save(member("보내는사람"));
         var receiver = memberRepository.save(member("받는사람"));
 
-        RestAssured.given()
-                .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
-                .body("""
-                        {
-                            "optionId": %d,
-                            "quantity": 10,
-                            "receiverId": %d,
-                            "message": "선물!"
-                        }
-                        """.formatted(opt.getId(), receiver.getId()))
-                .when()
-                .post("/api/gifts")
-                .then()
-                .statusCode(500);
+        선물을_보낸다(sender.getId(), opt.getId(), 10, receiver.getId())
+                .then().statusCode(500);
 
-        var updatedOption = optionRepository.findById(opt.getId()).orElseThrow();
-        assertThat(updatedOption.getQuantity()).isEqualTo(5);
+        assertThat(옵션_재고를_조회한다(opt.getId())).isEqualTo(5);
     }
 
     @Test
@@ -93,38 +66,13 @@ class GiftAcceptanceTest extends AcceptanceTest {
         var sender = memberRepository.save(member("보내는사람"));
         var receiver = memberRepository.save(member("받는사람"));
 
-        var requestBody = """
-                {
-                    "optionId": %d,
-                    "quantity": 1,
-                    "receiverId": %d,
-                    "message": "선물!"
-                }
-                """.formatted(opt.getId(), receiver.getId());
+        선물을_보낸다(sender.getId(), opt.getId(), 1, receiver.getId())
+                .then().statusCode(200);
+        assertThat(옵션_재고를_조회한다(opt.getId())).isEqualTo(0);
 
-        RestAssured.given()
-                .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
-                .body(requestBody)
-                .when()
-                .post("/api/gifts")
-                .then()
-                .statusCode(200);
-
-        var afterFirst = optionRepository.findById(opt.getId()).orElseThrow();
-        assertThat(afterFirst.getQuantity()).isEqualTo(0);
-
-        RestAssured.given()
-                .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
-                .body(requestBody)
-                .when()
-                .post("/api/gifts")
-                .then()
-                .statusCode(500);
-
-        var afterSecond = optionRepository.findById(opt.getId()).orElseThrow();
-        assertThat(afterSecond.getQuantity()).isEqualTo(0);
+        선물을_보낸다(sender.getId(), opt.getId(), 1, receiver.getId())
+                .then().statusCode(500);
+        assertThat(옵션_재고를_조회한다(opt.getId())).isEqualTo(0);
     }
 
     @Test
@@ -132,20 +80,27 @@ class GiftAcceptanceTest extends AcceptanceTest {
         var sender = memberRepository.save(member("보내는사람"));
         var receiver = memberRepository.save(member("받는사람"));
 
-        RestAssured.given()
+        선물을_보낸다(sender.getId(), 999999L, 1, receiver.getId())
+                .then().statusCode(500);
+    }
+
+    private Response 선물을_보낸다(Long senderId, Long optionId, int quantity, Long receiverId) {
+        return RestAssured.given()
                 .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
+                .header("Member-Id", senderId)
                 .body("""
                         {
-                            "optionId": 999999,
-                            "quantity": 1,
+                            "optionId": %d,
+                            "quantity": %d,
                             "receiverId": %d,
                             "message": "선물!"
                         }
-                        """.formatted(receiver.getId()))
+                        """.formatted(optionId, quantity, receiverId))
                 .when()
-                .post("/api/gifts")
-                .then()
-                .statusCode(500);
+                .post("/api/gifts");
+    }
+
+    private int 옵션_재고를_조회한다(Long optionId) {
+        return optionRepository.findById(optionId).orElseThrow().getQuantity();
     }
 }
