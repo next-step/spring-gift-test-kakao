@@ -24,6 +24,11 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation platform('io.cucumber:cucumber-bom:7.22.0')
+	testImplementation 'io.cucumber:cucumber-java'
+	testImplementation 'io.cucumber:cucumber-spring'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
