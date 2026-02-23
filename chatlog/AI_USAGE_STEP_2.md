@@ -16,3 +16,15 @@
   - `src/test/resources/junit-platform.properties`: Cucumber 엔진 설정 (features, glue, plugin)
   - `build.gradle`: cucumberTest 태스크의 includeTags → includeEngines 'cucumber'로 수정
 - **Outcome**: `./gradlew test` BUILD SUCCESSFUL. Cucumber 4개 시나리오 + 기존 RestAssured 6개 테스트 모두 통과.
+
+## 2-2. 기존 API 범위 내 BDD 시나리오 확장
+- **Prompt**: Step 1의 나머지 케이스를 BDD feature로 추가. 단, 인수 테스트 목적에 맞게 기존 API만 검증 — 테스트를 위해 새 컨트롤러를 만들지 않음.
+- **Action**:
+  - `features/product.feature` 추가: 상품 등록 성공 / 존재하지 않는 카테고리 실패 (2 시나리오)
+  - `ProductStepDefinitions.java` 추가: 상품 등록 When + 상품 수/카테고리 검증 Then
+  - `CommonStepDefinitions.java` 분리: 공통 스텝 (@Before DB 초기화, 회원/카테고리/상품 Given, 응답 코드 Then)
+  - `GiftStepDefinitions.java` 리팩토링: 선물 전용 스텝만 남김
+  - Option/Wish는 REST 엔드포인트가 없으므로 인수 테스트 범위에서 제외
+  - 처음에 생성했던 OptionRestController, WishRestController, option.feature, wish.feature, OptionStepDefinitions, WishStepDefinitions 모두 제거
+- **Outcome**: `./gradlew clean test` BUILD SUCCESSFUL. Cucumber 6 시나리오 (gift 4 + product 2) + 기존 RestAssured 6개 = 총 12개 통과.
+- **교훈**: 인수 테스트는 기존 시스템의 외부 동작을 검증하는 것이 목적. 테스트를 위해 프로덕션 코드(API)를 추가하는 것은 부적절.
