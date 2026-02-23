@@ -114,6 +114,11 @@ class GiftAcceptanceTest {
                 .post("/api/gifts")
                 .then().log().all()
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+
+        // then — 트랜잭션 롤백으로 재고가 변경되지 않았는지 확인
+        Integer remainingQuantity = jdbcTemplate.queryForObject(
+                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+        assertThat(remainingQuantity).isEqualTo(fixture.initialQuantity());
     }
 
     @Test
@@ -132,6 +137,11 @@ class GiftAcceptanceTest {
                 .post("/api/gifts")
                 .then().log().all()
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+
+        // then — 트랜잭션 롤백으로 재고가 변경되지 않았는지 확인
+        Integer remainingQuantity = jdbcTemplate.queryForObject(
+                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+        assertThat(remainingQuantity).isEqualTo(fixture.initialQuantity());
     }
 
     private GiftFixture.Builder giftFixtureBuilder() {
