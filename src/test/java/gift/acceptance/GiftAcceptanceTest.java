@@ -15,12 +15,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@ActiveProfiles("test")
 class GiftAcceptanceTest {
 
     @LocalServerPort
@@ -68,7 +70,7 @@ class GiftAcceptanceTest {
 
         // then — 조회 API 미제공으로 DB에서 재고 차감 직접 확인
         Integer remainingQuantity = jdbcTemplate.queryForObject(
-                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+                "SELECT quantity FROM options WHERE id = ?", Integer.class, fixture.optionId());
         assertThat(remainingQuantity).isEqualTo(initialQuantity - giftQuantity);
     }
 
@@ -94,7 +96,7 @@ class GiftAcceptanceTest {
 
         // then — 트랜잭션 롤백으로 재고가 변경되지 않았는지 확인
         Integer remainingQuantity = jdbcTemplate.queryForObject(
-                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+                "SELECT quantity FROM options WHERE id = ?", Integer.class, fixture.optionId());
         assertThat(remainingQuantity).isEqualTo(fixture.initialQuantity());
     }
 
@@ -117,7 +119,7 @@ class GiftAcceptanceTest {
 
         // then — 트랜잭션 롤백으로 재고가 변경되지 않았는지 확인
         Integer remainingQuantity = jdbcTemplate.queryForObject(
-                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+                "SELECT quantity FROM options WHERE id = ?", Integer.class, fixture.optionId());
         assertThat(remainingQuantity).isEqualTo(fixture.initialQuantity());
     }
 
@@ -140,7 +142,7 @@ class GiftAcceptanceTest {
 
         // then — 트랜잭션 롤백으로 재고가 변경되지 않았는지 확인
         Integer remainingQuantity = jdbcTemplate.queryForObject(
-                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+                "SELECT quantity FROM options WHERE id = ?", Integer.class, fixture.optionId());
         assertThat(remainingQuantity).isEqualTo(fixture.initialQuantity());
     }
 
