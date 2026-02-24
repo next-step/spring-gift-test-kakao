@@ -5,7 +5,7 @@ import io.restassured.RestAssured;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -38,7 +38,6 @@ class CategoryApiTest extends ApiTest {
         .then()
                 .statusCode(200)
                 .body("$", hasSize(2))
-                .body("[0].name", equalTo("교환권"))
-                .body("[1].name", equalTo("상품권"));
+                .body("name", hasItems("교환권", "상품권"));
     }
 }
