@@ -1,0 +1,23 @@
+services:
+  db-dev:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: gift_dev
+      POSTGRES_USER: kakao
+      POSTGRES_PASSWORD: choonsik
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev-data:/var/lib/postgresql/data
+
+  db-test:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: gift_test
+      POSTGRES_USER: kakao
+      POSTGRES_PASSWORD: choonsik
+    ports:
+      - "5433:5432"
+
+volumes:
+  dev-data:
