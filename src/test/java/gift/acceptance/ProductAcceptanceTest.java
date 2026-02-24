@@ -10,8 +10,8 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -20,20 +20,20 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @ActiveProfiles("test")
 class ProductAcceptanceTest {
 
-    @LocalServerPort
-    int port;
+    @Value("${app.port}")
+    int appPort;
 
     @Autowired
     CategoryRepository categoryRepository;
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        RestAssured.port = appPort;
     }
 
     @Test

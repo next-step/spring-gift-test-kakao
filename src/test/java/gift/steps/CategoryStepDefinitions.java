@@ -10,7 +10,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -19,14 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CategoryStepDefinitions {
 
-	@LocalServerPort
-	int port;
+	@Value("${app.port}")
+	int appPort;
 
 	private ExtractableResponse<Response> listResponse;
 
 	@Before
 	public void setUp() {
-		RestAssured.port = port;
+		RestAssured.port = appPort;
 	}
 
 	@Given("{string} 카테고리를 생성한다")

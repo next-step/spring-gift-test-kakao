@@ -15,15 +15,15 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GiftStepDefinitions {
 
-    @LocalServerPort
-    int port;
+    @Value("${app.port}")
+    int appPort;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -45,7 +45,7 @@ public class GiftStepDefinitions {
 
     @Before
     public void setUp() {
-        RestAssured.port = port;
+        RestAssured.port = appPort;
     }
 
     @Given("재고가 {int}개인 옵션이 준비되어 있다")

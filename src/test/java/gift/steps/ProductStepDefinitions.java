@@ -12,7 +12,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProductStepDefinitions {
 
-    @LocalServerPort
-    int port;
+    @Value("${app.port}")
+    int appPort;
 
     @Autowired
     CategoryRepository categoryRepository;
@@ -33,7 +33,7 @@ public class ProductStepDefinitions {
 
     @Before
     public void setUp() {
-        RestAssured.port = port;
+        RestAssured.port = appPort;
     }
 
     @Given("{string} 카테고리가 준비되어 있다")
