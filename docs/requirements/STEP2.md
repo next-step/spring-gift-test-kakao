@@ -185,3 +185,120 @@ When에서 받은 응답을 Then에서 검증하려면 공유 저장소가 필�
 - cucumberTest에서는 Spring Boot가 한 번만 뜨고 8개 시나리오가 모두 실행되므로, 시나리오 간 스키마 리셋은 일어나지 않음
 - 시나리오 간 데이터 초기화는 TRUNCATE(CucumberHooks)가 담당
 - 프로덕션에서는 create 대신 Flyway/Liquibase 같은 마이그레이션 도구를 사용해야 함
+
+
+# Application 컨테이너화
+현재 상태 (요구사항 2 완료 후)
+
+테스트(Host JVM) ──→ 내장 Tomcat(Host JVM) ──→ PostgreSQL(Docker)                                                                                                                                              
+HTTP(localhost:random)              JDBC(localhost:5432)
+- 테스트와 애플리케이션이 같은 JVM에서 실행
+- @SpringBootTest(RANDOM_PORT)가 내장 서버를 띄움
+
+목표 상태 (요구사항 3)
+
+테스트(Host JVM) ──HTTP──→ App(Docker, 28080:8080) ──JDBC──→ PostgreSQL(Docker)
+│                       Docker Network (postgres:5432)
+└──JDBC──→ PostgreSQL(Docker, localhost:5432)  ← cleanup용
+- 애플리케이션이 Docker 컨테이너에서 실행
+- 테스트는 Host에서 localhost:28080으로 HTTP 요청
+- 테스트는 Host에서 localhost:5432로 JDBC 접속 (cleanup용)
+- App 컨테이너는 Docker 네트워크 내부에서 postgres:5432로 DB 접속
+
+실행 순서
+
+1단계: Dockerfile 작성 (Multi-stage build)
+- Builder stage: JDK 이미지 + Gradle Wrapper로 JAR 빌드
+- Runtime stage: JRE 이미지 + JAR 복사 + 실행
+- Multi-stage를 쓰는 이유: 빌드 도구(Gradle, JDK)를 최종 이미지에서 제거 → 이미지 크기 감소
+
+2단계: .dockerignore 작성
+- build/, .gradle/, .git/ 등 불필요한 파일 제외 → 빌드 컨텍스트 축소
+
+3단계: docker-compose.yml 업데이트
+- app 서비스 추가
+- depends_on: postgres (condition: service_healthy) — PostgreSQL 준비 후 앱 시작
+- ports: 28080:8080 — Host에서 접근 가능
+- environment — SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/gift_test (Docker 내부 네트워크에서는 서비스명이 hostname)
+- app의 healthcheck 추가
+
+4단계: CucumberSpringConfiguration 변경
+- webEnvironment = RANDOM_PORT → webEnvironment = NONE
+- 내장 서버 제거. 앱은 Docker에서 실행되므로 테스트 JVM에서 서버를 띄울 필요 없음
+- Spring 컨텍스트는 로드되므로 JdbcTemplate(cleanup용)은 사용 가능
+
+5단계: application-cucumber.properties 수정
+- ddl-auto=create → ddl-auto=none (스키마 생성은 Docker 앱이 담당)
+- datasource는 localhost:5432 유지 (테스트의 JDBC cleanup용)
+
+6단계: CucumberHooks 수정
+- @LocalServerPort 제거 (내장 서버 없음)
+- RestAssured.baseURI = "http://localhost", RestAssured.port = 28080으로 변경
+
+7단계: Gradle 태스크 정리
+- dockerBuild — Docker 이미지 빌드
+- dockerUp — docker compose up -d --wait (기존 dockerComposeUp 대체)
+- dockerDown — docker compose down (기존 dockerComposeDown 대체)
+- cucumberTest — dependsOn 'dockerUp', dockerUp은 dependsOn 'dockerBuild'
+
+8단계: 검증 및 README 업데이트
+
+./gradlew dockerBuild      # Docker 이미지 빌드
+./gradlew dockerUp          # PostgreSQL + App 시작
+curl http://localhost:28080  # 앱 응답 확인
+./gradlew cucumberTest       # 테스트 실행
+./gradlew dockerDown         # 정리
+
+## 배운 것 정리
+
+### Multi-stage build (1단계)
+Dockerfile을 여러 단계로 나누는 빌드 방식:
+- Builder stage (`eclipse-temurin:25-jdk`): JDK + Gradle로 JAR을 빌드. 이 레이어는 최종 이미지에 포함되지 않음
+- Runtime stage (`eclipse-temurin:25-jre`): JRE + JAR만 포함. 빌드 도구, 소스 코드, 캐시가 모두 제거됨
+- `COPY --from=builder`로 이전 stage의 결과물만 가져옴
+- JDK(~400MB) 대신 JRE(~200MB)만 사용하므로 이미지 크기가 절반으로 줄어듦
+
+Docker 레이어 캐싱도 활용:
+- Gradle 설정 파일(build.gradle 등)을 먼저 복사 → 의존성 다운로드 → 소스 코드 복사 → 빌드
+- 소스 코드만 바뀌면 의존성 다운로드 레이어는 캐시를 재사용하여 빌드가 빨라짐
+
+### .dockerignore (2단계)
+- `.gitignore`와 동일한 개념. Docker 빌드 시 컨텍스트(Docker 데몬으로 전송되는 파일)에서 제외할 항목을 지정
+- `build/`, `.gradle/`, `.git/`, `src/test/` 등 빌드에 불필요한 파일을 제외
+- 컨텍스트 크기가 줄어들어 빌드가 빨라짐
+
+### Docker 네트워크와 서비스명 (3단계)
+Docker Compose는 자동으로 네트워크를 생성하고, 서비스명이 그 네트워크 안에서 hostname이 됨:
+- App 컨테이너에서 PostgreSQL 접근: `postgres:5432` (서비스명이 hostname)
+- Host에서 PostgreSQL 접근: `localhost:5432` (포트 매핑)
+- Host에서 App 접근: `localhost:28080` (포트 매핑 28080:8080)
+
+`depends_on: condition: service_healthy`는 단순히 컨테이너 시작이 아니라, healthcheck가 통과할 때까지 기다림. 없으면 PostgreSQL이 아직 준비되지 않은 상태에서 앱이 연결을 시도하여 실패할 수 있음.
+
+### webEnvironment = NONE (4단계)
+- `RANDOM_PORT`: Spring Boot가 내장 Tomcat을 랜덤 포트로 시작. 테스트와 앱이 같은 JVM에서 실행
+- `NONE`: 웹 서버를 시작하지 않음. Spring 컨텍스트(Bean)만 로드
+- 앱이 Docker 컨테이너에서 실행되므로 테스트 JVM에서 서버를 띄울 필요 없음
+- 하지만 Spring 컨텍스트가 로드되므로 JdbcTemplate은 사용 가능 → cleanup용 JDBC 접속에 활용
+
+### 환경변수로 Spring Boot 설정 오버라이드 (트러블슈팅)
+Spring Boot는 환경변수를 properties로 자동 바인딩:
+- `SPRING_DATASOURCE_URL` → `spring.datasource.url`
+- `SPRING_JPA_HIBERNATE_DDL_AUTO` → `spring.jpa.hibernate.ddl-auto`
+
+주의: `application.properties`에 하드코딩된 `spring.datasource.driverClassName=org.h2.Driver`가 있으면, URL만 환경변수로 PostgreSQL로 바꿔도 드라이버가 H2로 남아서 Dialect 감지에 실패함. `SPRING_DATASOURCE_DRIVER_CLASS_NAME`도 환경변수로 오버라이드해야 함.
+
+### ddl-auto 역할 분리 (5단계)
+- Docker 앱 (docker-compose.yml): `DDL_AUTO: create` → 스키마 생성 담당
+- 테스트 JVM (application-cucumber.properties): `ddl-auto=none` → 스키마 건드리지 않음
+- 둘 다 `create`면 Docker 앱이 만든 테이블을 테스트 JVM이 DROP + 재생성하여 충돌 가능
+
+### healthcheck에 curl이 필요 (트러블슈팅)
+- `eclipse-temurin:25-jre` 이미지에는 `curl`이 기본 설치되어 있지 않음
+- healthcheck에서 `curl -f http://localhost:8080/api/categories`를 사용하므로, Dockerfile runtime stage에 `apt-get install -y curl` 추가 필요
+- `rm -rf /var/lib/apt/lists/*`로 패키지 캐시 정리하여 이미지 크기 최소화
+
+### Gradle 커스텀 Exec 태스크
+- `tasks.register('dockerBuild', Exec)` — 외부 명령어(`docker compose build`)를 Gradle 태스크로 실행
+- `dependsOn` 체인: `cucumberTest` → `dockerUp` → `dockerBuild`로 자동 빌드 + 시작
+- `finalizedBy 'dockerDown'` — 테스트 성공/실패 무관하게 컨테이너 정리
