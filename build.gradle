@@ -36,8 +36,26 @@ tasks.named('test') {
 	exclude 'gift/cucumber/**'
 }
 
+tasks.register('dockerBuild', Exec) {
+	description = 'Docker 이미지를 빌드한다.'
+	group = 'docker'
+	commandLine 'docker', 'compose', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	description = 'Docker Compose로 전체 서비스를 시작한다.'
+	group = 'docker'
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	description = 'Docker Compose로 전체 서비스를 종료한다.'
+	group = 'docker'
+	commandLine 'docker', 'compose', 'down'
+}
+
 tasks.register('cucumberTest', Test) {
-	description = 'Cucumber BDD 테스트를 PostgreSQL과 함께 실행한다.'
+	description = 'Cucumber BDD 테스트를 Docker 환경에서 실행한다.'
 	group = 'verification'
 
 	doFirst {
@@ -50,9 +68,5 @@ tasks.register('cucumberTest', Test) {
 	include 'gift/cucumber/**'
 	systemProperty 'spring.profiles.active', 'cucumber'
 
-	finalizedBy 'composeDown'
-}
-
-tasks.register('composeDown', Exec) {
-	commandLine 'docker', 'compose', 'down'
+	finalizedBy 'dockerDown'
 }
