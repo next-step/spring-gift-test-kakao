@@ -32,7 +32,7 @@ class ProductTest {
         databaseCleanup.execute();
     }
 
-    Long 카테고리를_생성하고_ID를_반환한다(String name) {
+    Long createCategoryAndReturnId(String name) {
         return given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
@@ -46,7 +46,7 @@ class ProductTest {
 
     @Test
     void 상품을_생성한다() {
-        Long categoryId = 카테고리를_생성하고_ID를_반환한다("음료");
+        Long categoryId = createCategoryAndReturnId("음료");
 
         given()
                 .contentType(ContentType.JSON)
@@ -68,7 +68,7 @@ class ProductTest {
 
     @Test
     void 상품을_생성하면_조회_목록에_포함된다() {
-        Long categoryId = 카테고리를_생성하고_ID를_반환한다("음료");
+        Long categoryId = createCategoryAndReturnId("음료");
 
         given()
                 .contentType(ContentType.JSON)

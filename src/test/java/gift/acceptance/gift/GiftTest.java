@@ -1,14 +1,10 @@
 package gift.acceptance.gift;
 
-import gift.model.Category;
 import gift.model.Member;
 import gift.model.Option;
-import gift.model.Product;
-import gift.support.CategoryFixture;
 import gift.support.DatabaseCleanup;
 import gift.support.MemberFixture;
 import gift.support.OptionFixture;
-import gift.support.ProductFixture;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,12 +27,6 @@ class GiftTest {
     DatabaseCleanup databaseCleanup;
 
     @Autowired
-    CategoryFixture categoryFixture;
-
-    @Autowired
-    ProductFixture productFixture;
-
-    @Autowired
     OptionFixture optionFixture;
 
     @Autowired
@@ -48,11 +38,40 @@ class GiftTest {
         databaseCleanup.execute();
     }
 
+    Long createCategoryAndReturnId(String name) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", name))
+        .when()
+                .post("/api/categories")
+        .then()
+                .extract()
+                .jsonPath()
+                .getLong("id");
+    }
+
+    Long createProductAndReturnId(String name, int price, Long categoryId) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "name", name,
+                        "price", price,
+                        "imageUrl", "https://example.com/image.png",
+                        "categoryId", categoryId
+                ))
+        .when()
+                .post("/api/products")
+        .then()
+                .extract()
+                .jsonPath()
+                .getLong("id");
+    }
+
     @Test
     void 선물을_전달한다() {
-        Category category = categoryFixture.builder().name("음료").build();
-        Product product = productFixture.builder().name("아메리카노").price(4500).category(category).build();
-        Option option = optionFixture.builder().name("ICE").quantity(3).product(product).build();
+        Long categoryId = createCategoryAndReturnId("음료");
+        Long productId = createProductAndReturnId("아메리카노", 4500, categoryId);
+        Option option = optionFixture.builder().name("ICE").quantity(3).productId(productId).build();
         Member sender = memberFixture.builder().name("보내는사람").email("sender@test.com").build();
         Member receiver = memberFixture.builder().name("받는사람").email("receiver@test.com").build();
 
@@ -73,9 +92,9 @@ class GiftTest {
 
     @Test
     void 재고보다_많은_수량을_요청하면_실패한다() {
-        Category category = categoryFixture.builder().name("음료").build();
-        Product product = productFixture.builder().name("아메리카노").price(4500).category(category).build();
-        Option option = optionFixture.builder().name("ICE").quantity(1).product(product).build();
+        Long categoryId = createCategoryAndReturnId("음료");
+        Long productId = createProductAndReturnId("아메리카노", 4500, categoryId);
+        Option option = optionFixture.builder().name("ICE").quantity(1).productId(productId).build();
         Member sender = memberFixture.builder().name("보내는사람").email("sender@test.com").build();
         Member receiver = memberFixture.builder().name("받는사람").email("receiver@test.com").build();
 
