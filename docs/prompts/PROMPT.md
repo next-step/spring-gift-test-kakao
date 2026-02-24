@@ -157,3 +157,63 @@ https://cucumber.io/docs/cucumber/state/#spring
 ```
 일단 먼저 실행 계획을 설명해줘.
 ```
+
+
+```
+# 2. PostgreSQL + Docker Compose 통합
+목표
+H2 in-memory DB를 PostgreSQL로 전환하고, Docker Compose로 테스트 환경을 자동화합니다.
+
+핵심 요구사항
+Docker Compose로 PostgreSQL 실행 환경 구성
+Spring 프로파일로 테스트/개발 DB 분리
+테스트 실행 시 DB 자동 시작 및 체크
+각 시나리오마다 DB 초기화 (Test Isolation)
+검증
+./gradlew cucumberTest
+# PostgreSQL이 자동으로 준비되고 테스트가 실행되어야 함
+제출
+README.md에 실행 방법 업데이트
+학습 내용을 별도 문서로 기록 (선택사항)
+
+
+미션 수행에 도움 되는 질문
+전체 미션
+다른 개발자도 동일한 명령으로 실행 가능한가?
+실행 방법이 충분히 단순한가?
+실패했을 때 원인을 쉽게 파악할 수 있는가?
+
+요구사항 2 (PostgreSQL)
+왜 H2 대신 PostgreSQL을 사용하는가?
+Production Parity란 무엇인가?
+테스트 실패 시에도 DB가 정리되는가?
+
+## 힌트
+요구사항 2: PostgreSQL + Docker Compose
+핵심 키워드
+
+docker-compose.yml - 서비스 정의
+healthcheck - 컨테이너 준비 상태 확인
+pg_isready - PostgreSQL 체크 명령
+@ActiveProfiles("cucumber") - 테스트 프로파일
+application-cucumber.properties - 설정 분리
+Gradle Exec task
+doFirst / finalizedBy
+탐구 질문
+
+Docker Compose의 services, volumes는 무엇인가?
+Health check는 왜 필요한가?
+Spring Profile은 어떻게 동작하는가?
+Gradle Task에서 Shell 스크립트를 어떻게 실행하는가?
+테스트 실패 시에도 DB를 정리하려면 어떻게 해야 하는가?
+H2 단위 테스트와 PostgreSQL 통합 테스트를 어떻게 분리하는가?
+
+네트워크 이해
+테스트 코드는 어디서 실행되는가? (Host vs Container)
+PostgreSQL은 어떤 주소로 접근하는가? (localhost:5432)
+
+참고 자료
+Docker Compose Documentation
+Spring Boot Profiles
+Gradle Exec Task
+```
