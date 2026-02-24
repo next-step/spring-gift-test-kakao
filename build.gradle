@@ -30,6 +30,16 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
-tasks.named('test') {
+tasks.register('DbAutoRunCheck', Exec) {
+    description = 'Check PostgreSQL container is running'
+    commandLine 'docker', 'compose', 'up', '-d', 'db-test'
+}
+
+tasks.register('cucumberTest', Test) {
+    description = 'Runs Cucumber BDD tests'
     useJUnitPlatform()
+    dependsOn 'DbAutoRunCheck'
+    filter {
+        includeTestsMatching 'gift.CucumberTest'
+    }
 }
