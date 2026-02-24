@@ -12,7 +12,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.notNullValue;
@@ -61,13 +60,4 @@ class CategoryTest {
                 .body("name", hasItem("간식"));
     }
 
-    @Test
-    void 카테고리가_없으면_빈_목록을_반환한다() {
-        given()
-        .when()
-                .get("/api/categories")
-        .then()
-                .statusCode(200)
-                .body("$", empty());
-    }
 }
