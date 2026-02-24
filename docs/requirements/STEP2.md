@@ -1,4 +1,4 @@
-# Cucumber BDD 적용
+# 1. Cucumber BDD 적용
 
 1단계: 의존성 추가 (build.gradle)
 
@@ -96,3 +96,92 @@ When에서 받은 응답을 Then에서 검증하려면 공유 저장소가 필�
 개선 방향: 재고 조회 API가 없는 현재 상황에서는 한계가 있지만, DB 직접 조회 Step을 추가하면 시나리오가 더 명확해집니다.
 
 그러면 "Tall" 옵션의 재고는 3개이다
+
+
+# 2. PostgreSQL + Docker Compose 통합
+현재 상태
+
+- DB: H2 in-memory (jdbc:h2:mem:testdb)
+- Docker Compose: 없음
+- PostgreSQL 의존성: 없음
+- Spring Profile: 없음 (단일 application.properties)
+- Gradle 테스트 태스크: test 하나만 존재
+- cleanup.sql: H2 전용 문법 (ALTER TABLE ... ALTER COLUMN id RESTART WITH 1)
+
+실행 순서
+
+1단계: docker-compose.yml 작성
+- PostgreSQL 서비스 정의 (이미지, 포트, 환경변수)
+- healthcheck + pg_isready로 컨테이너 준비 상태 확인
+- volume 설정 (선택)
+
+2단계: PostgreSQL 의존성 추가 (build.gradle)
+- runtimeOnly 'org.postgresql:postgresql' 추가
+- H2는 기존 AcceptanceTest용으로 유지
+
+3단계: Spring Profile 분리
+- application-cucumber.properties 생성 (PostgreSQL 연결 정보)
+- CucumberSpringConfiguration에 @ActiveProfiles("cucumber") 추가
+- 기존 AcceptanceTest는 H2 그대로 유지 → H2/PostgreSQL 테스트 분리
+
+4단계: PostgreSQL용 cleanup SQL 작성
+- H2 문법 → PostgreSQL 문법 전환 필요
+- TRUNCATE ... RESTART IDENTITY CASCADE 또는 DELETE + ALTER SEQUENCE RESTART
+- CucumberHooks에서 PostgreSQL용 스크립트 사용
+
+5단계: Gradle cucumberTest 태스크 생성
+- doFirst: docker-compose up -d (PostgreSQL 시작 + healthcheck 대기)
+- Cucumber 테스트만 실행 (기존 AcceptanceTest 제외)
+- finalizedBy: docker-compose down (테스트 실패 시에도 DB 정리)
+
+6단계: 검증 및 README 업데이트
+- ./gradlew cucumberTest 실행 → PostgreSQL 자동 준비 + 테스트 통과 확인
+- README.md에 실행 방법 업데이트
+
+## 배운 것 정리
+
+### Production Parity
+왜 H2 대신 PostgreSQL을 사용하는가? — 프로덕션과 동일한 환경에서 테스트해야 "프로덕션에서만 발생하는 버그"를 사전에 잡을 수 있다는 원칙입니다.
+
+실제로 이번 작업에서 체감한 H2와 PostgreSQL의 차이:
+- cleanup SQL 문법이 다름: H2는 `ALTER TABLE ... ALTER COLUMN id RESTART WITH 1`, PostgreSQL은 `TRUNCATE ... RESTART IDENTITY CASCADE`
+- H2에서는 통과하던 쿼리가 PostgreSQL에서 실패할 수 있음 (대소문자 처리, 타입 캐스팅 등)
+- 이 차이 때문에 cleanup.sql(H2)과 cleanup-pg.sql(PostgreSQL)을 분리해야 했음
+
+### docker-compose.yml (1단계)
+- `services` — 실행할 컨테이너를 정의. 여기서는 PostgreSQL 하나만 정의
+- `environment` — 컨테이너 시작 시 자동으로 DB, 유저, 패스워드를 생성
+- `healthcheck` + `pg_isready` — 컨테이너가 떴다고 바로 쓸 수 있는 게 아님. PostgreSQL이 실제로 쿼리를 받을 준비가 됐는지 확인하는 것이 healthcheck의 역할
+- `volumes`를 넣지 않은 이유 — 테스트용 DB는 매번 깨끗한 상태에서 시작하는 게 유리. 컨테이너 종료 시 데이터가 사라지는 것이 오히려 테스트 격리에 도움
+
+### Spring Profile (3단계)
+- `@ActiveProfiles("cucumber")` → Spring Boot가 `application-cucumber.properties`를 로드
+- 동작 순서: `application.properties`(기본)를 먼저 로드 → `application-cucumber.properties`로 오버라이드
+- 즉, datasource 설정이 H2 → PostgreSQL로 덮어씌워짐
+- 기존 AcceptanceTest는 Profile이 없으므로 H2(기본)를 계속 사용 → 테스트 분리 달성
+
+### TRUNCATE vs DELETE (4단계)
+- `DELETE FROM` — 행 단위 삭제. 외래키 순서를 수동으로 지정해야 함 (wish → option → product → ...)
+- `TRUNCATE` — 테이블 통째로 비움. DELETE보다 빠름
+- `RESTART IDENTITY` — IDENTITY 시퀀스를 1로 리셋
+- `CASCADE` — 외래키 의존 관계를 자동 처리. 삭제 순서를 신경 쓸 필요 없음
+- H2에서는 TRUNCATE + RESTART IDENTITY CASCADE 문법이 다르므로, DB별로 cleanup 스크립트를 분리
+
+### Gradle 커스텀 Test 태스크 (5단계)
+- `tasks.register('cucumberTest', Test)` — 기본 `test` 태스크와 별개의 테스트 태스크 생성
+- 커스텀 Test 태스크는 `testClassesDirs`와 `classpath`를 명시해야 함. 기본 `test` 태스크만 자동으로 소스 경로를 상속받음
+- `include '**/CucumberTest.class'` — 이 태스크에서 실행할 테스트 클래스를 필터링
+- `dependsOn 'dockerComposeUp'` — 테스트 실행 전 PostgreSQL 컨테이너를 먼저 시작
+- `--wait` 플래그 — Docker Compose V2 기능. healthcheck가 healthy 상태가 될 때까지 대기. 이것이 없으면 PostgreSQL 시작 중에 테스트가 연결을 시도하여 Connection refused 발생 (경쟁 조건 방지)
+
+### 네트워크 이해
+- 테스트 코드(JVM)는 Host에서 실행됨
+- PostgreSQL은 Docker 컨테이너 안에서 실행됨
+- `ports: "5432:5432"` 매핑으로 Host의 localhost:5432 → 컨테이너의 5432로 연결
+- 따라서 `application-cucumber.properties`에서 `jdbc:postgresql://localhost:5432/gift_test`로 접근 가능
+
+### ddl-auto=create
+- 매 애플리케이션 시작 시 기존 테이블을 DROP하고 엔티티 기반으로 재생성
+- cucumberTest에서는 Spring Boot가 한 번만 뜨고 8개 시나리오가 모두 실행되므로, 시나리오 간 스키마 리셋은 일어나지 않음
+- 시나리오 간 데이터 초기화는 TRUNCATE(CucumberHooks)가 담당
+- 프로덕션에서는 create 대신 Flyway/Liquibase 같은 마이그레이션 도구를 사용해야 함
