@@ -32,8 +32,76 @@ dependencies {
 	// JUnit Platform에서 Cucumber 실행
 	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
 	testImplementation 'org.junit.platform:junit-platform-suite:1.11.4'
+
+	// PostgreSQL 드라이버
+	runtimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+configurations {
+	cucumberRuntime {
+		extendsFrom testImplementation, testRuntimeOnly
+	}
+}
+
+tasks.register('cucumberTest') {
+	dependsOn assemble, testClasses
+
+	doFirst {
+		exec {
+			commandLine 'docker-compose', 'up', '-d'
+		}
+
+		def maxRetries = 20
+		def sleepMs = 3000
+		def ready = false
+
+		for (int i = 0; i < maxRetries; i++) {
+			try {
+				def result = exec {
+					commandLine 'docker-compose', 'exec', '-T', 'postgres',
+							'pg_isready', '-U', 'gift', '-d', 'gift_test'
+					ignoreExitValue = true
+				}
+				if (result.exitValue == 0) {
+					ready = true
+					logger.lifecycle("PostgreSQL is ready!")
+					break
+				}
+			} catch (Exception e) {
+				// 컨테이너가 아직 시작 안 된 경우
+			}
+			logger.lifecycle("Waiting for PostgreSQL... (${i + 1}/${maxRetries})")
+			Thread.sleep(sleepMs)
+		}
+
+		if (!ready) {
+			throw new GradleException("PostgreSQL failed to start within ${maxRetries * sleepMs / 1000} seconds")
+		}
+	}
+
+	doLast {
+		javaexec {
+			mainClass = 'io.cucumber.core.cli.Main'
+			classpath = configurations.cucumberRuntime + sourceSets.test.output + sourceSets.main.output
+			args = [
+					'--glue', 'gift.acceptance',
+					'--plugin', 'pretty',
+					'src/test/resources/features'
+			]
+		}
+	}
+
+	finalizedBy 'composeDown'
+}
+
+tasks.register('composeDown') {
+	doLast {
+		exec {
+			commandLine 'docker-compose', 'down'
+		}
+	}
 }

@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gift-test-db
+    environment:
+      POSTGRES_DB: gift_test
+      POSTGRES_USER: gift
+      POSTGRES_PASSWORD: gift
+    ports:
+      - "5432:5432"
+    volumes:
+      - gift-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "gift", "-d", "gift_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  gift-test-data:
