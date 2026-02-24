@@ -24,8 +24,68 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+
+	// cucumber 관련 의존성
+	testImplementation 'io.cucumber:cucumber-java:7.22.0'
+	testImplementation 'io.cucumber:cucumber-spring:7.22.0'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.0'
+	testImplementation 'org.junit.platform:junit-platform-suite'
+
+	// postgresql 의존성
+	runtimeOnly 'org.postgresql:postgresql'
 }
 
-tasks.named('test') {
+tasks.withType(Test).configureEach {
+	testLogging {
+		events 'passed', 'failed', 'skipped', 'standardOut', 'standardError'
+		showStandardStreams = true
+		exceptionFormat = 'full'
+	}
+}
+
+// 1) ./gradlew test => cucumber 실행
+tasks.named('test', Test) {
 	useJUnitPlatform()
+	description = 'Runs Cucumber BDD tests'
+	group = 'verification'
+	filter {
+		includeTestsMatching 'gift.cucumber.CucumberTest'
+	}
+}
+
+// 2) ./gradlew cucumberTest => Docker (App + PostgreSQL)로 Cucumber 실행
+tasks.register('cucumberTest', Test) {
+	description = 'Runs Cucumber tests with Docker'
+	group = 'verification'
+	useJUnitPlatform()
+	filter {
+		includeTestsMatching 'gift.cucumber.CucumberTest'
+	}
+	systemProperty 'spring.profiles.active', 'test'
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
+}
+
+// 3) ./gradlew step1Test => 기존 인수테스트 실행
+tasks.register('step1Test', Test) {
+	useJUnitPlatform()
+	description = 'Runs step1 acceptance tests'
+	group = 'verification'
+	filter {
+		includeTestsMatching 'gift.CategoryAcceptanceTest'
+		includeTestsMatching 'gift.ProductAcceptanceTest'
+		includeTestsMatching 'gift.GiftAcceptanceTest'
+	}
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'compose', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker', 'compose', 'down', '-v'
 }

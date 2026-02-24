@@ -55,7 +55,10 @@ class CategoryAcceptanceTest {
      * C2: 카테고리 목록을 조회한다.
      */
     @Test
-    @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(
+            scripts = {"classpath:cleanup.sql", "classpath:test-data.sql"},
+            executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
+    )
     void 카테고리_목록을_조회한다() {
 
         // when

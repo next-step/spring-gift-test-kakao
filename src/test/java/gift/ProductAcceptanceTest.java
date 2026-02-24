@@ -65,7 +65,10 @@ class ProductAcceptanceTest {
      * P2: 상품 목록을 조회한다.
      */
     @Test
-    @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(
+            scripts = {"classpath:cleanup.sql", "classpath:test-data.sql"},
+            executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
+    )
     void 상품_목록을_조회한다() {
         // when
         ExtractableResponse<Response> response = 상품_목록을_조회_요청한다();
