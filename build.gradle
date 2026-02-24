@@ -63,6 +63,8 @@ tasks.register('cucumberTest', Test) {
 	if (project.hasProperty('db') && project.property('db') == 'postgres') {
 		dependsOn 'dockerPostgresUp'
 		finalizedBy 'dockerPostgresDown'
-		systemProperty 'spring.profiles.active', 'postgres'
+		doFirst {
+			systemProperty 'spring.profiles.active', 'cucumber,postgres'
+		}
 	}
 }
