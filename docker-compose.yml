@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gift
+      POSTGRES_USER: gift
+      POSTGRES_PASSWORD: gift
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gift -d gift"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app:
+    image: spring-gift-test:latest
+    ports:
+      - "28080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gift
+      SPRING_DATASOURCE_USERNAME: gift
+      SPRING_DATASOURCE_PASSWORD: gift
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create
+      SPRING_JPA_OPEN_IN_VIEW: "false"
+      KAKAO_MESSAGE_TOKEN: ACCESS_TOKEN
+      KAKAO_MESSAGE_URL: https://kapi.kakao.com/v1/api/talk
+      KAKAO_SOCIAL_TOKEN: ACCESS_TOKEN
+      KAKAO_SOCIAL_URL: https://kapi.kakao.com/v1/api/talk
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/api/categories || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
