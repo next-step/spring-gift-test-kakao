@@ -41,13 +41,28 @@ configurations {
 	}
 }
 
+tasks.register('dockerUp', Exec) {
+	description = 'Starts Docker containers'
+	group = 'docker'
+	commandLine 'docker-compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	description = 'Stops Docker containers'
+	group = 'docker'
+	commandLine 'docker-compose', 'down'
+}
+
 tasks.register('cucumberTest', Test) {
-	description = 'Runs Cucumber acceptance tests'
+	description = 'Runs Cucumber acceptance tests with Docker'
 	group = 'verification'
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 	useJUnitPlatform {
 		includeEngines 'cucumber'
 	}
+	systemProperty 'spring.profiles.active', 'cucumber'
+	dependsOn dockerUp
+	finalizedBy dockerDown
 	shouldRunAfter test
 }

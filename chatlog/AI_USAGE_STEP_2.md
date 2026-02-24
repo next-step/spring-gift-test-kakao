@@ -36,3 +36,11 @@
   - `src/main/resources/application-cucumber.properties` 생성: datasource URL(`jdbc:postgresql://localhost:5432/gift`), PostgreSQLDialect, ddl-auto=create-drop
   - `build.gradle`: `runtimeOnly 'org.postgresql:postgresql'` 의존성 추가
 - **Outcome**: `docker-compose up -d` → 컨테이너 healthy 상태 확인. `./gradlew clean build -x test` BUILD SUCCESSFUL.
+
+## 2-3-2. cucumberTest 태스크 Docker 라이프사이클 통합
+- **Prompt**: cucumberTest 태스크가 docker-compose up → Cucumber 테스트 (cucumber 프로파일) → docker-compose down 순서로 자동 실행되도록 build.gradle 수정.
+- **Action**:
+  - `build.gradle`: `dockerUp`(Exec, `docker-compose up -d --wait`), `dockerDown`(Exec, `docker-compose down`) 태스크 추가. cucumberTest에 `dependsOn dockerUp`, `finalizedBy dockerDown`, `systemProperty 'spring.profiles.active', 'cucumber'` 설정
+  - `CucumberSpringConfiguration.java`: `@ActiveProfiles("cucumber")` 추가
+  - `CommonStepDefinitions.java`: H2 전용 `SET REFERENTIAL_INTEGRITY FALSE/TRUE` → PostgreSQL 호환 `TRUNCATE ... CASCADE`로 변경
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL. Docker 자동 기동 → 6개 Cucumber 시나리오 통과 → Docker 자동 정리 확인.

@@ -24,13 +24,7 @@ public class CommonStepDefinitions {
     @Before
     public void setUp() {
         RestAssured.port = port;
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
-        jdbcTemplate.execute("TRUNCATE TABLE wish");
-        jdbcTemplate.execute("TRUNCATE TABLE option");
-        jdbcTemplate.execute("TRUNCATE TABLE product");
-        jdbcTemplate.execute("TRUNCATE TABLE category");
-        jdbcTemplate.execute("TRUNCATE TABLE member");
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+        jdbcTemplate.execute("TRUNCATE TABLE wish, option, product, category, member CASCADE");
     }
 
     @Given("^회원 \"([^\"]*)\"\\(ID: (\\d+)\\)과 \"([^\"]*)\"\\(ID: (\\d+)\\)이 존재한다$")
