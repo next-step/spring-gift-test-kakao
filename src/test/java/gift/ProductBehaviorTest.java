@@ -34,7 +34,7 @@ class ProductBehaviorTest {
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/product-setup.sql"})
-    void should_fail_to_create_product_due_to_dto_binding_bug() {
+    void 상품_생성_시_DTO_바인딩_버그로_실패한다() {
         // When & Then — 생성 실패 (DTO에 setter 없음 → categoryId=null → findById(null) 예외)
         RestAssured.given()
             .formParam("name", "테스트상품")
@@ -64,7 +64,7 @@ class ProductBehaviorTest {
      */
     @Test
     @Sql("/sql/cleanup.sql")
-    void should_fail_to_create_product_when_category_does_not_exist() {
+    void 상품_존재하지_않는_카테고리로_상품을_생성하면_실패한다() {
         // When & Then — 존재하지 않는 카테고리로 생성 실패
         RestAssured.given()
             .formParam("name", "테스트상품")

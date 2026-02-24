@@ -22,10 +22,65 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+
+	// Cucumber BDD
+	testImplementation platform('io.cucumber:cucumber-bom:7.18.1')
+	testImplementation 'io.cucumber:cucumber-java'
+	testImplementation 'io.cucumber:cucumber-spring'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Cucumber 테스트는 cucumberTest 태스크에서 PostgreSQL과 함께 실행
+	exclude 'gift/cucumber/**'
+}
+
+// --- Docker Compose + Cucumber 통합 ---
+
+tasks.register('composeUp', Exec) {
+	description = 'Start PostgreSQL via Docker Compose'
+	commandLine 'docker', 'compose', 'up', '-d', 'postgres', '--wait'
+}
+
+tasks.register('composeDown', Exec) {
+	description = 'Stop and remove Docker Compose services'
+	commandLine 'docker', 'compose', 'down', '-v'
+}
+
+tasks.register('cucumberTest', Test) {
+	description = 'Run Cucumber tests against Docker environment'
+	group = 'verification'
+
+	useJUnitPlatform()
+
+	// Cucumber 테스트만 실행
+	include 'gift/cucumber/**'
+
+	// 컨테이너 App이 떠 있으면 embedded 서버 대신 컨테이너로 요청
+	systemProperty 'cucumber.app.base-url', System.getProperty('cucumber.app.base-url', '')
+
+	dependsOn 'composeUp'
+	finalizedBy 'composeDown'
+}
+
+// --- Docker 빌드/실행 (Application 컨테이너화) ---
+
+tasks.register('dockerBuild', Exec) {
+	description = 'Build Docker images via Docker Compose'
+	commandLine 'docker', 'compose', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	description = 'Start all services (app + postgres) via Docker Compose'
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	description = 'Stop and remove all Docker Compose services'
+	commandLine 'docker', 'compose', 'down', '-v'
 }
