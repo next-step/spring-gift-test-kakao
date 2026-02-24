@@ -59,4 +59,9 @@ tasks.register('cucumberTest', Test) {
 	include '**/CucumberTest.class'
 	dependsOn 'dockerComposeUp'
 	finalizedBy 'dockerComposeDown'
+	testLogging {
+		events 'passed', 'failed', 'skipped'
+		exceptionFormat 'full'
+		showStandardStreams = false
+	}
 }
