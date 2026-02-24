@@ -127,16 +127,21 @@ src/main/java/gift/
 ./gradlew cucumberTest -Pfeature=선물_전송
 ```
 
-### 테스트 DB 선택
+### 테스트 실행 모드
 
-| 명령어 | DB | Docker 필요 |
-|--------|----|-------------|
-| `./gradlew cucumberTest` | H2 (in-memory) | 불필요 |
-| `./gradlew cucumberTest -Pdb=postgres` | PostgreSQL | 자동 시작/종료 |
+| 명령어 | App | DB | RestAssured 대상 |
+|--------|-----|----|-----------------|
+| `./gradlew cucumberTest` | Embedded | H2 | localhost:{random} |
+| `./gradlew cucumberTest -Pdb=postgres` | Embedded | Docker PG | localhost:{random} |
+| `./gradlew cucumberTest -Pmode=docker` | Docker Container | Docker PG | localhost:28080 |
 
 - 기본값은 H2이며, `-Pdb=postgres` 옵션 시 Docker Compose로 PostgreSQL 컨테이너를 자동 관리합니다.
-- PostgreSQL은 포트 `15432`를 사용합니다 (로컬 5432 충돌 방지).
-- 수동 제어: `./gradlew dockerPostgresUp` / `./gradlew dockerPostgresDown`
+- `-Pmode=docker` 옵션 시 앱 자체도 Docker 컨테이너로 실행하여 프로덕션과 동일한 환경에서 테스트합니다.
+  - Docker 이미지 빌드 → 컨테이너(app + postgres) 시작 → 테스트 실행 → 컨테이너 종료까지 자동으로 진행됩니다.
+  - 앱 컨테이너는 포트 `28080`, PostgreSQL은 포트 `15432`를 사용합니다.
+- 수동 Docker 제어:
+  - PostgreSQL만: `./gradlew dockerPostgresUp` / `./gradlew dockerPostgresDown`
+  - 앱 + PostgreSQL: `./gradlew dockerUp` / `./gradlew dockerDown`
 
 ### 테스트 구조
 
