@@ -43,12 +43,6 @@ configurations {
 	}
 }
 
-tasks.register('dockerUp', Exec) {
-	description = 'Starts Docker containers'
-	group = 'docker'
-	commandLine 'docker-compose', 'up', '-d', '--wait'
-}
-
 tasks.register('dockerDown', Exec) {
 	description = 'Stops Docker containers'
 	group = 'docker'
@@ -64,7 +58,11 @@ tasks.register('cucumberTest', Test) {
 		includeEngines 'cucumber'
 	}
 	systemProperty 'spring.profiles.active', 'cucumber'
-	dependsOn dockerUp
+	doFirst {
+		exec {
+			commandLine 'docker-compose', 'up', '-d', '--wait'
+		}
+	}
 	finalizedBy dockerDown
 	shouldRunAfter test
 }

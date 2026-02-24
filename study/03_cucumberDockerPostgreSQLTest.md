@@ -5,11 +5,6 @@
 - 테스트 실행 시 Docker 컨테이너 자동으로 관리(Up/Down)하고, cucumber 프로필을 강제.
 
 ```Groovy
-task dockerComposeUp(type: Exec) {
-    group = 'docker'
-    description = 'Docker Compose를 백그라운드로 실행'
-    commandLine 'docker-compose', 'up', '-d'
-}
 
 task dockerComposeDown(type: Exec) {
     group = 'docker'
@@ -23,7 +18,11 @@ task cucumberTest(type: Test) {
     description = 'Docker DB 띄우고 Cucumber 인수 테스트 진행'
     
     // 테스트 실행 전 docker-compose up
-    dependsOn dockerComposeUp
+    doFirst {
+        exec {
+        commandLine 'docker-compose', 'up', '-d', '--wait'
+        }
+    }
     
     // 테스트 성공/실패 상관없이 종료 후 Docker 내리기
     finalizedBy dockerComposeDown
