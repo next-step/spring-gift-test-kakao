@@ -50,3 +50,9 @@
 - **Action**:
   - `build.gradle`: `test` 태스크에 `excludeEngines 'cucumber'` 추가. Cucumber 테스트가 Docker 없이 실행되어 PostgreSQL 연결 실패하는 문제 해결.
 - **Outcome**: `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개, H2). `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 6개, PostgreSQL). 두 태스크 완전 분리 확인.
+
+## 2-3-4. doFirst 키워드 반영
+- **Prompt**: 요구사항 키워드 점검 결과 `doFirst`가 누락됨. `dependsOn dockerUp` 방식에서 `doFirst` 인라인 방식으로 변경.
+- **Action**:
+  - `build.gradle`: 별도 `dockerUp` Exec 태스크 제거. cucumberTest 내부에 `doFirst { exec { commandLine 'docker-compose', 'up', '-d', '--wait' } }`로 인라인 실행하도록 변경. `finalizedBy dockerDown`은 유지.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL. doFirst로 Docker 기동 → 6개 시나리오 통과 → finalizedBy로 Docker 정리 확인.
