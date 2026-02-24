@@ -34,11 +34,16 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 	exclude 'gift/restassured/**'
+	exclude 'gift/cucumber/**'
 }
 
 tasks.register('restAssuredTest', Test) {
 	useJUnitPlatform()
 	include 'gift/restassured/**'
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker-compose', 'build'
 }
 
 tasks.register('dockerUp', Exec) {
@@ -55,19 +60,19 @@ tasks.register('cucumberTest', Test) {
 	systemProperty 'spring.profiles.active', 'cucumber'
 	doFirst {
 		exec {
-			commandLine 'docker-compose', 'up', '-d'
+			commandLine 'docker-compose', 'up', '-d', '--build'
 		}
-		// PostgreSQL healthcheck 대기
-		def maxRetries = 20
+		// App healthcheck 대기 (PostgreSQL은 depends_on으로 먼저 준비됨)
+		def maxRetries = 30
 		for (int i = 0; i < maxRetries; i++) {
 			try {
 				exec {
-					commandLine 'docker-compose', 'exec', '-T', 'postgres', 'pg_isready', '-U', 'test'
+					commandLine 'curl', '-s', '-o', '/dev/null', 'http://localhost:28080'
 				}
 				break
 			} catch (Exception e) {
 				if (i == maxRetries - 1) throw e
-				Thread.sleep(2000)
+				Thread.sleep(3000)
 			}
 		}
 	}
