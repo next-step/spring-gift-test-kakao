@@ -36,30 +36,30 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-task dockerComposeUp(type: Exec) {
+tasks.register('dockerComposeUp', Exec) {
 	commandLine 'docker', 'compose', 'up', '-d', '--wait'
 }
 
-task dockerComposeDown(type: Exec) {
+tasks.register('dockerComposeDown', Exec) {
 	commandLine 'docker', 'compose', 'down'
 }
 
-task cucumberTest(type: Test) {
+tasks.register('cucumberTest', Test) {
 	useJUnitPlatform()
 	systemProperty 'spring.profiles.active', 'test'
-	dependsOn dockerComposeUp
-	finalizedBy dockerComposeDown
+	dependsOn 'dockerComposeUp'
+	finalizedBy 'dockerComposeDown'
 }
 
-task dockerBuild(type: Exec) {
-	dependsOn bootJar
+tasks.register('dockerBuild', Exec) {
+	dependsOn 'bootJar'
 	commandLine 'docker', 'build', '-t', 'gift-app:latest', '.'
 }
 
-task dockerUp(type: Exec) {
+tasks.register('dockerUp', Exec) {
 	commandLine 'docker', 'compose', '--profile', 'app', 'up', '-d', '--wait'
 }
 
-task dockerDown(type: Exec) {
+tasks.register('dockerDown', Exec) {
 	commandLine 'docker', 'compose', '--profile', 'app', 'down'
 }
