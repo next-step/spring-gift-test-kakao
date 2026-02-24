@@ -5,8 +5,13 @@
 ## 실행
 
 ```bash
-docker compose up -d       # PostgreSQL 시작
-./gradlew bootRun          # dev 프로파일 자동 → gift_dev DB
+./gradlew bootRun    # DB 컨테이너 자동 시작 → dev 프로파일 → gift_dev DB
+```
+
+## 종료
+
+```bash
+./gradlew dockerDown    # DB 컨테이너 종료
 ```
 
 ## 테스트
@@ -15,7 +20,7 @@ docker compose up -d       # PostgreSQL 시작
 # H2 테스트 (Docker 불필요)
 ./gradlew test
 
-# Cucumber 인수 테스트 (PostgreSQL, Docker 자동 시작/종료)
+# Cucumber 인수 테스트 (이미지 빌드 → 컨테이너 시작 → 테스트 → 컨테이너 종료 자동화)
 ./gradlew cucumberTest
 ```
 
@@ -27,8 +32,18 @@ docker compose up -d       # PostgreSQL 시작
 
 ### DB 환경
 
-| 명령어 | 프로파일 | DB |
-|--------|----------|-----|
-| `./gradlew bootRun` | dev | PostgreSQL `gift_dev` |
-| `./gradlew test` | 없음 | H2 (in-memory) |
-| `./gradlew cucumberTest` | cucumber | PostgreSQL `gift_test` |
+| 명령어 | 프로파일 | DB | 실행 환경 |
+|--------|----------|-----|-----------|
+| `./gradlew bootRun` | dev | PostgreSQL `gift_dev` | Host (embedded) |
+| `./gradlew test` | 없음 | H2 (in-memory) | Host (embedded) |
+| `./gradlew cucumberTest` | cucumber / docker-test | PostgreSQL `gift_test` | Host (테스트) + Docker (App) |
+
+### cucumberTest 아키텍처
+
+```
+테스트 (Host) → HTTP → localhost:28080 (Docker App) → JDBC → db:5432 (Docker PostgreSQL)
+테스트 (Host) → JDBC → localhost:5432 (Docker PostgreSQL)  ← DB cleanup
+```
+
+- App 컨테이너: `docker-test` 프로파일 → `db:5432/gift_test` 연결, `ddl-auto=update`
+- 테스트 프로세스: `cucumber` 프로파일 → `localhost:5432/gift_test` 연결, `ddl-auto=none` (TRUNCATE만 수행)
