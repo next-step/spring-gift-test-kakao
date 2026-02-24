@@ -21,12 +21,14 @@
 
 ```bash
 ./gradlew bootRun          # 애플리케이션 실행
-./gradlew cucumberTest     # Cucumber 인수 테스트 (PostgreSQL 자동 시작/종료)
-./gradlew test             # Cucumber 인수 테스트 (H2 인메모리)
+./gradlew cucumberTest     # Cucumber 인수 테스트 (Docker: App + PostgreSQL)
 ./gradlew restAssuredTest  # RestAssured 인수 테스트 (H2 인메모리)
+./gradlew dockerBuild      # Docker 이미지 빌드
+./gradlew dockerUp         # Docker Compose 전체 기동
+./gradlew dockerDown       # Docker Compose 종료
 ```
 
-`cucumberTest`는 Docker Compose로 PostgreSQL을 자동으로 시작하고, 테스트 완료 후 종료합니다.
+`cucumberTest`는 Docker Compose로 PostgreSQL + App을 자동으로 빌드/시작하고, 테스트 완료 후 종료합니다.
 
 ## 프로젝트 구조
 
@@ -99,14 +101,14 @@ var sender = memberRepository.save(member("보내는사람"));
 - `DatabaseCleaner` — 각 테스트 전 `TRUNCATE`로 DB 초기화 (H2/PostgreSQL 양쪽 호환)
 - `@Transactional` 롤백에 의존하지 않음 (서버와 테스트가 별도 스레드)
 
-### H2 vs PostgreSQL
+### 테스트 환경 비교
 
-| 구분 | H2 (`./gradlew test`) | PostgreSQL (`./gradlew cucumberTest`) |
-|------|----------------------|--------------------------------------|
-| 용도 | 빠른 피드백 | Production Parity 검증 |
-| DB 시작 | 자동 (인메모리) | Docker Compose 자동 시작 |
-| 프로파일 | 기본 | `cucumber` (`application-cucumber.properties`) |
-| TRUNCATE | `SET REFERENTIAL_INTEGRITY FALSE` | `TRUNCATE ... CASCADE` |
+| 구분 | RestAssured (`./gradlew restAssuredTest`) | Cucumber (`./gradlew cucumberTest`) |
+|------|------------------------------------------|-------------------------------------|
+| App 실행 | Embedded (`@SpringBootTest RANDOM_PORT`) | Docker 컨테이너 (`localhost:28080`) |
+| DB | H2 인메모리 | Docker PostgreSQL (`localhost:5432`) |
+| 용도 | 빠른 피드백 | Production Parity E2E 검증 |
+| 프로파일 | 기본 | `cucumber` |
 
 ## 테스트 시나리오
 
@@ -149,7 +151,14 @@ var sender = memberRepository.save(member("보내는사람"));
 7. DatabaseCleaner H2/PostgreSQL 양쪽 호환
 8. `cucumberTest` Gradle task로 자동화 (DB 시작 → 테스트 → DB 종료)
 
+#### 요구사항 3: Application 컨테이너화
+9. Multi-stage Dockerfile 작성 (빌드 + 경량 런타임)
+10. Docker Compose에 App 서비스 추가 (`depends_on: service_healthy`)
+11. `webEnvironment = NONE` — embedded 서버 제거, Docker 앱에 HTTP 요청
+12. `dockerBuild`/`dockerUp`/`dockerDown` Gradle task 추가
+
 ## 참고 문서
 
 - [Cucumber BDD 학습 가이드](step2docs/cucumber.md) — Cucumber 설정, Gherkin 문법, Step Definitions 작성법 정리
 - [PostgreSQL + Docker Compose 학습 가이드](step2docs/postgresql-docker.md) — Docker Compose, Spring 프로파일, Gradle 자동화 정리
+- [Application 컨테이너화 학습 가이드](step2docs/docker-app.md) — Multi-stage build, Docker 네트워크, E2E 아키텍처 정리
