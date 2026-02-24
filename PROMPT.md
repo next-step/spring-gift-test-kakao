@@ -37,3 +37,6 @@ formParam 안쓰고 지금 구조에서 API를 사용하는 방법이 전혀 없
 
 ### 프롬프트 10
 레거시 코드 인수 테스트 전략을 정리하여 TEST_STRATEGY.md(테스트 전략 문서)와 PROMPT_STRATEGY.md(프롬프트 및 AI 활용 방법 문서)를 작성하라. 프로젝트 분석부터 시나리오 도출, 테스트 작성까지의 전 과정을 문서화한다.
+
+### 프롬프트 11
+H2 → PostgreSQL + Docker Compose 전환. spring-boot-docker-compose 활용하여 Docker Compose 자동 시작/종료, PostgreSQL 호환 cleanup SQL로 테스트 격리, Option 테이블명 예약어 회피(@Table(name="options")), @ActiveProfiles("test") 추가.

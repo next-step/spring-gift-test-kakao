@@ -107,7 +107,7 @@ public class GiftStepDefinitions {
     @And("옵션 재고는 {int}개이다")
     public void 옵션_재고는_N개이다(int expectedQuantity) {
         Integer remainingQuantity = jdbcTemplate.queryForObject(
-                "SELECT quantity FROM option WHERE id = ?", Integer.class, fixture.optionId());
+                "SELECT quantity FROM options WHERE id = ?", Integer.class, fixture.optionId());
         assertThat(remainingQuantity).isEqualTo(expectedQuantity);
     }
 }
