@@ -1,63 +1,80 @@
-# 선물하기 서비스 - Cucumber BDD 테스트 가이드
+# 선물하기 서비스 - E2E 테스트 인프라 가이드
 
-기존 RestAssured + JUnit5 기반 인수 테스트를 **Cucumber BDD** 형식으로 전환하고,
-**PostgreSQL + Docker Compose**로 테스트 인프라를 구성하여 실제 운영 환경에 가까운 테스트를 수행한다.
+## 현재 상태 (2단계 완료)
 
----
-
-## 현재 상태 (1단계 완료)
-
-- Cucumber BDD 테스트가 **H2 In-Memory DB** 위에서 동작 중
+- **1단계 완료:** Cucumber BDD 테스트 적용 (한글 Gherkin, Step Definitions, 시나리오 간 데이터 격리)
+- **2단계 완료:** Cucumber 테스트 DB를 H2 → PostgreSQL(Docker Compose)로 전환
 - Feature 파일: `src/test/resources/features/` (category, product, gift)
 - Step Definitions: `src/test/java/gift/cucumber/steps/`
-- CucumberSpringConfiguration: H2 전용 TRUNCATE 문법 사용 중 (`SET REFERENTIAL_INTEGRITY`)
-- 기존 AcceptanceTest: H2 + `@Sql` 어노테이션으로 동작 중
+- CucumberSpringConfiguration: `webEnvironment = RANDOM_PORT`, `@LocalServerPort` 사용, PostgreSQL TRUNCATE + CASCADE
+- 기존 AcceptanceTest: H2 + `@Sql` 어노테이션으로 동작 중 (변경 없음)
+- `docker-compose.yml`: PostgreSQL 16 컨테이너만 정의 (포트 `15432`)
+- `application-cucumber.properties`: PostgreSQL 접속 설정 (`ddl-auto=create-drop`)
+- `build.gradle`: `cucumberTest` 태스크 (doFirst로 DB 컨테이너 시작) + `composeDown` 태스크
 
-### 2단계 목표
-
-Cucumber 테스트의 DB를 **H2 → PostgreSQL(Docker Compose)** 로 전환한다.
-기존 AcceptanceTest는 H2를 그대로 사용한다.
-
----
-
-## 핵심 원칙
-
-1. **한글 Gherkin 시나리오:** `조건/만일/그러면` 한글 키워드로 비즈니스 행동을 묘사한다.
-2. **상태 변화 검증:** 실패 시나리오를 통해 재고 부족 등 상태 변화를 증명한다.
-3. **시나리오 간 데이터 격리:** Cucumber `@Before` 훅에서 DB를 TRUNCATE하여 테스트 간 간섭을 방지한다.
-4. **Step 재사용:** Given/When/Then 스텝을 재사용 가능하게 작성한다.
-5. **DB 분리:** Cucumber 테스트는 PostgreSQL(Docker Compose), 기존 AcceptanceTest는 H2를 사용한다.
-
----
-
-## 기술 스택
-
-| 구성 요소 | 기술 |
-| --- | --- |
-| BDD 프레임워크 | Cucumber 7.x (`cucumber-java`, `cucumber-spring`) |
-| 한글 스텝 | `io.cucumber.java.ko` 패키지 |
-| HTTP 테스트 | RestAssured |
-| Spring 통합 | `@CucumberContextConfiguration` + `@SpringBootTest` |
-| DB (Cucumber) | PostgreSQL 16 (Docker Compose, 포트 `15432`) |
-| DB (AcceptanceTest) | H2 In-Memory |
-| 테스트 러너 | JUnit Platform Suite API |
-
----
-
-## 테스트 실행
+### 현재 테스트 실행 (2단계)
 
 ```bash
-./gradlew cucumberTest    # Cucumber만 (PostgreSQL 자동 시작/종료)
-./gradlew test            # AcceptanceTest만 (H2, Cucumber 제외)
+./gradlew cucumberTest  # PostgreSQL Docker 자동 시작 → Cucumber 테스트 → 자동 종료
+./gradlew test          # AcceptanceTest만 (H2, Cucumber 제외, Docker 불필요)
+```
+
+---
+
+### 3단계 목표
+
+Spring Boot 애플리케이션을 **Docker 컨테이너**로 실행하고,
+테스트 코드는 **호스트**에서 Docker 컨테이너의 애플리케이션에 HTTP 요청을 보내는 구조로 전환한다.
+
+---
+
+## 3단계 아키텍처
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Host (테스트 실행 환경)                                       │
+│                                                             │
+│  Cucumber Test ──HTTP──▶ localhost:28080                     │
+│  Cucumber Test ──JDBC──▶ localhost:15432  (DB cleanup용)     │
+└─────────────────────────────────────────────────────────────┘
+         │                        │
+         ▼                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Docker Network                                             │
+│                                                             │
+│  ┌─────────────┐           ┌─────────────┐                  │
+│  │  app         │──JDBC──▶ │  postgres    │                  │
+│  │  (Spring Boot)│          │  (PostgreSQL)│                  │
+│  │  :8080       │           │  :5432       │                  │
+│  └─────────────┘           └─────────────┘                  │
+│   ↕ 28080:8080              ↕ 15432:5432                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- **테스트 코드 (Host)** → HTTP → `localhost:28080` → Docker App 컨테이너
+- **테스트 코드 (Host)** → JDBC → `localhost:15432` → Docker DB 컨테이너 (TRUNCATE용)
+- **App 컨테이너** → JDBC → `postgres:5432` → Docker DB 컨테이너 (Docker 내부 네트워크)
+
+---
+
+## 테스트 실행 (3단계 완료 후)
+
+```bash
+./gradlew dockerBuild         # Docker 이미지 빌드
+./gradlew dockerUp            # App + DB 컨테이너 시작
+curl http://localhost:28080   # 애플리케이션 응답 확인
+./gradlew cucumberTest        # Docker 환경에서 Cucumber 테스트 실행
+./gradlew dockerDown          # 컨테이너 종료
+
+./gradlew test                # AcceptanceTest만 (H2, Cucumber 제외, Docker 불필요)
 ```
 
 ---
 
 ## 테스트 분리 구조
 
-- **기본 `test` 태스크:** `gift/cucumber/**` 패턴을 제외하여 AcceptanceTest만 실행한다.
-- **`cucumberTest` 태스크:** `gift/cucumber/**` 패턴만 포함하여 Cucumber 테스트만 실행한다.
-- CucumberSpringConfiguration에 `@ActiveProfiles("cucumber")`를 선언하여 PostgreSQL 프로파일을 활성화한다.
+- **기본 `test` 태스크:** `gift/cucumber/**` 패턴을 제외하여 AcceptanceTest만 실행한다. (H2)
+- **`cucumberTest` 태스크:** `gift/cucumber/**` 패턴만 포함하여 Cucumber 테스트만 실행한다. (Docker 환경)
 
 ---
 
@@ -67,13 +84,17 @@ Cucumber 테스트의 DB를 **H2 → PostgreSQL(Docker Compose)** 로 전환한�
 - 기존 `*AcceptanceTest` 파일 수정 금지
 - H2 의존성(`com.h2database:h2`) 제거 금지
 - Entity 클래스 수정 금지
-- Feature 파일, Step Definitions 수정 금지 (PostgreSQL 전환 시)
+- Feature 파일(`src/test/resources/features/`) 수정 금지
+- Step Definitions(`src/test/java/gift/cucumber/steps/`) 수정 금지
+
+> **3단계 수정 대상**: `CucumberSpringConfiguration.java`, `build.gradle`, `docker-compose.yml`, `application-cucumber.properties`는 3단계에서 수정이 필요하다.
 
 ---
 
-## 참고
+## Skills
 
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Spring Boot Profiles](https://docs.spring.io/spring-boot/reference/features/profiles.html)
-- [Gradle Exec Task](https://docs.gradle.org/current/dsl/org.gradle.api.tasks.Exec.html)
-- [Cucumber 공식 문서](https://cucumber.io/docs/cucumber/)
+| Skill | 용도 |
+| --- | --- |
+| `/acceptance-test-writer` | Cucumber BDD Feature 파일 + Step Definitions 작성 (1단계) |
+| `/postgres-docker-setup` | H2 → PostgreSQL + Docker Compose 전환 (2단계) |
+| `/app-containerization` | Application Docker 컨테이너화 (3단계) |
