@@ -61,7 +61,7 @@
 ### test-data.sql 초기 데이터
 
 ```sql
--- 회원 (API 없으므로 직접 삽입)
+-- 회원
 INSERT INTO member (id, name, email) VALUES (1, '보내는사람', 'sender@test.com');
 INSERT INTO member (id, name, email) VALUES (2, '받는사람', 'receiver@test.com');
 
@@ -72,7 +72,7 @@ INSERT INTO category (id, name) VALUES (100, '테스트카테고리');
 INSERT INTO product (id, name, price, image_url, category_id)
 VALUES (100, '테스트상품', 10000, 'http://test.com/image.jpg', 100);
 
--- 옵션 (API 없으므로 직접 삽입)
+-- 옵션
 INSERT INTO option (id, name, quantity, product_id) VALUES (1, '옵션A', 10, 100);  -- 충분한 재고
 INSERT INTO option (id, name, quantity, product_id) VALUES (2, '옵션B', 1, 100);   -- 최소 재고 (실패 테스트용)
 ```

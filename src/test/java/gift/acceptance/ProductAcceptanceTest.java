@@ -62,7 +62,6 @@ class ProductAcceptanceTest {
     }
 
     @Test
-    @Sql("classpath:sql/truncate.sql")
     void 존재하지_않는_카테고리로_상품_생성에_실패한다() {
         given()
             .contentType(ContentType.JSON)
