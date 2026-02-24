@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: gift-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gift
+      POSTGRES_USER: gift
+      POSTGRES_PASSWORD: gift
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gift"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

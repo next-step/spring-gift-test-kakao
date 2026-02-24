@@ -28,3 +28,11 @@
   - 처음에 생성했던 OptionRestController, WishRestController, option.feature, wish.feature, OptionStepDefinitions, WishStepDefinitions 모두 제거
 - **Outcome**: `./gradlew clean test` BUILD SUCCESSFUL. Cucumber 6 시나리오 (gift 4 + product 2) + 기존 RestAssured 6개 = 총 12개 통과.
 - **교훈**: 인수 테스트는 기존 시스템의 외부 동작을 검증하는 것이 목적. 테스트를 위해 프로덕션 코드(API)를 추가하는 것은 부적절.
+
+## 2-3. PostgreSQL 도입 (Docker + 프로파일 분리)
+- **Prompt**: Docker Compose로 PostgreSQL 15 서비스 정의 (healthcheck 포함). application-cucumber.properties로 프로파일 분리하여 Cucumber 테스트가 Docker PostgreSQL을 바라보도록 설정.
+- **Action**:
+  - `docker-compose.yml` 생성: PostgreSQL 15, 포트 5432, DB/유저/패스워드 `gift`, `pg_isready` healthcheck (interval 5s, timeout 3s, retries 5)
+  - `src/main/resources/application-cucumber.properties` 생성: datasource URL(`jdbc:postgresql://localhost:5432/gift`), PostgreSQLDialect, ddl-auto=create-drop
+  - `build.gradle`: `runtimeOnly 'org.postgresql:postgresql'` 의존성 추가
+- **Outcome**: `docker-compose up -d` → 컨테이너 healthy 상태 확인. `./gradlew clean build -x test` BUILD SUCCESSFUL.
