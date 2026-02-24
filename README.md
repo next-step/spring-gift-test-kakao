@@ -1,9 +1,26 @@
 # spring-gift-test
 
-## Cucumber Test 수행방법
+## 사전 준비 (선택 사항)
 
+### Docker
+
+```bash
+# 설치 (Homebrew)
+brew install --cask docker
+
+# 설치 후 Docker Desktop 실행
+open /Applications/Docker.app
+
+# 실행 확인
+docker --version
 ```
-./gradlew test
+
+## 실행 방법
+
+### Cucumber 테스트 실행
+
+```bash
+./gradlew cucumberTest
 ```
 
 ## 테스트 시나리오
