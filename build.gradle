@@ -22,15 +22,13 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
 	testImplementation 'io.cucumber:cucumber-java:7.22.1'
 	testImplementation 'io.cucumber:cucumber-spring:7.22.1'
 	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
 	testImplementation 'org.junit.platform:junit-platform-suite'
-	testImplementation 'org.testcontainers:postgresql'
-	testImplementation 'org.testcontainers:junit-jupiter'
-	testRuntimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
@@ -56,15 +54,35 @@ def detectDockerHost() {
 	return found ? "unix://${found}" : null
 }
 
+def dockerHostEnv() {
+	def dockerHost = detectDockerHost()
+	return dockerHost ? ['DOCKER_HOST': dockerHost] : [:]
+}
+
+tasks.register('dockerBuild', Exec) {
+	group = 'docker'
+	description = 'Docker 이미지 빌드'
+	commandLine 'docker', 'build', '-t', 'spring-gift-test:latest', '.'
+	environment dockerHostEnv()
+}
+
+tasks.register('dockerUp', Exec) {
+	group = 'docker'
+	description = 'Docker Compose 시작'
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+	environment dockerHostEnv()
+}
+
+tasks.register('dockerDown', Exec) {
+	group = 'docker'
+	description = 'Docker Compose 종료'
+	commandLine 'docker', 'compose', 'down'
+	environment dockerHostEnv()
+}
+
 tasks.register('cucumberTest', Test) {
 	useJUnitPlatform()
 	include 'gift/cucumber/CucumberTest.class'
 	group = 'verification'
-	description = 'Cucumber 인수 테스트 (PostgreSQL + Testcontainers)'
-
-	def dockerHost = detectDockerHost()
-	if (dockerHost) {
-		environment 'DOCKER_HOST', dockerHost
-		environment 'TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE', '/var/run/docker.sock'
-	}
+	description = 'Cucumber 인수 테스트 (Docker PostgreSQL)'
 }
