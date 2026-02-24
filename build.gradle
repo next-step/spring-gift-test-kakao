@@ -66,11 +66,7 @@ tasks.register('dockerDown', Exec) {
 tasks.register('cucumberTest', Test) {
 	description = 'Run Cucumber BDD tests'
 	group = 'verification'
-	useJUnitPlatform {
-		includeEngines 'cucumber'
-	}
-	systemProperty 'cucumber.glue', 'gift.cucumber'
-	systemProperty 'cucumber.features', 'classpath:features'
+	useJUnitPlatform()
 
 	if (project.hasProperty('tag')) {
 		systemProperty 'cucumber.filter.tags', project.property('tag')
@@ -83,14 +79,10 @@ tasks.register('cucumberTest', Test) {
 	if (project.hasProperty('mode') && project.property('mode') == 'docker') {
 		dependsOn 'dockerUp'
 		finalizedBy 'dockerDown'
-		doFirst {
-			systemProperty 'spring.profiles.active', 'cucumber,docker'
-		}
+		include '**/RunCucumberContainerTest*'
 	} else if (project.hasProperty('db') && project.property('db') == 'postgres') {
 		dependsOn 'dockerPostgresUp'
 		finalizedBy 'dockerPostgresDown'
-		doFirst {
-			systemProperty 'spring.profiles.active', 'cucumber,postgres'
-		}
+		include '**/RunCucumberPostgresTest*'
 	}
 }
