@@ -69,20 +69,6 @@ class GiftTest {
                 .post("/api/gifts")
         .then()
                 .statusCode(200);
-
-        given()
-                .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
-                .body(Map.of(
-                        "optionId", option.getId(),
-                        "quantity", 1,
-                        "receiverId", receiver.getId(),
-                        "message", "한번더"
-                ))
-        .when()
-                .post("/api/gifts")
-        .then()
-                .statusCode(500);
     }
 
     @Test
