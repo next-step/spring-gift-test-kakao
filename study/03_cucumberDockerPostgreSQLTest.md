@@ -49,3 +49,15 @@ task cucumberTest(type: Test) {
 ## 데이터베이스 초기화 SQL 변경
 
 - H2와 달리 PostgreSQL에서는 FK 제약 조건이 상대적으로 엄격해서  TRUNCATE ... CASCADE 문법을 사용해야 한다.
+
+## 테스트 분리 - excludeEngines 적용
+
+- test 태스크에서 cucumber 테스트 제외
+
+```Groovy
+tasks.named('test') {
+  useJUnitPlatform {
+    excludeEngines 'cucumber'
+  }
+}
+```

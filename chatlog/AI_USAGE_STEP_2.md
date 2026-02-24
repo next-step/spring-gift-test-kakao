@@ -44,3 +44,9 @@
   - `CucumberSpringConfiguration.java`: `@ActiveProfiles("cucumber")` 추가
   - `CommonStepDefinitions.java`: H2 전용 `SET REFERENTIAL_INTEGRITY FALSE/TRUE` → PostgreSQL 호환 `TRUNCATE ... CASCADE`로 변경
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL. Docker 자동 기동 → 6개 Cucumber 시나리오 통과 → Docker 자동 정리 확인.
+
+## 2-3-3. test/cucumberTest 태스크 엔진 분리
+- **Prompt**: 기존 RestAssured 테스트가 `./gradlew test`로 여전히 정상 동작하는지 확인.
+- **Action**:
+  - `build.gradle`: `test` 태스크에 `excludeEngines 'cucumber'` 추가. Cucumber 테스트가 Docker 없이 실행되어 PostgreSQL 연결 실패하는 문제 해결.
+- **Outcome**: `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개, H2). `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 6개, PostgreSQL). 두 태스크 완전 분리 확인.
