@@ -1,4 +1,4 @@
-package gift.cucumber.gift;
+package gift.cucumber.steps.gift;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;

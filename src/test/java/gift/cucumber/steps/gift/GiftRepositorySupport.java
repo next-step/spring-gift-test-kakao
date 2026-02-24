@@ -1,4 +1,4 @@
-package gift.cucumber.gift;
+package gift.cucumber.steps.gift;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;

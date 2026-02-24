@@ -1,4 +1,4 @@
-package gift.cucumber.common;
+package gift.cucumber.steps.common;
 
 import io.cucumber.spring.ScenarioScope;
 import io.restassured.response.Response;

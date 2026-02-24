@@ -1,6 +1,6 @@
-package gift.cucumber.category;
+package gift.cucumber.steps.category;
 
-import gift.cucumber.common.ScenarioContext;
+import gift.cucumber.steps.common.ScenarioContext;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;

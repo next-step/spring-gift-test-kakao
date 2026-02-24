@@ -1,4 +1,4 @@
-package gift.cucumber.hooks;
+package gift.cucumber.steps.hooks;
 
 import gift.model.CategoryRepository;
 import gift.model.MemberRepository;
@@ -7,7 +7,6 @@ import gift.model.ProductRepository;
 import io.cucumber.java.Before;
 import io.restassured.RestAssured;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 public class DataCleanupHook {
 
@@ -19,7 +18,7 @@ public class DataCleanupHook {
     private final MemberRepository memberRepository;
 
     public DataCleanupHook(
-        @LocalServerPort final int port,
+        @Value("${local.server.port:0}") final int port,
         @Value("${test.target.base-url:}") final String targetBaseUrl,
         final OptionRepository optionRepository,
         final ProductRepository productRepository,

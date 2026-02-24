@@ -1,4 +1,4 @@
-package gift.cucumber.product;
+package gift.cucumber.steps.product;
 
 import io.restassured.response.Response;
 import org.springframework.stereotype.Component;

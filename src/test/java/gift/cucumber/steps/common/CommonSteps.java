@@ -1,4 +1,4 @@
-package gift.cucumber.common;
+package gift.cucumber.steps.common;
 
 import io.cucumber.java.en.Then;
 
