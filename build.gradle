@@ -60,7 +60,7 @@ tasks.register('cucumberTest', Test) {
 	systemProperty 'spring.profiles.active', 'cucumber'
 	doFirst {
 		exec {
-			commandLine 'docker-compose', 'up', '-d', '--wait'
+			commandLine 'docker-compose', 'up', '-d', '--build', '--wait'
 		}
 	}
 	finalizedBy dockerDown

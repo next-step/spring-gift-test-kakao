@@ -56,3 +56,13 @@
 - **Action**:
   - `build.gradle`: 별도 `dockerUp` Exec 태스크 제거. cucumberTest 내부에 `doFirst { exec { commandLine 'docker-compose', 'up', '-d', '--wait' } }`로 인라인 실행하도록 변경. `finalizedBy dockerDown`은 유지.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL. doFirst로 Docker 기동 → 6개 시나리오 통과 → finalizedBy로 Docker 정리 확인.
+
+## 2-4. 애플리케이션 컨테이너화 (Step 2-3)
+- **Prompt**: Spring Boot 앱 실행할 Dockerfile 작성 (Multi-stage build). docker-compose.yml에 app 서비스 추가해서 DB와 같이 돌릴 수 있도록 수정. app 컨테이너는 DB 컨테이너에 의존하는 형태.
+- **Action**:
+  - `Dockerfile` 생성: Multi-stage build (`FROM eclipse-temurin:21-jdk AS builder` → `COPY --from=builder` → `FROM eclipse-temurin:21-jre-alpine` 경량 런타임). Windows CRLF 대응 `sed -i 's/\r$//' gradlew` 포함.
+  - `docker-compose.yml`: app 서비스 추가. `depends_on: postgres: condition: service_healthy`로 시작 순서 보장. `SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gift` (Docker network에서 service name이 hostname). Port mapping `28080:8080`. app healthcheck(`wget --spider`로 `GET /api/categories` 활용).
+  - `CucumberSpringConfiguration.java`: `webEnvironment = RANDOM_PORT` → `webEnvironment = NONE`으로 변경 (embedded 서버 제거, Docker 컨테이너의 앱 사용).
+  - `CommonStepDefinitions.java`: `@LocalServerPort` 제거, `RestAssured.baseURI = "http://localhost"`, `RestAssured.port = 28080`으로 Docker 컨테이너 직접 호출.
+  - `build.gradle`: doFirst의 docker-compose 명령에 `--build` 플래그 추가.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL. Docker 이미지 빌드 → postgres + app 컨테이너 기동 → app Healthy 확인 → Cucumber 6개 시나리오 통과 → 전체 컨테이너 정리. `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개, H2) — 기존 테스트 영향 없음 확인.
