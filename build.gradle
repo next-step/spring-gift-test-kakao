@@ -28,8 +28,43 @@ dependencies {
 	testImplementation 'io.cucumber:cucumber-spring:7.22.1'
 	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
 	testImplementation 'org.junit.platform:junit-platform-suite'
+	testImplementation 'org.testcontainers:postgresql'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testRuntimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/cucumber/**'
+}
+
+// Docker 소켓 자동 탐색: DOCKER_HOST > 런타임별 소켓 경로 > /var/run/docker.sock
+def detectDockerHost() {
+	def dockerHost = System.getenv('DOCKER_HOST')
+	if (dockerHost) return dockerHost
+
+	def home = System.getProperty('user.home')
+	def candidates = [
+		"${home}/.docker/run/docker.sock",       // Docker Desktop (macOS)
+		"${home}/.docker/desktop/docker.sock",    // Docker Desktop (Linux)
+		"${home}/.colima/default/docker.sock",    // Colima
+		"${home}/.orbstack/run/docker.sock",      // OrbStack
+		"${home}/.rd/docker.sock",                // Rancher Desktop
+		'/var/run/docker.sock',                   // Linux native / symlink
+	]
+	def found = candidates.find { new File(it).exists() }
+	return found ? "unix://${found}" : null
+}
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform()
+	include 'gift/cucumber/CucumberTest.class'
+	group = 'verification'
+	description = 'Cucumber 인수 테스트 (PostgreSQL + Testcontainers)'
+
+	def dockerHost = detectDockerHost()
+	if (dockerHost) {
+		environment 'DOCKER_HOST', dockerHost
+		environment 'TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE', '/var/run/docker.sock'
+	}
 }
