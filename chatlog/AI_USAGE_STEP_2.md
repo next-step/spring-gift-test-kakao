@@ -73,3 +73,10 @@
   - `docker-compose.yml`: postgres 포트 매핑 `5432:5432` → `25432:5432`로 변경. app의 `SPRING_DATASOURCE_URL`은 Docker 내부 네트워크(`postgres:5432`)이므로 변경 없음.
   - `application-cucumber.properties`: datasource URL `localhost:5432` → `localhost:25432`로 변경.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 6개, PostgreSQL `25432:5432`). `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개, H2). 호스트 포트(`25432`, `28080`)와 컨테이너 내부 포트(`5432`, `8080`)가 명확히 구분됨.
+
+## 2-4-3. study 문서 오류 수정
+- **Prompt**: study/03_cucumberDockerPostgreSQLTest.md의 build.gradle 부분 서술이 실제 코드와 안 맞는 부분 수정.
+- **Action**:
+  - build.gradle 섹션: `useJUnitPlatform()`에 `includeEngines 'cucumber'` 누락 수정, `--build` 플래그 추가, `testClassesDirs`/`classpath` 설정 추가, `shouldRunAfter test` 추가
+  - docker-compose 섹션: `SPRING_DATASOUCE_URL` → `SPRING_DATASOURCE_URL` 오타 수정
+- **Outcome**: study 문서가 실제 구현 코드와 일치하도록 갱신 완료.
