@@ -40,3 +40,6 @@ formParam 안쓰고 지금 구조에서 API를 사용하는 방법이 전혀 없
 
 ### 프롬프트 11
 H2 → PostgreSQL + Docker Compose 전환. spring-boot-docker-compose 활용하여 Docker Compose 자동 시작/종료, PostgreSQL 호환 cleanup SQL로 테스트 격리, Option 테이블명 예약어 회피(@Table(name="options")), @ActiveProfiles("test") 추가.
+
+### 프롬프트 12
+Spring Boot 앱까지 Docker 컨테이너로 실행하여 E2E 테스트 수행.
