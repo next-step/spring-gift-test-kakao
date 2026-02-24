@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.8'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.8'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
@@ -14,54 +14,73 @@ java {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	runtimeOnly 'com.h2database:h2'
-	runtimeOnly 'org.postgresql:postgresql'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'io.rest-assured:rest-assured'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.rest-assured:rest-assured'
 
-	testImplementation platform('io.cucumber:cucumber-bom:7.20.1')
-	testImplementation 'io.cucumber:cucumber-java'
-	testImplementation 'io.cucumber:cucumber-spring'
-	testImplementation 'io.cucumber:cucumber-junit-platform-engine'
-	testImplementation 'org.junit.platform:junit-platform-suite'
+    testImplementation platform('io.cucumber:cucumber-bom:7.20.1')
+    testImplementation 'io.cucumber:cucumber-java'
+    testImplementation 'io.cucumber:cucumber-spring'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine'
+    testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.withType(Test) {
-	testLogging {
-		events 'passed', 'skipped', 'failed'
-	}
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
-	exclude '**/CucumberTest*'
+    useJUnitPlatform()
+    exclude '**/CucumberTest*'
+}
+
+task dockerDbUp(type: Exec) {
+    description = 'Start database container'
+    group = 'docker'
+    commandLine '/usr/local/bin/docker', 'compose', 'up', '-d', '--wait', 'db'
 }
 
 bootRun {
-	systemProperty 'spring.profiles.active', 'dev'
+    systemProperty 'spring.profiles.active', 'dev'
+    dependsOn dockerDbUp
 }
 
-task dockerComposeUp(type: Exec) {
-	commandLine '/usr/local/bin/docker', 'compose', 'up', '-d', '--wait'
+task dockerBuild(type: Exec) {
+    description = 'Build Docker image for the application'
+    group = 'docker'
+    commandLine '/usr/local/bin/docker', 'compose', 'build'
 }
 
-task dockerComposeDown(type: Exec) {
-	commandLine '/usr/local/bin/docker', 'compose', 'down'
+task dockerUp(type: Exec) {
+    description = 'Start all Docker containers'
+    group = 'docker'
+    commandLine '/usr/local/bin/docker', 'compose', 'up', '-d', '--wait'
 }
+
+task dockerDown(type: Exec) {
+    description = 'Stop all Docker containers'
+    group = 'docker'
+    commandLine '/usr/local/bin/docker', 'compose', 'down'
+}
+
+dockerUp.mustRunAfter dockerBuild
 
 task cucumberTest(type: Test) {
-	description = 'Run Cucumber tests against PostgreSQL'
-	group = 'verification'
-	useJUnitPlatform()
-	include '**/CucumberTest*'
-	systemProperty 'spring.profiles.active', 'cucumber'
-	dependsOn dockerComposeUp
-	finalizedBy dockerComposeDown
+    description = 'Run Cucumber tests against Docker containers'
+    group = 'verification'
+    useJUnitPlatform()
+    include '**/CucumberTest*'
+    systemProperty 'spring.profiles.active', 'cucumber'
+    dependsOn dockerBuild, dockerUp
+    finalizedBy dockerDown
 }
