@@ -33,3 +33,21 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.register('cucumberTest', Test) {
+	description = 'Run Cucumber BDD tests'
+	group = 'verification'
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'cucumber.glue', 'gift.cucumber'
+	systemProperty 'cucumber.features', 'classpath:features'
+
+	if (project.hasProperty('tag')) {
+		systemProperty 'cucumber.filter.tags', project.property('tag')
+	}
+
+	if (project.hasProperty('feature')) {
+		systemProperty 'cucumber.features', "classpath:features/${project.property('feature')}.feature"
+	}
+}
