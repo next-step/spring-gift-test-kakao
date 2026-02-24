@@ -9,7 +9,7 @@ Spring Boot 기반의 선물하기 서비스 API 서버입니다. 카테고리�
 | Framework | Spring Boot 3.5.8 |
 | Build Tool | Gradle 8.4 |
 | Java | 25 |
-| Database | H2 (인메모리) |
+| Database | H2 (인메모리), PostgreSQL 17 (Docker, 테스트용) |
 | 아키텍처 | 계층형 (UI → Application → Model → Infrastructure) |
 
 ### 의존성
@@ -20,7 +20,11 @@ Spring Boot 기반의 선물하기 서비스 API 서버입니다. 카테고리�
 | `spring-boot-starter-thymeleaf` | 템플릿 엔진 (현재 미사용) |
 | `spring-boot-starter-web` | REST API 서버 |
 | `com.h2database:h2` | 인메모리 데이터베이스 |
-| `spring-boot-starter-test` | 테스트 (현재 미작성) |
+| `org.postgresql:postgresql` | PostgreSQL JDBC 드라이버 (Cucumber 테스트용) |
+| `spring-boot-starter-test` | 테스트 프레임워크 |
+| `io.rest-assured:rest-assured` | REST API 인수 테스트 |
+| `io.cucumber:cucumber-java` | Cucumber BDD 프레임워크 |
+| `io.cucumber:cucumber-spring` | Cucumber + Spring 통합 |
 
 ---
 
@@ -405,6 +409,7 @@ kakao.social.url=https://kapi.kakao.com/v1/api/talk       # 카카오 소셜 API
 
 - Java 25 이상
 - Gradle 8.4 이상 (Gradle Wrapper 포함)
+- Docker (Cucumber 테스트 실행 시 필요)
 
 ### 빌드 & 실행
 
@@ -424,11 +429,23 @@ java -jar build/libs/spring-gift-test-0.0.1-SNAPSHOT.jar
 ### 테스트 실행
 
 ```bash
-# 전체 테스트 실행 (Cucumber BDD 시나리오 포함)
+# 인수 테스트 (H2, Docker 불필요)
 ./gradlew test
+
+# Cucumber BDD 테스트 (PostgreSQL + Docker)
+./gradlew cucumberTest
 ```
 
-테스트 결과 리포트: `build/reports/tests/test/index.html`
+| 명령어 | DB | 대상 | Docker 필요 |
+|--------|-----|------|------------|
+| `./gradlew test` | H2 | AcceptanceTest | 아니오 |
+| `./gradlew cucumberTest` | PostgreSQL | Cucumber 시나리오 | 예 |
+
+`cucumberTest`는 자동으로 Docker Compose를 통해 PostgreSQL 컨테이너를 시작하고, healthcheck 통과 후 테스트를 실행합니다. 테스트 완료 후 컨테이너는 유지되며, 수동 정리는 `./gradlew dockerComposeDown`으로 수행합니다.
+
+테스트 결과 리포트:
+- `build/reports/tests/test/index.html`
+- `build/reports/tests/cucumberTest/index.html`
 
 #### Cucumber BDD 시나리오
 
