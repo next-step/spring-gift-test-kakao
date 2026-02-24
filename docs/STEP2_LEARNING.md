@@ -127,3 +127,100 @@ src/test/
 
 도메인별로 나누되, 여러 도메인에서 공유되는 step(데이터 준비, 응답 검증)은 CommonStepDefs에 둔다.
 데이터 준비 step은 카테고리 insert가 상품 feature에서도 쓰이는 등 도메인을 넘나들기 때문에 Common이 적절하다.
+
+---
+
+# Step 2: PostgreSQL + Docker Compose 학습 기록
+
+## Production Parity
+
+테스트 DB와 운영 DB가 다르면(H2 vs PostgreSQL) DB별 문법 차이로 테스트에서 잡히지 않는 버그가 생길 수 있다.
+Cucumber 테스트를 PostgreSQL로 전환하여 운영 환경과 동일한 DB로 검증한다.
+
+## Docker Compose
+
+여러 컨테이너를 `docker-compose.yml` 파일 하나로 정의하고 관리하는 도구.
+
+- `docker-compose.yml`은 기본 파일명. 다른 이름이면 `-f` 옵션 필요.
+- `services`, `volumes`, `healthcheck` 등은 Docker Compose 스펙에 정의된 예약 키.
+- 테스트용 로컬 컨테이너에서는 DB 비밀번호를 직접 노출해도 괜찮지만, 운영 환경에서는 `.env` 파일로 분리한다.
+
+### 주요 명령어 옵션
+
+- `-d` (detached): 컨테이너를 백그라운드에서 실행. 없으면 터미널이 컨테이너 로그에 점유됨.
+- `--wait`: healthcheck가 healthy가 될 때까지 대기. 최초 1회 healthy 시점에 명령 완료.
+- `-v` (`down -v`): 컨테이너와 함께 볼륨도 삭제하여 깨끗하게 정리.
+
+### Healthcheck
+
+컨테이너 시작 직후부터 `interval` 간격으로 반복 실행되는 상태 확인.
+`pg_isready`는 PostgreSQL이 제공하는 유틸리티로, 연결을 받을 준비가 됐는지 확인한다(exit code 0 = 준비 완료).
+`--wait`는 이 healthcheck가 최초 성공할 때까지 기다린 후 완료된다.
+healthcheck가 없으면 `--wait`는 컨테이너 시작만으로 완료되어, DB가 아직 준비 안 된 상태에서 테스트가 시작될 수 있다.
+
+## Gradle Exec task
+
+외부 명령어(프로세스)를 실행하는 Gradle 내장 task 타입.
+`commandLine`에 지정된 명령어 실행 자체가 본 동작이므로 `doFirst`가 필요 없다.
+
+### task 연결
+
+- `dependsOn`: 이 task 실행 전에 다른 task를 먼저 실행 (task 간 실행 순서)
+- `finalizedBy`: 이 task의 성공/실패와 관계없이 항상 지정된 task를 실행 (정리 작업에 사용)
+- `doFirst`: 하나의 task 내부에서 본 동작 직전에 실행할 코드 블록 추가 (task 내부 훅)
+
+```
+dockerUp (dependsOn)  →  cucumberTest  →  dockerDown (finalizedBy, 실패해도 실행)
+```
+
+컨테이너 시작/종료는 task 단위로 1번씩만 실행된다. 매 시나리오마다 실행되지 않는다.
+시나리오별 데이터 정리는 `@Before`의 `TRUNCATE`가 담당한다.
+
+## JUnit Platform 엔진 필터링
+
+Cucumber 엔진은 Suite 엔진과 독립적으로 테스트를 발견한다.
+`excludeTags`로는 Cucumber 엔진의 직접 발견을 막을 수 없어서 `excludeEngines`로 엔진 자체를 제외해야 한다.
+
+```groovy
+// 기존 테스트: Cucumber 엔진 제외 + CucumberSuite 클래스 제외
+tasks.named('test') {
+    useJUnitPlatform { excludeEngines 'cucumber' }
+    exclude '**/CucumberSuite*'
+}
+
+// Cucumber 테스트: Cucumber 엔진만 포함
+tasks.register('cucumberTest', Test) {
+    useJUnitPlatform { includeEngines 'cucumber' }
+}
+```
+
+Cucumber 엔진이 직접 실행될 때 glue 경로는 `systemProperty`로 설정할 수 있다.
+`cucumber.glue`를 지정하지 않으면 루트 패키지부터 전체 스캔하므로 동작은 하지만 명시적으로 지정하는 것이 낫다.
+
+## Spring Profile
+
+활성화된 프로필 이름에 따라 `application-{프로필명}.properties`를 추가 로드하는 메커니즘.
+
+- 클래스 로딩 시점이 아니라 **Spring ApplicationContext 초기화 시점**에 처리된다.
+- 기본 `application.properties`를 먼저 로드하고, 프로필 설정이 같은 키를 덮어쓴다.
+- 프로필이 다르면 Spring이 별도의 ApplicationContext를 생성한다.
+- 여러 프로필을 동시에 활성화할 수 있고, 뒤에 지정된 프로필이 우선순위가 높다.
+- 테스트 전용이 아니라 애플리케이션 전체에서 동작한다 (dev/prod 분리 등).
+
+```java
+// 단일 프로필
+@ActiveProfiles("cucumber")
+
+// 복수 프로필 (뒤가 우선순위 높음)
+@ActiveProfiles({"test", "cucumber"})
+```
+
+## 테스트 분리 구조
+
+| 명령 | 실행 대상 | DB | 실행 환경 |
+|------|----------|-----|-----------|
+| `./gradlew test` | RestAssured 인수 테스트 3개 | H2 | 호스트 |
+| `./gradlew cucumberTest` | Cucumber 시나리오 8개 | PostgreSQL (Docker) | 호스트에서 실행, DB만 컨테이너 |
+
+테스트 코드는 호스트(로컬 JVM)에서 실행되고, PostgreSQL만 Docker 컨테이너에서 실행된다.
+`ports: "5432:5432"`가 호스트와 컨테이너 포트를 연결한다.
