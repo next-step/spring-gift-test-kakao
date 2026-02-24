@@ -17,10 +17,23 @@ docker --version
 
 ## 실행 방법
 
-### Cucumber 테스트 실행
+### Docker 환경에서 테스트 실행
 
 ```bash
+# 1. Docker 이미지 빌드
+./gradlew dockerBuild
+
+# 2. 컨테이너 시작 
+./gradlew dockerUp
+
+# (선택 사항) 애플리케이션 응답 확인
+curl http://localhost:28080
+
+# 3. Cucumber 테스트 실행
 ./gradlew cucumberTest
+
+# 4. 컨테이너 종료
+./gradlew dockerDown
 ```
 
 ## 테스트 시나리오

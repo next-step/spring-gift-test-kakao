@@ -43,3 +43,18 @@ tasks.register('cucumberTest', Test) {
         includeTestsMatching 'gift.CucumberTest'
     }
 }
+
+tasks.register('dockerBuild', Exec) {
+    description = 'Build Docker image'
+    commandLine 'docker', 'compose', 'build', 'app'
+}
+
+tasks.register('dockerUp', Exec) {
+    description = 'Start Docker containers'
+    commandLine 'docker', 'compose', 'up', '-d'
+}
+
+tasks.register('dockerDown', Exec) {
+    description = 'Stop Docker containers'
+    commandLine 'docker', 'compose', 'down'
+}

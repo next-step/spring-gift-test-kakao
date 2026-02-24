@@ -5,13 +5,13 @@ import static org.assertj.core.api.Assertions.*;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
@@ -27,11 +27,9 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 public class GiftStepDefinitions {
-	@LocalServerPort
-	private int port;
+	private static final String BASE_URL = "http://localhost:28080/api";
 
-	@Autowired
-	private TestRestTemplate restTemplate;
+	private final RestTemplate restTemplate = new RestTemplate();
 
 	@Autowired
 	private CategoryRepository categoryRepository;
@@ -89,12 +87,12 @@ public class GiftStepDefinitions {
 
 	@Given("선물의 옵션ID를 존재하지 않는 {int}로 선택한다.")
 	public void 존재하지_않는_옵션ID를_선택한다(int optionId) {
-		invalidOptionId = (long) optionId;
+		invalidOptionId = (long)optionId;
 	}
 
 	@Given("존재하지 않는 발신자 Member ID {int}가 있다.")
 	public void 존재하지_않는_발신자_Member_ID가_있다(int memberId) {
-		invalidSenderId = (long) memberId;
+		invalidSenderId = (long)memberId;
 	}
 
 	// === When Steps ===
@@ -139,11 +137,15 @@ public class GiftStepDefinitions {
 			"message", "선물입니다"
 		);
 
-		return restTemplate.exchange(
-			"http://localhost:" + port + "/api/gifts",
-			HttpMethod.POST,
-			new HttpEntity<>(request, headers),
-			Void.class
-		);
+		try {
+			return restTemplate.exchange(
+				BASE_URL + "/gifts",
+				HttpMethod.POST,
+				new HttpEntity<>(request, headers),
+				Void.class
+			);
+		} catch (HttpStatusCodeException e) {
+			return ResponseEntity.status(e.getStatusCode()).build();
+		}
 	}
 }
