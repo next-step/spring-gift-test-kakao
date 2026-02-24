@@ -14,18 +14,19 @@
 
 Java 21 필수.
 
-## 현재 과제: 1단계 — 레거시 코드 인수 테스트
+## 현재 과제: 2단계 — Cucumber/Gherkin 기반 인수 테스트
 
-이 프로젝트의 1단계 과제는 레거시 코드에 대한 **인수 테스트(Acceptance Test)** 작성이다.
+1단계에서 작성한 인수 테스트를 **Cucumber/Gherkin** 기반으로 전환한다. 기획자/QA와 소통 가능한 **비즈니스 언어 시나리오**를 작성하는 것이 목표이다.
 
 ### 제출물
-1. **TEST_STRATEGY.md** — 검증할 행위 목록, 테스트 데이터 전략, 검증 전략, 주요 의사결정
-2. **테스트 코드** — 최소 5개 이상의 **행위(behavior)** 를 검증 (테스트 메서드 5개가 아닌 행위 5개)
+1. **Gherkin 시나리오 (.feature 파일)** — 비즈니스 언어로 작성된 인수 테스트 시나리오
+2. **Step Definition 코드** — Gherkin 시나리오를 실행하는 Java 코드
 3. **AI 활용 문서** — 프롬프트 및 접근 방법 정리
 
 ### 제약 조건
-- BDD 도구(Cucumber, Karate 등) 사용 금지
+- **Cucumber + Gherkin** 사용 필수
 - 사용자 관점에서 행위를 검증하는 테스트 (API 레벨의 인수 테스트)
+- Gherkin 시나리오는 **기획자/QA가 읽을 수 있는 비즈니스 언어**로 작성 (구현 세부사항 노출 금지)
 
 ### 테스트 설계 원칙: "어떻게 되는가"를 검증한다
 
@@ -38,9 +39,81 @@ Java 21 필수.
 ### 테스트 작성 가이드
 
 #### 기술 스택
-- `@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)` + **RestAssured**
+- `@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)` + **RestAssured** + **Cucumber**
 - H2 인메모리 DB 사용 (별도 설정 불필요)
-- RestAssured 의존성 필요: `testImplementation 'io.rest-assured:rest-assured'`
+- Gradle 의존성:
+
+```groovy
+testImplementation 'io.rest-assured:rest-assured'
+testImplementation 'io.cucumber:cucumber-java:7.22.1'
+testImplementation 'io.cucumber:cucumber-spring:7.22.1'
+testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
+testImplementation 'org.junit.platform:junit-platform-suite'
+```
+
+#### Cucumber 디렉토리 구조
+
+```
+src/test/
+├── java/gift/
+│   ├── cucumber/
+│   │   ├── CucumberTest.java              # @Suite 엔트리포인트
+│   │   ├── CucumberSpringConfig.java      # @CucumberContextConfiguration + @SpringBootTest
+│   │   └── steps/
+│   │       ├── CategorySteps.java         # 카테고리 관련 step definitions
+│   │       ├── ProductSteps.java          # 상품 관련 step definitions
+│   │       └── GiftSteps.java             # 선물하기 관련 step definitions
+│   └── AcceptanceTestSupport.java         # 공통 API 호출 헬퍼 (1단계에서 작성)
+└── resources/
+    ├── features/
+    │   ├── category.feature
+    │   ├── product.feature
+    │   └── gift.feature
+    ├── cleanup.sql
+    └── test-data.sql
+```
+
+#### Cucumber + Spring 통합
+
+```java
+// CucumberSpringConfig.java
+@CucumberContextConfiguration
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class CucumberSpringConfig {
+    // Spring 컨텍스트 설정
+}
+
+// CucumberTest.java — Cucumber 테스트 실행 엔트리포인트
+@Suite
+@IncludeEngines("cucumber")
+@SelectPackages("gift.cucumber")
+@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "gift.cucumber")
+@ConfigurationParameter(key = FEATURES_PROPERTY_NAME, value = "src/test/resources/features")
+public class CucumberTest {}
+```
+
+#### Gherkin 작성 원칙
+- **비즈니스 언어로 작성**: 기획자/QA가 읽고 이해할 수 있어야 한다
+- **구현 세부사항 노출 금지**: HTTP 메서드, 상태 코드, JSON 필드명 등을 시나리오에 직접 쓰지 않는다
+- **한국어 Gherkin 키워드 사용**: `기능`, `시나리오`, `Given`/`When`/`Then` (또는 `주어진`/`만일`/`그러면`)
+
+```gherkin
+# 좋음 (비즈니스 언어)
+시나리오: 재고가 충분하면 선물하기에 성공한다
+  주어진 회원 "철수"와 "영희"가 등록되어 있다
+  그리고 "생일 케이크" 상품에 "기본 옵션" 재고가 5개 있다
+  만일 "철수"가 "영희"에게 "생일 케이크"의 "기본 옵션" 1개를 선물한다
+  그러면 선물하기가 성공한다
+
+# 나쁨 (구현 노출)
+시나리오: 선물하기 API 호출
+  Given POST /api/gifts 요청을 보낸다
+  Then 응답 코드가 200이다
+```
+
+#### 컨트롤러 요청 바인딩
+- 모든 POST 엔드포인트(`/api/products`, `/api/categories`, `/api/gifts`)에 `@RequestBody`가 있음 → **JSON body**로 전송
 
 ```java
 // RestAssured 사용 예시
@@ -53,10 +126,6 @@ ExtractableResponse<Response> response = RestAssured.given().log().all()
         .then().log().all().extract();
 ```
 
-#### 컨트롤러별 요청 바인딩 주의
-- `POST /api/products`, `POST /api/categories` → **`@RequestBody` 없음 → form params**로 전송
-- `POST /api/gifts` → **`@RequestBody` 있음 → JSON body**로 전송
-
 #### 테스트 데이터 전략: @Sql 스크립트
 - repository를 직접 사용하면 Java 엔티티/생성자에 의존 → 리팩토링 시 깨짐
 - **@Sql 스크립트**로 데이터를 준비하고 정리한다 (구현 비의존)
@@ -67,9 +136,10 @@ ExtractableResponse<Response> response = RestAssured.given().log().all()
 @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 ```
 
-- cleanup.sql → 모든 테이블 TRUNCATE (FK 순서 고려)
+- cleanup.sql → `SET REFERENTIAL_INTEGRITY FALSE` 후 모든 테이블 TRUNCATE → PK 시퀀스도 초기화
 - test-data.sql → 테스트에 필요한 기본 데이터 INSERT
 - H2의 컬럼명은 JPA 네이밍 전략을 따름 (예: `imageUrl` → `image_url`)
+- Cucumber에서는 `@Sql` 대신 Step Definition 내에서 JDBC 또는 API 호출로 데이터를 준비/정리할 수 있다
 
 #### 테스트 격리
 - **`RANDOM_PORT`에서 `@Transactional` 롤백은 동작하지 않는다.** 실제 HTTP 요청은 별도 스레드에서 처리되므로 테스트 트랜잭션과 분리됨.
@@ -87,9 +157,14 @@ ExtractableResponse<Response> response = RestAssured.given().log().all()
 4. 상품 목록 조회 (`GET /api/products`) — 생성한 상품이 목록에 존재
 5. 선물하기 성공 (`POST /api/gifts`) — 재고 충분 시 200 응답
 6. 선물하기 후 재고 감소 — 재고 전부 소진 후 재시도 시 실패로 검증 (행위 기반)
-7. 재고 부족 시 선물 실패 — 재고 초과 수량 요청 시 500 응답
+7. 재고 부족 시 선물 실패 — 재고 초과 수량 요청 시 400 응답 (`GlobalExceptionHandler`가 `IllegalStateException`/`NoSuchElementException`을 `BAD_REQUEST`로 처리)
 
 > **WishService**: 컨트롤러가 없으므로 API 레벨 인수 테스트 범위에서 제외. 필요 시 서비스 레벨 테스트로 별도 분리 가능하나, "사용자 관점 행위 검증" 취지와 맞지 않음.
+
+### 기존 테스트 헬퍼 (1단계에서 작성)
+- **`AcceptanceTestSupport`** — 공통 API 호출 헬퍼 클래스 (`카테고리를_생성한다()` 등)
+- 각 테스트 클래스 내 private 헬퍼 메서드 — `상품을_조회한다()` 등
+- Cucumber step definition에서도 이 헬퍼들을 재사용할 수 있다
 
 ## 아키텍처
 
@@ -99,7 +174,7 @@ ExtractableResponse<Response> response = RestAssured.given().log().all()
 
 - **model/** — JPA 엔티티(`Product`, `Category`, `Option`, `Member`, `Wish`), 리포지토리, 도메인 인터페이스(`GiftDelivery`). `Gift`는 선물 트랜잭션에서만 사용되는 비영속 값 객체.
 - **application/** — 서비스 및 요청 DTO. 모든 서비스는 `@Transactional` + 생성자 주입.
-- **ui/** — REST 컨트롤러 (`/api/products`, `/api/categories`, `/api/gifts`).
+- **ui/** — REST 컨트롤러 (`/api/products`, `/api/categories`, `/api/gifts`), `GlobalExceptionHandler` (`IllegalStateException`/`NoSuchElementException` → 400 BAD_REQUEST).
 - **infrastructure/** — 인터페이스 구현체 및 외부 설정 프로퍼티. `FakeGiftDelivery`는 현재 `GiftDelivery` 구현체 (콘솔 출력 스텁).
 
 ### 핵심 도메인 관계
