@@ -6,7 +6,7 @@ import org.springframework.test.context.ActiveProfiles;
 import io.cucumber.spring.CucumberContextConfiguration;
 
 @CucumberContextConfiguration
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("cucumber")
 public class CucumberSpringConfiguration {
 }

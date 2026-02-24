@@ -39,6 +39,11 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/acceptance/**'
+
+	testLogging {
+		events 'PASSED', 'FAILED', 'SKIPPED'
+	}
 }
 
 configurations {
@@ -47,14 +52,23 @@ configurations {
 	}
 }
 
-tasks.register('cucumberTest') {
-	dependsOn assemble, testClasses
+tasks.register('dockerBuild') {
+	doLast {
+		exec {
+			commandLine 'docker-compose', 'build'
+		}
+	}
+}
 
-	doFirst {
+tasks.register('dockerUp') {
+	dependsOn 'dockerBuild'
+
+	doLast {
 		exec {
 			commandLine 'docker-compose', 'up', '-d'
 		}
 
+		// PostgreSQL 준비 대기
 		def maxRetries = 20
 		def sleepMs = 3000
 		def ready = false
@@ -81,7 +95,35 @@ tasks.register('cucumberTest') {
 		if (!ready) {
 			throw new GradleException("PostgreSQL failed to start within ${maxRetries * sleepMs / 1000} seconds")
 		}
+
+		// Spring Boot 앱 준비 대기
+		ready = false
+		for (int i = 0; i < maxRetries; i++) {
+			try {
+				def result = exec {
+					commandLine 'curl', '-sf', 'http://localhost:28080/api/categories'
+					ignoreExitValue = true
+				}
+				if (result.exitValue == 0) {
+					ready = true
+					logger.lifecycle("Spring Boot app is ready!")
+					break
+				}
+			} catch (Exception e) {
+				// 앱이 아직 시작 안 된 경우
+			}
+			logger.lifecycle("Waiting for Spring Boot app... (${i + 1}/${maxRetries})")
+			Thread.sleep(sleepMs)
+		}
+
+		if (!ready) {
+			throw new GradleException("Spring Boot app failed to start within ${maxRetries * sleepMs / 1000} seconds")
+		}
 	}
+}
+
+tasks.register('cucumberTest') {
+	dependsOn testClasses
 
 	doLast {
 		javaexec {
@@ -94,11 +136,9 @@ tasks.register('cucumberTest') {
 			]
 		}
 	}
-
-	finalizedBy 'composeDown'
 }
 
-tasks.register('composeDown') {
+tasks.register('dockerDown') {
 	doLast {
 		exec {
 			commandLine 'docker-compose', 'down'

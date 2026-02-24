@@ -7,23 +7,7 @@
 - Gradle (Groovy DSL)
 - Docker (Colima 또는 Docker Desktop)
 
-## 테스트 실행 방법
-
-### Cucumber 인수 테스트 (PostgreSQL)
-
-아래 한 줄로 PostgreSQL 컨테이너 실행부터 테스트, 정리까지 자동으로 수행됩니다.
-
-```bash
-./gradlew cucumberTest
-```
-
-**자동 수행 흐름:**
-1. `docker-compose up -d` — PostgreSQL 16 컨테이너 시작
-2. DB 준비 대기 (`pg_isready`)
-3. Cucumber 테스트 실행 (PostgreSQL 사용)
-4. `docker-compose down` — 컨테이너 정리 (테스트 실패 시에도 실행)
-
-### 사전 준비
+## 사전 준비
 
 Docker 런타임이 실행 중이어야 합니다.
 
@@ -35,8 +19,45 @@ Docker 런타임이 실행 중이어야 합니다.
 colima start
 ```
 
-### 단위 테스트
+## 테스트 구조
+
+| 명령어 | 대상 | DB | 앱 실행 방식 |
+|--------|------|----|-------------|
+| `./gradlew test` | Java 인수 테스트 (13개) | H2 (인메모리) | 내장 톰캣 (RANDOM_PORT) |
+| `./gradlew cucumberTest` | Cucumber 시나리오 (13개) | PostgreSQL (Docker) | Spring Boot (Docker) |
+
+## Java 인수 테스트
+
+Docker 없이 즉시 실행 가능합니다.
 
 ```bash
 ./gradlew test
+```
+
+## Cucumber 인수 테스트 (Docker)
+
+### 단계별 실행
+
+```bash
+# 1. Docker 이미지 빌드
+./gradlew dockerBuild
+
+# 2. 컨테이너 시작 (PostgreSQL + Spring Boot)
+./gradlew dockerUp
+
+# 3. Cucumber 테스트 실행
+./gradlew cucumberTest
+
+# 4. 컨테이너 종료
+./gradlew dockerDown
+```
+
+### 컨테이너 구조
+
+```
+테스트 (Host)
+   ↓ HTTP (localhost:28080)
+Spring Boot (Docker - gift-test-app)
+   ↓ JDBC (postgres:5432)
+PostgreSQL (Docker - gift-test-db)
 ```

@@ -18,7 +18,7 @@ public class ApiClient {
 	}
 
 	private int getPort() {
-		return Integer.parseInt(environment.getProperty("local.server.port"));
+		return Integer.parseInt(environment.getProperty("test.server.port", "28080"));
 	}
 
 	public Response sendGift(Long senderId, Long receiverId, Long optionId, int quantity) {
