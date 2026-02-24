@@ -65,6 +65,8 @@ docs/
 ├── TEST_DESIGN.md          # 단위 vs 인수 테스트 개념, 시나리오 정의, 테스트 구조
 ├── TEST_STRATEGY.md        # 행위 선정 기준, 데이터 전략, 검증 전략, 의사결정 근거
 └── step2/
-    ├── STEP2_PLAN.md       # 2단계 미션 요구사항 (Cucumber BDD, PostgreSQL, Docker)
-    └── CUCUMBER_BDD.md     # 요구사항 1 구현 가이드 (Cucumber BDD 적용)
+    ├── STEP2_PLAN.md           # 2단계 미션 요구사항 (Cucumber BDD, PostgreSQL, Docker)
+    ├── CUCUMBER_BDD.md         # 요구사항 1 구현 가이드 (Cucumber BDD 적용)
+    ├── POSTGRESQL_DOCKER.md    # 요구사항 2 구현 가이드 (PostgreSQL + Docker Compose)
+    └── APP_CONTAINERIZATION.md # 요구사항 3 구현 가이드 (Application 컨테이너화)
 ```
