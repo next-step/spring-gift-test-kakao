@@ -2,7 +2,6 @@ package gift.cucumber;
 
 import io.cucumber.java.Before;
 import io.restassured.RestAssured;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -12,9 +11,6 @@ import java.util.Objects;
 
 public class CucumberHooks {
 
-    @LocalServerPort
-    private int port;
-
     private final JdbcTemplate jdbcTemplate;
 
     public CucumberHooks(JdbcTemplate jdbcTemplate) {
@@ -23,7 +19,8 @@ public class CucumberHooks {
 
     @Before
     public void setUp() throws SQLException {
-        RestAssured.port = port;
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = 28080;
 
         ScriptUtils.executeSqlScript(
                 Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection(),
