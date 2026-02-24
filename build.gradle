@@ -27,6 +27,7 @@ dependencies {
 
 	// http://localhost:8080/h2-console
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
@@ -40,4 +41,22 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude '**/CucumberTest.class'
+}
+
+tasks.register('dockerComposeUp', Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerComposeDown', Exec) {
+	commandLine 'docker', 'compose', 'down'
+}
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform()
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	include '**/CucumberTest.class'
+	dependsOn 'dockerComposeUp'
+	finalizedBy 'dockerComposeDown'
 }
