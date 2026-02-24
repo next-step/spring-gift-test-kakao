@@ -66,3 +66,10 @@
   - `CommonStepDefinitions.java`: `@LocalServerPort` 제거, `RestAssured.baseURI = "http://localhost"`, `RestAssured.port = 28080`으로 Docker 컨테이너 직접 호출.
   - `build.gradle`: doFirst의 docker-compose 명령에 `--build` 플래그 추가.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL. Docker 이미지 빌드 → postgres + app 컨테이너 기동 → app Healthy 확인 → Cucumber 6개 시나리오 통과 → 전체 컨테이너 정리. `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개, H2) — 기존 테스트 영향 없음 확인.
+
+## 2-4-2. PostgreSQL 외부 포트 변경 (가독성 개선)
+- **Prompt**: postgres도 외부 포트에서 내부 포트로 가는 거니까 안 헷갈리게 포트 번호 바꾸자.
+- **Action**:
+  - `docker-compose.yml`: postgres 포트 매핑 `5432:5432` → `25432:5432`로 변경. app의 `SPRING_DATASOURCE_URL`은 Docker 내부 네트워크(`postgres:5432`)이므로 변경 없음.
+  - `application-cucumber.properties`: datasource URL `localhost:5432` → `localhost:25432`로 변경.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 6개, PostgreSQL `25432:5432`). `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개, H2). 호스트 포트(`25432`, `28080`)와 컨테이너 내부 포트(`5432`, `8080`)가 명확히 구분됨.
