@@ -80,3 +80,9 @@
   - build.gradle 섹션: `useJUnitPlatform()`에 `includeEngines 'cucumber'` 누락 수정, `--build` 플래그 추가, `testClassesDirs`/`classpath` 설정 추가, `shouldRunAfter test` 추가
   - docker-compose 섹션: `SPRING_DATASOUCE_URL` → `SPRING_DATASOURCE_URL` 오타 수정
 - **Outcome**: study 문서가 실제 구현 코드와 일치하도록 갱신 완료.
+
+## 2-5. README.md 실행 방법 추가
+- **Prompt**: README.md에 실행 방법 추가. 전제 조건, 명령어 구분(test/cucumberTest), 테스트 아키텍처(28080/25432 포트) 포함.
+- **Action**:
+  - `README.md`: 전제 조건(Java 21, Docker), 빌드/테스트 명령어, 테스트 아키텍처 다이어그램(Host → App 컨테이너 :28080, Host → PostgreSQL 컨테이너 :25432) 작성.
+- **Outcome**: README.md 작성 완료.
