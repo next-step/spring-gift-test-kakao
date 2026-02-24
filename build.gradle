@@ -44,11 +44,16 @@ tasks.named('test') {
 	exclude '**/CucumberTest.class'
 }
 
-tasks.register('dockerComposeUp', Exec) {
-	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'compose', 'build'
 }
 
-tasks.register('dockerComposeDown', Exec) {
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+	dependsOn 'dockerBuild'
+}
+
+tasks.register('dockerDown', Exec) {
 	commandLine 'docker', 'compose', 'down'
 }
 
@@ -57,8 +62,8 @@ tasks.register('cucumberTest', Test) {
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 	include '**/CucumberTest.class'
-	dependsOn 'dockerComposeUp'
-	finalizedBy 'dockerComposeDown'
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
 	testLogging {
 		events 'passed', 'failed', 'skipped'
 		exceptionFormat 'full'
