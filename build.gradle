@@ -39,7 +39,12 @@ tasks.named('test') {
 	exclude '**/CucumberSuite*'
 }
 
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker-compose', 'build'
+}
+
 tasks.register('dockerUp', Exec) {
+	dependsOn 'dockerBuild'
 	commandLine 'docker-compose', 'up', '-d', '--wait'
 }
 
@@ -52,6 +57,7 @@ tasks.register('cucumberTest', Test) {
 		includeEngines 'cucumber'
 	}
 	systemProperty 'cucumber.glue', 'gift.acceptance.cucumber'
+	systemProperty 'cucumber.features', 'classpath:features'
 	systemProperty 'cucumber.plugin', 'pretty'
 	dependsOn 'dockerUp'
 	finalizedBy 'dockerDown'
