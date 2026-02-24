@@ -224,3 +224,105 @@ Cucumber 엔진이 직접 실행될 때 glue 경로는 `systemProperty`로 설�
 
 테스트 코드는 호스트(로컬 JVM)에서 실행되고, PostgreSQL만 Docker 컨테이너에서 실행된다.
 `ports: "5432:5432"`가 호스트와 컨테이너 포트를 연결한다.
+
+---
+
+# Step 3: Application 컨테이너화 학습 기록
+
+## 왜 애플리케이션까지 컨테이너로 실행하는가?
+
+Step 2에서는 DB만 컨테이너였고 앱은 로컬 JVM에서 실행되었다.
+로컬 JDK 버전, OS 차이 등으로 "내 PC에서는 되는데 서버에서는 안 되는" 문제가 발생할 수 있다.
+앱까지 컨테이너화하면 프로덕션과 완전히 동일한 환경에서 테스트할 수 있다.
+
+## 아키텍처
+
+```
+테스트(Host JVM)  --HTTP-->  localhost:28080 (Docker App 컨테이너)
+테스트(Host JVM)  --JDBC-->  localhost:5432  (Docker DB 컨테이너)
+App(Container)  --JDBC-->  postgres:5432   (Docker DB 컨테이너, 내부 네트워크)
+```
+
+테스트 코드는 로컬에서 실행되고, 앱과 DB는 Docker 컨테이너에서 실행된다.
+앱 컨테이너 내부에서는 서비스 이름(`postgres`)이 hostname으로 동작한다.
+
+## Docker 핵심 개념
+
+### 이미지 / 서비스 / 컨테이너
+
+| 비유 | Docker | 설명 |
+|------|--------|------|
+| 소스코드 | 이미지 | 실행에 필요한 파일 묶음 |
+| 클래스 | 서비스 | 이미지 + 실행 설정 (포트, 환경변수 등) |
+| 인스턴스 | 컨테이너 | 서비스를 실제로 실행한 것 |
+
+하나의 서비스에서 `--scale`로 여러 컨테이너를 띄울 수 있다. 보통은 1:1로 사용한다.
+만약 여러개 띄우고 싶다면 포트 고정은 해제해야 한다.
+
+### Docker 내부 네트워크
+
+Docker Compose가 자동으로 내부 네트워크를 만들고, 각 서비스 이름을 DNS에 등록한다.
+서비스 이름이 곧 컨테이너 간 통신의 hostname이 된다.
+
+## Multi-stage build
+
+Dockerfile에서 `FROM`으로 시작하는 각 단계를 스테이지라 한다. 마지막 스테이지만 최종 이미지가 되고, 이전 스테이지는 버려진다.
+`COPY --from=builder`로 이전 스테이지의 결과물만 가져올 수 있다.
+
+빌드에는 JDK + Gradle + 소스코드가 필요하지만 실행에는 JRE + JAR만 있으면 된다.
+스테이지를 나눠서 최종 이미지에 빌드 도구를 포함하지 않아 이미지 크기를 줄인다.
+
+`AS builder`는 스테이지 별칭. 번호(`--from=0`)로도 참조 가능하지만 별칭이 가독성이 좋다.
+
+### 이미지 태그
+
+- `eclipse-temurin:21-jdk` — Debian + JDK (빌드용, 가장 무거움)
+- `eclipse-temurin:21-jre` — Debian + JRE (실행용)
+- `eclipse-temurin:21-jre-alpine` — Alpine + JRE (실행용, 가장 가벼움)
+
+`alpine`은 경량 리눅스 배포판. 단, `jdk-alpine`은 Gradle 네이티브 라이브러리와 호환 문제(musl libc)가 있어 빌드 스테이지에는 Debian 기반을 사용했다.
+
+## depends_on과 --wait의 차이
+
+- `depends_on: condition: service_healthy` → 컨테이너 간 시작 순서 제어 (postgres healthy → app 시작)
+- `--wait` → `docker-compose up` 명령이 모든 서비스가 healthy될 때까지 대기 후 리턴
+
+둘은 별개. `depends_on`은 컨테이너 간 순서, `--wait`는 CLI 명령의 리턴 시점을 제어한다.
+
+### healthcheck가 없는 서비스
+
+- `--wait`: 체크를 건너뛰고 시작만으로 ready 처리
+- `depends_on: condition: service_healthy`: 에러 발생. `condition: service_started`를 써야 함
+
+## .dockerignore
+
+`.gitignore`의 Docker 버전. `COPY . .` 시 불필요한 파일 전송을 방지한다.
+빌드 속도 저하뿐 아니라 `.git/` 등이 포함되면 Docker 레이어 캐시가 불필요하게 무효화된다.
+
+## webEnvironment = NONE
+
+앱이 Docker 컨테이너에서 이미 실행되므로 테스트 JVM에서 앱을 또 띄울 필요가 없다.
+`NONE`이면 임베디드 웹서버를 시작하지 않지만, Spring 컨텍스트는 로드된다 (JdbcTemplate으로 DB cleanup 필요).
+
+## JdbcTemplate이 필요한 이유
+
+앱이 Docker 컨테이너 안에 있으므로 로컬에서 앱의 Repository나 Service를 직접 호출할 수 없다.
+DB는 `localhost:5432`로 직접 접근 가능하므로 JdbcTemplate으로 TRUNCATE하여 데이터를 정리한다.
+
+## dockerBuild와 Docker 레이어 캐시
+
+`docker-compose up`은 이미지가 이미 존재하면 재빌드하지 않는다.
+`dockerBuild`(`docker-compose build`)는 항상 빌드를 시도하지만, 코드 변경이 없으면 Docker 레이어 캐시 덕분에 빠르게 완료된다.
+`dockerUp`이 `dockerBuild`에 의존하도록 설정하여 항상 최신 이미지로 테스트하게 했다.
+
+## cucumber.features 시스템 프로퍼티
+
+`cucumberTest`에서 `includeEngines 'cucumber'`로 cucumber 엔진을 직접 사용할 때, feature 파일 위치를 명시적으로 지정해야 테스트가 발견된다.
+`CucumberSuite`의 `@SelectClasspathResource`는 `junit-platform-suite` 엔진용이므로 별개.
+
+## 테스트 분리 구조 (최종)
+
+| 명령 | 실행 대상 | DB | 앱 실행 위치 |
+|------|----------|-----|-------------|
+| `./gradlew test` | RestAssured 인수 테스트 3개 | H2 | 로컬 JVM |
+| `./gradlew cucumberTest` | Cucumber 시나리오 8개 | PostgreSQL (Docker) | Docker 컨테이너 |
