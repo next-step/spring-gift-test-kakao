@@ -21,6 +21,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -48,4 +49,17 @@ task cucumberTest(type: Test) {
 	systemProperty 'spring.profiles.active', 'test'
 	dependsOn dockerComposeUp
 	finalizedBy dockerComposeDown
+}
+
+task dockerBuild(type: Exec) {
+	dependsOn bootJar
+	commandLine 'docker', 'build', '-t', 'gift-app:latest', '.'
+}
+
+task dockerUp(type: Exec) {
+	commandLine 'docker', 'compose', '--profile', 'app', 'up', '-d', '--wait'
+}
+
+task dockerDown(type: Exec) {
+	commandLine 'docker', 'compose', '--profile', 'app', 'down'
 }
