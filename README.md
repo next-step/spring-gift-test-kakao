@@ -7,7 +7,8 @@ Spring Boot 기반 선물하기 서비스 애플리케이션입니다.
 - Java 21
 - Spring Boot 3.5.8
 - Spring Data JPA
-- H2 Database
+- H2 Database (기본)
+- PostgreSQL 16 (Docker Compose)
 - Gradle
 
 ## 주요 기능
@@ -106,19 +107,36 @@ src/main/java/gift/
 ### Cucumber BDD 테스트
 
 ```bash
-# Cucumber 전체 실행
+# Cucumber 전체 실행 (H2, 기본)
 ./gradlew cucumberTest
+
+# PostgreSQL로 실행 (Docker 자동 시작/종료)
+./gradlew cucumberTest -Pdb=postgres
 
 # 태그로 도메인별 실행
 ./gradlew cucumberTest -Ptag=@category   # 카테고리 (4개 시나리오)
 ./gradlew cucumberTest -Ptag=@product    # 상품 (4개 시나리오)
 ./gradlew cucumberTest -Ptag=@gift       # 선물 (5개 시나리오)
 
+# PostgreSQL + 태그 조합
+./gradlew cucumberTest -Pdb=postgres -Ptag=@category
+
 # 특정 feature 파일 실행
 ./gradlew cucumberTest -Pfeature=카테고리_관리
 ./gradlew cucumberTest -Pfeature=상품_관리
 ./gradlew cucumberTest -Pfeature=선물_전송
 ```
+
+### 테스트 DB 선택
+
+| 명령어 | DB | Docker 필요 |
+|--------|----|-------------|
+| `./gradlew cucumberTest` | H2 (in-memory) | 불필요 |
+| `./gradlew cucumberTest -Pdb=postgres` | PostgreSQL | 자동 시작/종료 |
+
+- 기본값은 H2이며, `-Pdb=postgres` 옵션 시 Docker Compose로 PostgreSQL 컨테이너를 자동 관리합니다.
+- PostgreSQL은 포트 `15432`를 사용합니다 (로컬 5432 충돌 방지).
+- 수동 제어: `./gradlew dockerPostgresUp` / `./gradlew dockerPostgresDown`
 
 ### 테스트 구조
 
