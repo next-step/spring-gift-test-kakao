@@ -8,19 +8,14 @@ import gift.support.OptionFixture;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 
 public class GiftStepDefinitions {
-
-    @LocalServerPort
-    int port;
 
     private final ScenarioContext context;
     private final OptionFixture optionFixture;
@@ -34,7 +29,6 @@ public class GiftStepDefinitions {
 
     @Given("{string} 옵션의 재고가 {int}개 있다")
     public void 옵션의_재고가_있다(String optionName, int quantity) {
-        RestAssured.port = port;
         Long categoryId = given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", "음료"))
@@ -84,7 +78,6 @@ public class GiftStepDefinitions {
 
     @When("회원이 {string} 옵션 {int}개를 선물한다")
     public void 회원이_옵션을_선물한다(String optionName, int quantity) {
-        RestAssured.port = port;
         Long optionId = context.get("optionId", Long.class);
         Long senderId = context.get("senderId", Long.class);
         Long receiverId = context.get("receiverId", Long.class);
@@ -105,7 +98,6 @@ public class GiftStepDefinitions {
 
     @When("존재하지 않는 옵션으로 선물한다")
     public void 존재하지_않는_옵션으로_선물한다() {
-        RestAssured.port = port;
         Long senderId = context.get("senderId", Long.class);
 
         Response response = given()

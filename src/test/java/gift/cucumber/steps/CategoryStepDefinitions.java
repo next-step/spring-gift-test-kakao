@@ -4,10 +4,8 @@ import gift.cucumber.ScenarioContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import java.util.Map;
 
@@ -18,9 +16,6 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class CategoryStepDefinitions {
 
-    @LocalServerPort
-    int port;
-
     private final ScenarioContext context;
 
     public CategoryStepDefinitions(ScenarioContext context) {
@@ -29,7 +24,6 @@ public class CategoryStepDefinitions {
 
     @When("{string} 카테고리를 생성한다")
     public void 카테고리를_생성한다(String name) {
-        RestAssured.port = port;
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
@@ -40,7 +34,6 @@ public class CategoryStepDefinitions {
 
     @Given("{string} 카테고리가 존재한다")
     public void 카테고리가_존재한다(String name) {
-        RestAssured.port = port;
         Long categoryId = given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
@@ -55,7 +48,6 @@ public class CategoryStepDefinitions {
 
     @When("전체 카테고리를 조회한다")
     public void 전체_카테고리를_조회한다() {
-        RestAssured.port = port;
         Response response = given()
         .when()
                 .get("/api/categories");

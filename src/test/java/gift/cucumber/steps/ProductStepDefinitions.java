@@ -4,10 +4,8 @@ import gift.cucumber.ScenarioContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import java.util.Map;
 
@@ -18,9 +16,6 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class ProductStepDefinitions {
 
-    @LocalServerPort
-    int port;
-
     private final ScenarioContext context;
 
     public ProductStepDefinitions(ScenarioContext context) {
@@ -29,7 +24,6 @@ public class ProductStepDefinitions {
 
     @When("{string} 상품을 가격 {int}원으로 생성한다")
     public void 상품을_가격으로_생성한다(String name, int price) {
-        RestAssured.port = port;
         Long categoryId = context.get("categoryId", Long.class);
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -46,7 +40,6 @@ public class ProductStepDefinitions {
 
     @Given("{string} 상품이 존재한다")
     public void 상품이_존재한다(String name) {
-        RestAssured.port = port;
         Long categoryId = context.get("categoryId", Long.class);
         Long productId = given()
                 .contentType(ContentType.JSON)
@@ -67,7 +60,6 @@ public class ProductStepDefinitions {
 
     @When("전체 상품을 조회한다")
     public void 전체_상품을_조회한다() {
-        RestAssured.port = port;
         Response response = given()
         .when()
                 .get("/api/products");
@@ -76,7 +68,6 @@ public class ProductStepDefinitions {
 
     @When("존재하지 않는 카테고리로 상품을 생성한다")
     public void 존재하지_않는_카테고리로_상품을_생성한다() {
-        RestAssured.port = port;
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
