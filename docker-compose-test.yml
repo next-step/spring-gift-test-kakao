@@ -2,13 +2,41 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: gift_test
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: test
+      POSTGRES_DB: ${POSTGRES_DB:-gift_test}
+      POSTGRES_USER: ${POSTGRES_USER:-test}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test}
     ports:
-      - "15432:5432"
+      - "${POSTGRES_PORT:-15432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test -d gift_test"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-test} -d ${POSTGRES_DB:-gift_test}"]
       interval: 3s
       timeout: 3s
       retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-28080}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-gift_test}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-test}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-test}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${DDL_AUTO:-create-drop}
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      KAKAO_MESSAGE_TOKEN: ${KAKAO_MESSAGE_TOKEN:-test-token}
+      KAKAO_MESSAGE_URL: ${KAKAO_MESSAGE_URL:-https://test.kakao.com}
+      KAKAO_SOCIAL_TOKEN: ${KAKAO_SOCIAL_TOKEN:-test-token}
+      KAKAO_SOCIAL_URL: ${KAKAO_SOCIAL_URL:-https://test.kakao.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/categories"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    profiles:
+      - docker

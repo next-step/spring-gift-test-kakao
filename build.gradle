@@ -43,6 +43,26 @@ tasks.register('dockerPostgresDown', Exec) {
 	commandLine 'docker', 'compose', '-f', 'docker-compose-test.yml', 'down'
 }
 
+tasks.register('dockerBuild', Exec) {
+	description = 'Build Docker image for the application'
+	group = 'docker'
+	dependsOn 'bootJar'
+	commandLine 'docker', 'compose', '-f', 'docker-compose-test.yml', '--profile', 'docker', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	description = 'Start all Docker services (app + postgres)'
+	group = 'docker'
+	dependsOn 'dockerBuild'
+	commandLine 'docker', 'compose', '-f', 'docker-compose-test.yml', '--profile', 'docker', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	description = 'Stop all Docker services'
+	group = 'docker'
+	commandLine 'docker', 'compose', '-f', 'docker-compose-test.yml', '--profile', 'docker', 'down'
+}
+
 tasks.register('cucumberTest', Test) {
 	description = 'Run Cucumber BDD tests'
 	group = 'verification'
@@ -60,7 +80,13 @@ tasks.register('cucumberTest', Test) {
 		systemProperty 'cucumber.features', "classpath:features/${project.property('feature')}.feature"
 	}
 
-	if (project.hasProperty('db') && project.property('db') == 'postgres') {
+	if (project.hasProperty('mode') && project.property('mode') == 'docker') {
+		dependsOn 'dockerUp'
+		finalizedBy 'dockerDown'
+		doFirst {
+			systemProperty 'spring.profiles.active', 'cucumber,docker'
+		}
+	} else if (project.hasProperty('db') && project.property('db') == 'postgres') {
 		dependsOn 'dockerPostgresUp'
 		finalizedBy 'dockerPostgresDown'
 		doFirst {
