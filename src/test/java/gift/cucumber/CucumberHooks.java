@@ -27,7 +27,7 @@ public class CucumberHooks {
 
         ScriptUtils.executeSqlScript(
                 Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection(),
-                new ClassPathResource("/sql/cleanup.sql")
+                new ClassPathResource("/sql/cleanup-pg.sql")
         );
     }
 }
