@@ -10,17 +10,22 @@
 
 Docker 불필요. H2 인메모리 DB를 사용한다.
 
-### Cucumber 인수 테스트 (PostgreSQL + Testcontainers)
+### Cucumber 인수 테스트 (Docker PostgreSQL)
+
+Docker 이미지를 빌드하고 Docker Compose로 애플리케이션과 PostgreSQL을 띄운 뒤 테스트를 실행한다.
 
 ```bash
-./gradlew cucumberTest
+./gradlew dockerBuild   # Docker 이미지 빌드
+./gradlew dockerUp      # Docker Compose 시작 (postgres + app)
+./gradlew cucumberTest  # Cucumber 인수 테스트 실행
+./gradlew dockerDown    # Docker Compose 종료
 ```
 
-**Docker 런타임이 실행 중이어야 한다.** Testcontainers가 PostgreSQL 컨테이너를 자동으로 시작/종료한다.
+**Docker 런타임이 실행 중이어야 한다.**
 
 ## Docker 런타임 설정
 
-`cucumberTest`는 아래 순서로 Docker 소켓을 자동 탐색한다:
+Docker 관련 Gradle task(`dockerBuild`, `dockerUp`, `dockerDown`)는 아래 순서로 Docker 소켓을 자동 탐색한다:
 
 | 우선순위 | 소켓 경로 | 런타임 |
 |---------|----------|--------|
@@ -39,5 +44,5 @@ Docker 불필요. H2 인메모리 DB를 사용한다.
 자동 탐색 목록에 없는 런타임이거나, 소켓 경로가 다른 경우 `DOCKER_HOST`를 직접 지정한다:
 
 ```bash
-DOCKER_HOST=unix:///path/to/docker.sock ./gradlew cucumberTest
+DOCKER_HOST=unix:///path/to/docker.sock ./gradlew dockerBuild
 ```

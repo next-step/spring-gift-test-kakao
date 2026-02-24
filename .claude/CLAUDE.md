@@ -7,109 +7,98 @@
 ```bash
 ./gradlew build          # 빌드 + test (Cucumber 제외)
 ./gradlew test           # 1단계 인수 테스트 (H2, Cucumber 제외)
-./gradlew cucumberTest   # Cucumber 인수 테스트 (PostgreSQL + Testcontainers, Docker 필수)
+./gradlew dockerBuild    # Docker 이미지 빌드
+./gradlew dockerUp       # Docker Compose 시작 (postgres + app)
+./gradlew cucumberTest   # Cucumber 인수 테스트 (Docker PostgreSQL)
+./gradlew dockerDown     # Docker Compose 종료
 ./gradlew bootRun        # 애플리케이션 실행 (H2 인메모리 DB, 포트 8080)
 ./gradlew test --tests "gift.SomeTest"              # 단일 테스트 클래스 실행
 ./gradlew test --tests "gift.SomeTest.methodName"   # 단일 테스트 메서드 실행
 ```
 
-Java 21 필수. `cucumberTest` 실행 시 **Docker가 실행 중**이어야 한다.
+Java 21 필수. Cucumber 테스트 실행 시 **Docker가 실행 중**이어야 한다.
 Docker 소켓은 주요 런타임(Docker Desktop, Colima, OrbStack, Rancher Desktop)을 자동 탐색한다. 탐색 실패 시 `DOCKER_HOST` 환경변수로 지정. 상세 안내는 `README.md` 참조.
 
-## 현재 과제: 요구사항 2 — PostgreSQL + Testcontainers 통합
+## 현재 과제: 요구사항 3 — Application 컨테이너화
 
-### 목표: Production Parity
-테스트 DB를 프로덕션과 동일한 **PostgreSQL**로 전환하여 DB 방언 차이로 인한 문제를 사전에 방지한다. **Testcontainers**로 PostgreSQL 컨테이너를 자동 관리하여 로컬 DB 설치 없이 테스트를 실행한다.
+### 목표: End-to-End Docker 환경
+Spring Boot 애플리케이션 자체도 Docker 컨테이너로 실행하여, 프로덕션과 동일한 환경에서 End-to-End 테스트를 수행한다.
+
+### 아키텍처
+
+```
+[요구사항 2] Test JVM → embedded Spring Boot + Testcontainers PostgreSQL
+[요구사항 3] Test JVM → Docker App (localhost:28080) + Docker PostgreSQL (localhost:5432)
+```
+
+- **Docker App**: `spring-gift-test:latest` 이미지, 포트 28080 (호스트) → 8080 (컨테이너)
+- **Docker PostgreSQL**: `postgres:17-alpine`, 포트 5432 (호스트/컨테이너)
+- **테스트 JVM**: `webEnvironment=NONE` (내장 서버 없음), RestAssured → `localhost:28080`
+- **DB 공유**: app 컨테이너는 Docker 네트워크에서 `postgres:5432` 접속, 테스트는 호스트에서 `localhost:5432` 접속 → 같은 DB
 
 ### 제약 조건
-- **Testcontainers + PostgreSQL** 사용 필수
-- 기존 2단계 Cucumber/Gherkin 시나리오를 PostgreSQL 위에서 실행
+- **Docker Compose** (postgres + app) 사용 필수
+- 기존 Cucumber/Gherkin 시나리오를 Docker 환경에서 실행
 - 기존 1단계 인수 테스트(H2)는 그대로 유지
 - Docker 실행이 전제 조건
 
-### 기술 스택
+### Cucumber 테스트 실행 흐름
 
-#### Gradle 의존성
-
-```groovy
-// 기존 (유지)
-runtimeOnly 'com.h2database:h2'                                          // 1단계 테스트 + 개발용
-testImplementation 'io.rest-assured:rest-assured'
-testImplementation 'io.cucumber:cucumber-java:7.22.1'
-testImplementation 'io.cucumber:cucumber-spring:7.22.1'
-testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
-testImplementation 'org.junit.platform:junit-platform-suite'
-
-// 추가 (PostgreSQL + Testcontainers)
-testImplementation 'org.testcontainers:postgresql'
-testImplementation 'org.testcontainers:junit-jupiter'
-testRuntimeOnly 'org.postgresql:postgresql'
+```bash
+./gradlew dockerBuild    # Multi-stage build: JDK builder → JRE runtime
+./gradlew dockerUp       # docker compose up -d --wait (healthcheck 대기)
+./gradlew cucumberTest   # Test JVM → Docker App (28080) + Docker PG (5432)
+./gradlew dockerDown     # docker compose down
 ```
 
-Testcontainers BOM은 Spring Boot의 `dependency-management` 플러그인이 자동 관리.
+### Docker 파일 구조
 
-#### cucumberTest Gradle task
-
-```groovy
-tasks.register('cucumberTest', Test) {
-    useJUnitPlatform()
-    include 'gift/cucumber/CucumberTest.class'
-    group = 'verification'
-    description = 'Cucumber 인수 테스트 (PostgreSQL + Testcontainers)'
-}
-```
-
-`CucumberTest.class`만 포함하도록 필터링 (Cucumber 엔진은 JUnit Jupiter의 `@Tag`를 지원하지 않음).
+| 파일 | 설명 |
+|------|------|
+| `Dockerfile` | Multi-stage build (JDK builder → JRE runtime) |
+| `.dockerignore` | 빌드 컨텍스트에서 불필요 파일 제외 |
+| `docker-compose.yml` | postgres + app 서비스 정의 (healthcheck 포함) |
 
 ### Spring 프로파일 분리
 
 | 프로파일 | 용도 | DB |
 |---------|------|-----|
 | 기본 (`application.properties`) | 개발 + 1단계 테스트 | H2 인메모리 |
-| `cucumber` (`application-cucumber.properties`) | Cucumber 테스트 | PostgreSQL (Testcontainers) |
+| `cucumber` (`application-cucumber.properties`) | Cucumber 테스트 | Docker PostgreSQL (localhost:5432) |
 
 - `CucumberSpringConfig`에 `@ActiveProfiles("cucumber")` 적용
-- datasource URL/username/password는 `@DynamicPropertySource`로 Testcontainers가 동적 주입
+- datasource는 `application-cucumber.properties`에 정적 설정 (`localhost:5432`)
+- `spring.jpa.hibernate.ddl-auto=none` (Docker app이 `create`로 스키마 생성)
+- `spring.main.web-application-type=none` (내장 서버 비활성화)
 
-### Testcontainers 통합 방식
+### CucumberSpringConfig 구성
 
 ```java
 @CucumberContextConfiguration
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("cucumber")
 public class CucumberSpringConfig {
-
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
-
-    static {
-        postgres.start();  // Cucumber 엔진은 JUnit Jupiter가 아니므로 수동 시작
-    }
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+    @io.cucumber.java.Before(order = 1)
+    public void setUp() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = 28080;
     }
 }
 ```
 
-- `static` 초기화 블록으로 컨테이너 1회 시작 (Cucumber는 `@Testcontainers`/`@Container` 미지원)
-- `spring.jpa.hibernate.ddl-auto=create-drop`으로 스키마 자동 생성
+- Testcontainers 코드 제거 (PostgreSQLContainer, static 블록, @DynamicPropertySource)
+- `webEnvironment=NONE` — 앱은 Docker에서 실행
+- RestAssured → Docker app의 28080 포트
 
 ### DB 초기화 (Test Isolation)
 
-`DatabaseCleanup.java`의 H2 전용 SQL을 PostgreSQL 호환으로 변경:
-- **H2**: `SET REFERENTIAL_INTEGRITY FALSE` → `TRUNCATE` → `SET REFERENTIAL_INTEGRITY TRUE`
-- **PostgreSQL**: `TRUNCATE wish, option, product, member, category CASCADE`
+`DatabaseCleanup.java`는 PostgreSQL 호환 SQL 사용:
+- `TRUNCATE TABLE wish, option, product, member, category CASCADE`
+- JdbcTemplate은 Spring 컨텍스트에서 `localhost:5432`(Docker PG)로 자동 연결
 
 ### 테스트 설계 원칙: "어떻게 되는가"를 검증한다
 
 인수 테스트는 **내부 구현이 아닌 사용자 입력과 그 결과**에 의존해야 한다. 세부 구현(엔티티 구조, repository 메서드, 서비스 내부 로직)에 의존하는 테스트는 리팩토링 시 깨진다. "어떻게 하는가"가 아니라 **"어떻게 되는가"**를 검증하는 테스트를 작성한다.
-
-예시: 재고 차감 검증
-- **나쁨** (구현 의존): 선물 후 `optionRepository.findById()`로 quantity 직접 조회
-- **좋음** (행위 검증): 재고 전부 소진하는 선물 → 성공 / 같은 옵션에 추가 선물 → 재고 부족으로 실패
 
 ### Cucumber 디렉토리 구조
 
@@ -117,8 +106,8 @@ public class CucumberSpringConfig {
 src/test/
 ├── java/gift/
 │   ├── cucumber/
-│   │   ├── CucumberTest.java              # @Suite + @Tag("cucumber") 엔트리포인트
-│   │   ├── CucumberSpringConfig.java      # @CucumberContextConfiguration + Testcontainers
+│   │   ├── CucumberTest.java              # @Suite 엔트리포인트
+│   │   ├── CucumberSpringConfig.java      # @CucumberContextConfiguration + RestAssured 설정
 │   │   ├── DatabaseCleanup.java           # @Before(order=0) TRUNCATE CASCADE
 │   │   ├── ScenarioState.java             # @ScenarioScope 상태 공유
 │   │   └── steps/
@@ -131,7 +120,7 @@ src/test/
     │   ├── category.feature
     │   ├── product.feature
     │   └── gift.feature
-    ├── application-cucumber.properties    # Cucumber 프로파일 설정
+    ├── application-cucumber.properties    # Cucumber 프로파일 설정 (Docker PG)
     ├── cleanup.sql                        # 1단계 H2 테스트용
     └── test-data.sql                      # 1단계 H2 테스트용
 ```
@@ -140,20 +129,6 @@ src/test/
 - **비즈니스 언어로 작성**: 기획자/QA가 읽고 이해할 수 있어야 한다
 - **구현 세부사항 노출 금지**: HTTP 메서드, 상태 코드, JSON 필드명 등을 시나리오에 직접 쓰지 않는다
 - **한국어 Gherkin 키워드 사용**: `기능`, `시나리오`, `Given`/`When`/`Then` (또는 `주어진`/`만일`/`그러면`)
-
-```gherkin
-# 좋음 (비즈니스 언어)
-시나리오: 재고가 충분하면 선물하기에 성공한다
-  주어진 회원 "철수"와 "영희"가 등록되어 있다
-  그리고 "생일 케이크" 상품에 "기본 옵션" 재고가 5개 있다
-  만일 "철수"가 "영희"에게 "생일 케이크"의 "기본 옵션" 1개를 선물한다
-  그러면 선물하기가 성공한다
-
-# 나쁨 (구현 노출)
-시나리오: 선물하기 API 호출
-  Given POST /api/gifts 요청을 보낸다
-  Then 응답 코드가 200이다
-```
 
 ### 컨트롤러 요청 바인딩
 - 모든 POST 엔드포인트(`/api/products`, `/api/categories`, `/api/gifts`)에 `@RequestBody`가 있음 → **JSON body**로 전송
@@ -170,18 +145,13 @@ src/test/
 4. 상품 목록 조회 (`GET /api/products`) — 생성한 상품이 목록에 존재
 5. 선물하기 성공 (`POST /api/gifts`) — 재고 충분 시 200 응답
 6. 선물하기 후 재고 감소 — 재고 전부 소진 후 재시도 시 실패로 검증 (행위 기반)
-7. 재고 부족 시 선물 실패 — 재고 초과 수량 요청 시 400 응답 (`GlobalExceptionHandler`가 `IllegalStateException`/`NoSuchElementException`을 `BAD_REQUEST`로 처리)
+7. 재고 부족 시 선물 실패 — 재고 초과 수량 요청 시 400 응답
 
 > **WishService**: 컨트롤러가 없으므로 API 레벨 인수 테스트 범위에서 제외.
 
-### 기존 테스트 헬퍼 (1단계에서 작성)
-- **`AcceptanceTestSupport`** — 공통 API 호출 헬퍼 클래스 (`카테고리를_생성한다()` 등)
-- 각 테스트 클래스 내 private 헬퍼 메서드 — `상품을_조회한다()` 등
-- Cucumber step definition에서도 이 헬퍼들을 재사용할 수 있다
-
 ## 아키텍처
 
-선물하기 플랫폼 (카카오 선물하기 스타일). Spring Boot 3.5, JPA + PostgreSQL (테스트: Testcontainers), Thymeleaf.
+선물하기 플랫폼 (카카오 선물하기 스타일). Spring Boot 3.5, JPA + PostgreSQL, Thymeleaf.
 
 ### 패키지 구조 (`src/main/java/gift/`)
 
