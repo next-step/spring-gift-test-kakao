@@ -61,8 +61,10 @@ ui (REST Controllers)  →  application (Services + DTOs)  →  model (Entities 
 
 ```
 docs/
-├── SYSTEM_OVERVIEW.md  # 도메인 모델, 패키지 구조, API 엔드포인트, 핵심 플로우
-├── TEST_DESIGN.md      # 단위 vs 인수 테스트 개념, 시나리오 정의, 테스트 구조
-├── TEST_STRATEGY.md    # 행위 선정 기준, 데이터 전략, 검증 전략, 의사결정 근거
-└── STEP2_PLAN.md       # 2단계 미션 요구사항 (Cucumber BDD, PostgreSQL, Docker)
+├── SYSTEM_OVERVIEW.md      # 도메인 모델, 패키지 구조, API 엔드포인트, 핵심 플로우
+├── TEST_DESIGN.md          # 단위 vs 인수 테스트 개념, 시나리오 정의, 테스트 구조
+├── TEST_STRATEGY.md        # 행위 선정 기준, 데이터 전략, 검증 전략, 의사결정 근거
+└── step2/
+    ├── STEP2_PLAN.md       # 2단계 미션 요구사항 (Cucumber BDD, PostgreSQL, Docker)
+    └── CUCUMBER_BDD.md     # 요구사항 1 구현 가이드 (Cucumber BDD 적용)
 ```
