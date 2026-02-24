@@ -9,7 +9,7 @@ import io.cucumber.java.ko.만일;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +18,8 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class ProductSteps {
 
-    @LocalServerPort
-    private int port;
+    @Value("${cucumber.target.url}")
+    private String targetUrl;
 
     @Autowired
     private ProductRepository productRepository;
@@ -45,7 +45,7 @@ public class ProductSteps {
     @만일("상품 목록을 조회하면")
     public void 상품_목록을_조회하면() {
         Response response = RestAssured.given()
-                .port(port)
+                .baseUri(targetUrl)
                 .when()
                 .get("/api/products");
         testContext.setLastResponse(response);

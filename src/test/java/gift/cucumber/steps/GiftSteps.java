@@ -11,12 +11,12 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 
 public class GiftSteps {
 
-    @LocalServerPort
-    private int port;
+    @Value("${cucumber.target.url}")
+    private String targetUrl;
 
     @Autowired
     private OptionRepository optionRepository;
@@ -57,7 +57,7 @@ public class GiftSteps {
                 """, option.getId(), quantity, receiver.getId());
 
         Response response = RestAssured.given()
-                .port(port)
+                .baseUri(targetUrl)
                 .contentType(ContentType.JSON)
                 .header("Member-Id", sender.getId())
                 .body(body)

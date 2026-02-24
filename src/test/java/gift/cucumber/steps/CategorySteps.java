@@ -10,14 +10,14 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 
 import static org.hamcrest.Matchers.hasItems;
 
 public class CategorySteps {
 
-    @LocalServerPort
-    private int port;
+    @Value("${cucumber.target.url}")
+    private String targetUrl;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -37,7 +37,7 @@ public class CategorySteps {
                 {"name": "%s"}
                 """, name);
         Response response = RestAssured.given()
-                .port(port)
+                .baseUri(targetUrl)
                 .contentType(ContentType.JSON)
                 .body(body)
                 .when()
@@ -48,7 +48,7 @@ public class CategorySteps {
     @만일("카테고리 목록을 조회하면")
     public void 카테고리_목록을_조회하면() {
         Response response = RestAssured.given()
-                .port(port)
+                .baseUri(targetUrl)
                 .when()
                 .get("/api/categories");
         testContext.setLastResponse(response);
