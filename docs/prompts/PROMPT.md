@@ -217,3 +217,67 @@ Docker Compose Documentation
 Spring Boot Profiles
 Gradle Exec Task
 ```
+
+```
+요구사항 3: Application 컨테이너화
+목표
+Spring Boot 애플리케이션까지 Docker 컨테이너로 실행하여, 프로덕션과 완전히 동일한 환경에서 End-to-End 테스트를 수행합니다.
+
+핵심 요구사항
+Dockerfile 작성 (Multi-stage build)
+Docker Compose에 애플리케이션 서비스 추가
+테스트가 Docker 컨테이너의 애플리케이션에 HTTP 요청
+전체 시스템 빌드/시작/종료 자동화
+
+검증
+./gradlew dockerBuild
+./gradlew dockerUp
+curl http://localhost:28080  # 애플리케이션 응답 확인
+./gradlew cucumberTest       # Docker 환경에서 테스트
+./gradlew dockerDown
+
+제출
+README.md에 Docker 기반 실행 방법 추가
+학습 내용을 별도 문서로 기록 (선택사항)
+
+요구사항 3 (Docker)
+왜 애플리케이션까지 컨테이너로 실행하는가?
+테스트는 어디서 실행되고, 애플리케이션은 어디서 실행되는가?
+Multi-stage build를 사용하는 이유는?
+
+요구사항 3: Application 컨테이너화
+핵심 키워드
+
+Multi-stage build - FROM ... AS builder, COPY --from=builder
+eclipse-temurin:21-jre-alpine - 경량 런타임
+depends_on: condition: service_healthy - 시작 순서
+Docker network - service name이 hostname
+SPRING_DATASOURCE_URL - 환경변수 주입
+webEnvironment = NONE - embedded 서버 제거
+Port mapping - 28080:8080
+탐구 질문
+
+Multi-stage build는 무엇이고 왜 사용하는가?
+Builder stage와 Runtime stage의 역할은?
+Docker 네트워크에서 service name이 어떻게 hostname이 되는가?
+컨테이너 내부에서는 postgres:5432, 테스트에서는 localhost:28080인 이유는?
+webEnvironment = NONE을 사용하는 이유는?
+왜 JdbcTemplate은 필요한가? (cleanup 용도)
+.dockerignore는 왜 필요한가?
+아키텍처 이해
+
+테스트 (Host) → HTTP → localhost:28080 (Docker App)
+테스트 (Host) → JDBC → localhost:5432 (Docker DB)
+App (Container) → JDBC → postgres:5432 (Docker DB)
+트러블슈팅 키워드
+
+docker ps - 컨테이너 상태 확인
+docker logs - 로그 확인
+docker exec - 컨테이너 내부 명령 실행
+docker system prune - 캐시 정리
+참고 자료
+
+Multi-stage builds
+Docker Compose Networking
+Spring Boot Docker
+```
