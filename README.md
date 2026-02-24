@@ -94,3 +94,49 @@ src/main/java/gift/
 ```
 
 애플리케이션은 기본적으로 `http://localhost:8080`에서 실행됩니다.
+
+## 테스트 실행 방법
+
+### 전체 테스트
+
+```bash
+./gradlew test
+```
+
+### Cucumber BDD 테스트
+
+```bash
+# Cucumber 전체 실행
+./gradlew cucumberTest
+
+# 태그로 도메인별 실행
+./gradlew cucumberTest -Ptag=@category   # 카테고리 (4개 시나리오)
+./gradlew cucumberTest -Ptag=@product    # 상품 (4개 시나리오)
+./gradlew cucumberTest -Ptag=@gift       # 선물 (5개 시나리오)
+
+# 특정 feature 파일 실행
+./gradlew cucumberTest -Pfeature=카테고리_관리
+./gradlew cucumberTest -Pfeature=상품_관리
+./gradlew cucumberTest -Pfeature=선물_전송
+```
+
+### 테스트 구조
+
+```
+src/test/
+├── java/gift/cucumber/
+│   ├── RunCucumberTest.java              # Cucumber 실행 진입점
+│   ├── CucumberSpringConfiguration.java  # Spring Boot 통합 설정
+│   ├── hooks/
+│   │   └── DataCleanupHook.java          # 시나리오별 데이터 초기화
+│   ├── common/
+│   │   ├── ScenarioContext.java          # 시나리오 공유 상태
+│   │   └── CommonSteps.java             # 공통 step (응답 상태 코드 검증)
+│   ├── category/                         # 카테고리 도메인
+│   ├── product/                          # 상품 도메인
+│   └── gift/                             # 선물 도메인
+└── resources/features/
+    ├── 카테고리_관리.feature              # @api @category
+    ├── 상품_관리.feature                  # @api @product
+    └── 선물_전송.feature                  # @api @gift
+```
