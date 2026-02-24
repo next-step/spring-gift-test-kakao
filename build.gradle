@@ -22,6 +22,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
 	testImplementation platform('io.cucumber:cucumber-bom:7.22.0')
@@ -32,5 +33,26 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeEngines 'cucumber'
+	}
+	exclude '**/CucumberSuite*'
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker-compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker-compose', 'down', '-v'
+}
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'cucumber.glue', 'gift.acceptance.cucumber'
+	systemProperty 'cucumber.plugin', 'pretty'
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
 }
