@@ -432,16 +432,25 @@ java -jar build/libs/spring-gift-test-0.0.1-SNAPSHOT.jar
 # 인수 테스트 (H2, Docker 불필요)
 ./gradlew test
 
-# Cucumber BDD 테스트 (PostgreSQL + Docker)
+# Cucumber BDD 테스트 (Docker: PostgreSQL + App)
 ./gradlew cucumberTest
 ```
 
-| 명령어 | DB | 대상 | Docker 필요 |
-|--------|-----|------|------------|
-| `./gradlew test` | H2 | AcceptanceTest | 아니오 |
-| `./gradlew cucumberTest` | PostgreSQL | Cucumber 시나리오 | 예 |
+| 명령어 | DB | 앱 실행 위치 | 대상 | Docker 필요 |
+|--------|-----|------------|------|------------|
+| `./gradlew test` | H2 | Host JVM (내장 Tomcat) | AcceptanceTest | 아니오 |
+| `./gradlew cucumberTest` | PostgreSQL (Docker) | Docker 컨테이너 | Cucumber 시나리오 | 예 |
 
-`cucumberTest`는 자동으로 Docker Compose를 통해 PostgreSQL 컨테이너를 시작하고, healthcheck 통과 후 테스트를 실행합니다. 테스트 완료 후 컨테이너는 유지되며, 수동 정리는 `./gradlew dockerComposeDown`으로 수행합니다.
+`cucumberTest`는 자동으로 Docker 이미지 빌드 → PostgreSQL + App 컨테이너 시작 → 테스트 실행 → 컨테이너 정리를 수행합니다.
+
+### Docker 개별 명령어
+
+```bash
+./gradlew dockerBuild   # Docker 이미지 빌드
+./gradlew dockerUp      # PostgreSQL + App 시작 (healthcheck 대기)
+curl http://localhost:28080/api/categories  # 앱 응답 확인
+./gradlew dockerDown    # 컨테이너 정리
+```
 
 테스트 결과 리포트:
 - `build/reports/tests/test/index.html`
