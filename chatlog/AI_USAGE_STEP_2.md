@@ -94,3 +94,9 @@
   - `GiftStepDefinitions.java`: `OptionRepository` import/필드/`옵션의_재고를_확인한다` 스텝 메서드 완전 제거. Option, assertThat import도 제거.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 7 시나리오). `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개). 프로덕션 코드(Repository) 의존 없이 순수 API 블랙박스 테스트 달성.
 - **교훈**: 인수 테스트는 시스템의 외부 인터페이스(API)만으로 검증해야 한다. 내부 구현(Repository)에 의존하면 화이트박스 테스트가 되어 인수 테스트 목적에 어긋남.
+
+## 2-6-2. ProductStepDefinitions에서도 Repository 의존 제거
+- **Prompt**: 동일 맥락의 피드백 반영. ProductStepDefinitions에서 ProductRepository로 상품 개수/카테고리를 직접 조회하던 것을 `GET /api/products` API 호출로 대체.
+- **Action**:
+  - `ProductStepDefinitions.java`: `ProductRepository` import/필드 제거. `상품_개수를_확인한다`와 `상품의_카테고리를_확인한다` 스텝을 `GET /api/products` API 응답의 JSON으로 검증하도록 변경. Product 엔티티 import도 제거.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 7 시나리오). 모든 Step Definition에서 Repository 의존 완전 제거 완료. Cucumber 테스트 코드가 순수하게 API(HTTP) 계층만 사용.

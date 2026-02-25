@@ -1,21 +1,15 @@
 package gift.cucumber;
 
-import gift.model.Product;
-import gift.model.ProductRepository;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProductStepDefinitions {
-
-    @Autowired
-    ProductRepository productRepository;
 
     @Autowired
     ScenarioContext scenarioContext;
@@ -43,16 +37,23 @@ public class ProductStepDefinitions {
 
     @Then("^상품이 (\\d+)개 등록되어 있다$")
     public void 상품_개수를_확인한다(int expectedCount) {
-        List<Product> products = productRepository.findAll();
-        assertThat(products).hasSize(expectedCount);
+        Response response = RestAssured.given()
+                .when()
+                .get("/api/products");
+
+        assertThat(response.jsonPath().getList("$")).hasSize(expectedCount);
     }
 
     @Then("^등록된 상품 \"([^\"]*)\"의 카테고리 ID는 (\\d+)이다$")
     public void 상품의_카테고리를_확인한다(String productName, long expectedCategoryId) {
-        Product product = productRepository.findAll().stream()
-                .filter(p -> p.getName().equals(productName))
-                .findFirst()
-                .orElseThrow();
-        assertThat(product.getCategory().getId()).isEqualTo(expectedCategoryId);
+        Response response = RestAssured.given()
+                .when()
+                .get("/api/products");
+
+        long categoryId = response.jsonPath()
+                .getList("findAll { it.name == '" + productName + "' }.category.id", Long.class)
+                .getFirst();
+
+        assertThat(categoryId).isEqualTo(expectedCategoryId);
     }
 }
