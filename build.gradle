@@ -141,7 +141,7 @@ tasks.register('cucumberTest') {
 tasks.register('dockerDown') {
 	doLast {
 		exec {
-			commandLine 'docker-compose', 'down'
+			commandLine 'docker-compose', 'down', '-v'
 		}
 	}
 }
