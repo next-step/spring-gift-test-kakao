@@ -35,16 +35,16 @@ TEST_STRATEGY.md에 따라 **API 엔드포인트 단위로 행위를 식별**하
 
 ### 시나리오별 리스크
 
-| 시나리오 | Impact | Likelihood | Detection Cost | Risk | 자동화 |
-|----------|--------|------------|----------------|------|--------|
-| 카테고리 생성 성공 | High | High | High | **High** | 자동화 |
-| 카테고리 생성 후 조회 반영 | High | High | High | **High** | 자동화 |
-| 상품 생성 성공 | High | High | High | **High** | 자동화 |
-| 상품 생성 후 조회 반영 | High | High | High | **High** | 자동화 |
-| 존재하지 않는 카테고리로 상품 생성 | Medium | Medium | Medium | **Medium** | 자동화 |
-| 재고 충분 시 선물 발송 성공 | High | High | High | **High** | 자동화 |
-| 재고 부족 시 선물 발송 실패 | High | High | High | **High** | 자동화 |
-| 존재하지 않는 옵션으로 선물 발송 | Medium | Medium | Medium | **Medium** | 자동화 |
+| 시나리오 | Impact | Likelihood | Detection Cost | Risk |
+|----------|--------|------------|----------------|------|
+| 재고 충분 시 선물 발송 성공 | High | High | High | **High** |
+| 재고 부족 시 선물 발송 실패 | High | High | High | **High** |
+| 상품 생성 성공 | Medium | Medium | Low | **Medium** |
+| 상품 생성 후 조회 반영 | Medium | Medium | Low | **Medium** |
+| 존재하지 않는 옵션으로 선물 발송 | Medium | Low | Medium | **Medium** |
+| 존재하지 않는 카테고리로 상품 생성 | Medium | Low | Medium | **Medium** |
+| 카테고리 생성 성공 | Low | Low | Low | **Low** |
+| 카테고리 생성 후 조회 반영 | Low | Low | Low | **Low** |
 
 ---
 
