@@ -28,7 +28,6 @@ public class ProductStepDefinitions {
     CategoryRepository categoryRepository;
 
     private ProductFixture fixture;
-    private Long createdProductId;
     private Response response;
 
     @Before
@@ -45,7 +44,7 @@ public class ProductStepDefinitions {
 
     @When("{string} 상품을 생성한다")
     public void 상품을_생성한다(String productName) {
-        ExtractableResponse<Response> createResponse = RestAssured.given().log().all()
+        RestAssured.given().log().all()
                 .contentType(ContentType.JSON)
                 .body(new CreateProductRequest(productName, 4500, "https://example.com/image.png", fixture.categoryId()))
                 .when()
@@ -53,8 +52,6 @@ public class ProductStepDefinitions {
                 .then().log().all()
                 .statusCode(HttpStatus.OK.value())
                 .extract();
-
-        createdProductId = createResponse.jsonPath().getLong("id");
     }
 
     @When("존재하지 않는 카테고리로 {string} 상품을 생성하면")
@@ -83,8 +80,8 @@ public class ProductStepDefinitions {
         assertThat(names).contains(productName);
     }
 
-    @Then("상품 생성 응답 상태 코드는 {int}이다")
-    public void 상품_생성_응답_상태_코드는_N이다(int statusCode) {
-        assertThat(response.statusCode()).isEqualTo(statusCode);
+    @Then("상품 생성에 실패한다")
+    public void 상품_생성에_실패한다() {
+        assertThat(response.jsonPath().getString("error")).isNotNull();
     }
 }

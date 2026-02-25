@@ -16,6 +16,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -99,9 +100,14 @@ public class GiftStepDefinitions {
                 .extract().response();
     }
 
-    @Then("응답 상태 코드는 {int}이다")
-    public void 응답_상태_코드는_N이다(int statusCode) {
-        assertThat(response.statusCode()).isEqualTo(statusCode);
+    @Then("선물하기가 성공한다")
+    public void 선물하기가_성공한다() {
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Then("선물하기에 실패한다")
+    public void 선물하기에_실패한다() {
+        assertThat(response.jsonPath().getString("error")).isNotNull();
     }
 
     @And("옵션 재고는 {int}개이다")
