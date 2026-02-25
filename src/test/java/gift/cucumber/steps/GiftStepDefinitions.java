@@ -29,31 +29,7 @@ public class GiftStepDefinitions {
 
     @Given("{string} 옵션의 재고가 {int}개 있다")
     public void 옵션의_재고가_있다(String optionName, int quantity) {
-        Long categoryId = given()
-                .contentType(ContentType.JSON)
-                .body(Map.of("name", "음료"))
-        .when()
-                .post("/api/categories")
-        .then()
-                .extract()
-                .jsonPath()
-                .getLong("id");
-
-        Long productId = given()
-                .contentType(ContentType.JSON)
-                .body(Map.of(
-                        "name", "아메리카노",
-                        "price", 4500,
-                        "imageUrl", "https://example.com/image.png",
-                        "categoryId", categoryId
-                ))
-        .when()
-                .post("/api/products")
-        .then()
-                .extract()
-                .jsonPath()
-                .getLong("id");
-
+        Long productId = context.get("productId", Long.class);
         Option option = optionFixture.builder()
                 .name(optionName)
                 .quantity(quantity)
