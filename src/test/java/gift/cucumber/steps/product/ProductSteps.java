@@ -54,23 +54,14 @@ public class ProductSteps {
     @When("관리자가 다음 상품을 생성한다:")
     public void 관리자가_다음_상품을_생성한다(DataTable dataTable) {
         Map<String, String> row = dataTable.asMaps(String.class, String.class).get(0);
-        Long categoryId = scenarioContext.getSavedCategoryId();
+        Long categoryId = row.containsKey("categoryId")
+            ? Long.parseLong(row.get("categoryId"))
+            : scenarioContext.getSavedCategoryId();
         scenarioContext.setLastResponse(productApiClient.createProduct(
             row.get("name"),
             Integer.parseInt(row.get("price")),
             row.get("imageUrl"),
             categoryId
-        ));
-    }
-
-    @When("관리자가 존재하지 않는 카테고리로 상품을 생성한다:")
-    public void 관리자가_존재하지_않는_카테고리로_상품을_생성한다(DataTable dataTable) {
-        Map<String, String> row = dataTable.asMaps(String.class, String.class).get(0);
-        scenarioContext.setLastResponse(productApiClient.createProduct(
-            row.get("name"),
-            Integer.parseInt(row.get("price")),
-            row.get("imageUrl"),
-            Long.parseLong(row.get("categoryId"))
         ));
     }
 

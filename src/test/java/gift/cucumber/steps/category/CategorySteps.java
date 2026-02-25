@@ -31,6 +31,11 @@ public class CategorySteps {
         categoryRepositorySupport.assertEmpty();
     }
 
+    @Given("카테고리 ID {long}는 존재하지 않는다")
+    public void 카테고리_ID는_존재하지_않는다(Long categoryId) {
+        categoryRepositorySupport.assertNotExistsById(categoryId);
+    }
+
     @Given("다음 카테고리들이 등록되어 있다:")
     public void 다음_카테고리들이_등록되어_있다(DataTable dataTable) {
         final List<String> names = dataTable

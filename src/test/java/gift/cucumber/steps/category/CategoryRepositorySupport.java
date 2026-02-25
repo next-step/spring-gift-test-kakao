@@ -28,6 +28,10 @@ public class CategoryRepositorySupport {
         assertThat(categoryRepository.count()).isZero();
     }
 
+    public void assertNotExistsById(final Long id) {
+        assertThat(categoryRepository.findById(id)).isEmpty();
+    }
+
     public void assertSaved(final String name) {
         assertThat(categoryRepository.findAll())
             .extracting(Category::getName)

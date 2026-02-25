@@ -34,7 +34,8 @@ Feature: 관리자가 상품을 관리할 수 있다
     And 데이터베이스에 "노트북" 상품이 저장되어 있다
 
   Scenario: 존재하지 않는 카테고리로 상품 생성 시 실패
-    When 관리자가 존재하지 않는 카테고리로 상품을 생성한다:
+    Given 카테고리 ID 9999는 존재하지 않는다
+    When 관리자가 다음 상품을 생성한다:
       | name | price   | imageUrl                         | categoryId |
       | 노트북  | 1500000 | https://example.com/notebook.png | 9999       |
     Then 응답 상태 코드는 500이다
