@@ -14,10 +14,13 @@ import io.cucumber.java.ko.만약;
 import io.cucumber.java.ko.조건;
 import io.restassured.http.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class GiftStepDefinitions {
 
@@ -35,6 +38,9 @@ public class GiftStepDefinitions {
 
     @Autowired
     private MemberFixture memberFixture;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @조건("재고가 {int}인 옵션이 등록되어 있다")
     public void 재고가_인_옵션이_등록되어_있다(int quantity) {
@@ -111,5 +117,15 @@ public class GiftStepDefinitions {
                 .extract();
 
         context.setResponse(response);
+    }
+
+    @그리고("옵션의 재고가 {int}이다")
+    public void 옵션의_재고가_이다(int expectedQuantity) {
+        Integer quantity = jdbcTemplate.queryForObject(
+                "SELECT quantity FROM option WHERE id = ?",
+                Integer.class,
+                context.getOptionId()
+        );
+        assertThat(quantity, equalTo(expectedQuantity));
     }
 }

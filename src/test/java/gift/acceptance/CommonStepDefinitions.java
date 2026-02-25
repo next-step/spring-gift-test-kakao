@@ -28,14 +28,36 @@ public class CommonStepDefinitions {
         databaseCleanup.execute();
     }
 
-    @그러면("응답 상태 코드는 {int}이다")
-    public void 응답_상태_코드는_이다(int statusCode) {
-        assertThat(context.getResponse().statusCode(), equalTo(statusCode));
+    @그러면("카테고리가 정상적으로 생성된다")
+    public void 카테고리가_정상적으로_생성된다() {
+        assertThat(context.getResponse().statusCode(), equalTo(200));
+        assertThat(context.getResponse().jsonPath().get("id"), notNullValue());
     }
 
-    @그리고("응답의 {string} 필드는 비어있지 않다")
-    public void 응답의_필드는_비어있지_않다(String fieldName) {
-        assertThat(context.getResponse().jsonPath().get(fieldName), notNullValue());
+    @그러면("상품이 정상적으로 생성된다")
+    public void 상품이_정상적으로_생성된다() {
+        assertThat(context.getResponse().statusCode(), equalTo(200));
+        assertThat(context.getResponse().jsonPath().get("id"), notNullValue());
+    }
+
+    @그러면("정상적으로 조회된다")
+    public void 정상적으로_조회된다() {
+        assertThat(context.getResponse().statusCode(), equalTo(200));
+    }
+
+    @그러면("선물이 정상적으로 전달된다")
+    public void 선물이_정상적으로_전달된다() {
+        assertThat(context.getResponse().statusCode(), equalTo(200));
+    }
+
+    @그러면("선물 전달이 실패한다")
+    public void 선물_전달이_실패한다() {
+        assertThat(context.getResponse().statusCode(), equalTo(500));
+    }
+
+    @그러면("상품 생성이 실패한다")
+    public void 상품_생성이_실패한다() {
+        assertThat(context.getResponse().statusCode(), equalTo(500));
     }
 
     @그리고("응답의 {string} 필드는 {string}이다")
