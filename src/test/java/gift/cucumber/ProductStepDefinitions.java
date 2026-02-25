@@ -14,8 +14,9 @@ public class ProductStepDefinitions {
     @Autowired
     ScenarioContext scenarioContext;
 
-    @When("^\"([^\"]*)\" 상품을 가격 (\\d+), 이미지 \"([^\"]*)\", 카테고리 (\\d+)로 등록하면$")
-    public void 상품을_등록하면(String name, int price, String imageUrl, long categoryId) {
+    @When("^\"([^\"]*)\" 상품을 가격 (\\d+), 이미지 \"([^\"]*)\", 카테고리 \"([^\"]*)\"으로 등록하면$")
+    public void 상품을_등록하면(String name, int price, String imageUrl, String categoryName) {
+        long categoryId = scenarioContext.getId(categoryName);
         int statusCode = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body("""
@@ -35,6 +36,27 @@ public class ProductStepDefinitions {
         scenarioContext.setResponseStatusCode(statusCode);
     }
 
+    @When("^\"([^\"]*)\" 상품을 가격 (\\d+), 이미지 \"([^\"]*)\", 존재하지 않는 카테고리로 등록하면$")
+    public void 상품을_존재하지않는_카테고리로_등록하면(String name, int price, String imageUrl) {
+        int statusCode = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "name": "%s",
+                            "price": %d,
+                            "imageUrl": "%s",
+                            "categoryId": 999
+                        }
+                        """.formatted(name, price, imageUrl))
+                .when()
+                .post("/api/products")
+                .then()
+                .extract()
+                .statusCode();
+
+        scenarioContext.setResponseStatusCode(statusCode);
+    }
+
     @Then("^상품이 (\\d+)개 등록되어 있다$")
     public void 상품_개수를_확인한다(int expectedCount) {
         Response response = RestAssured.given()
@@ -44,16 +66,16 @@ public class ProductStepDefinitions {
         assertThat(response.jsonPath().getList("$")).hasSize(expectedCount);
     }
 
-    @Then("^등록된 상품 \"([^\"]*)\"의 카테고리 ID는 (\\d+)이다$")
-    public void 상품의_카테고리를_확인한다(String productName, long expectedCategoryId) {
+    @Then("^등록된 상품 \"([^\"]*)\"의 카테고리는 \"([^\"]*)\"이다$")
+    public void 상품의_카테고리를_확인한다(String productName, String expectedCategoryName) {
         Response response = RestAssured.given()
                 .when()
                 .get("/api/products");
 
-        long categoryId = response.jsonPath()
-                .getList("findAll { it.name == '" + productName + "' }.category.id", Long.class)
+        String categoryName = response.jsonPath()
+                .getList("findAll { it.name == '" + productName + "' }.category.name", String.class)
                 .getFirst();
 
-        assertThat(categoryId).isEqualTo(expectedCategoryId);
+        assertThat(categoryName).isEqualTo(expectedCategoryName);
     }
 }

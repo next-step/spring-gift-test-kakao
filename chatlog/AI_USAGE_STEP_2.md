@@ -100,3 +100,14 @@
 - **Action**:
   - `ProductStepDefinitions.java`: `ProductRepository` import/필드 제거. `상품_개수를_확인한다`와 `상품의_카테고리를_확인한다` 스텝을 `GET /api/products` API 응답의 JSON으로 검증하도록 변경. Product 엔티티 import도 제거.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 7 시나리오). 모든 Step Definition에서 Repository 의존 완전 제거 완료. Cucumber 테스트 코드가 순수하게 API(HTTP) 계층만 사용.
+
+## 2-7. Feature 파일에서 기술적 세부사항(ID) 제거 — 이름 기반 참조로 전환
+- **Prompt**: 피드백 반영. Feature 파일에 노출된 ID(회원 ID, 카테고리 ID, 상품 ID, 옵션 ID)를 모두 제거하고, 이름만으로 엔티티를 참조하도록 전환. 비개발자도 읽을 수 있는 명세가 되도록 개선.
+- **Action**:
+  - `ScenarioContext.java`: `Map<String, Long> ids` 필드 추가. `storeId(name, id)` / `getId(name)` 메서드로 이름→ID 매핑 관리. Given에서 저장, When/Then에서 조회.
+  - `gift.feature`: `회원 "보내는사람"(ID: 1)` → `회원 "보내는사람"`, `카테고리ID: 1` → `카테고리: "식품"`, `회원 1이 옵션 1을` → `"보내는사람"이 옵션 "기본"을`. 모든 숫자 ID 제거.
+  - `product.feature`: `카테고리 1로 등록` → `카테고리 "식품"으로 등록`, `카테고리 ID는 1이다` → `카테고리는 "식품"이다`, `카테고리 999로 등록` → `존재하지 않는 카테고리로 등록`.
+  - `CommonStepDefinitions.java`: 하드코딩 ID INSERT → `KeyHolder`로 자동 생성 ID 반환 후 `scenarioContext.storeId()`에 저장. `TRUNCATE ... RESTART IDENTITY CASCADE`로 시퀀스 초기화.
+  - `GiftStepDefinitions.java`: 옵션 Given에 상품 이름 파라미터 추가(`상품 "초콜릿"에 옵션 "기본"`). When에서 이름으로 ID 조회.
+  - `ProductStepDefinitions.java`: 카테고리 이름으로 ID 조회 후 API 호출. `존재하지 않는 카테고리로 등록` 별도 스텝 추가. Then에서 카테고리명으로 검증.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). `./gradlew test` BUILD SUCCESSFUL (6개). Feature 파일에서 숫자 ID 완전 제거. 시나리오가 자연어처럼 읽히는 비즈니스 명세 수준으로 개선됨.
