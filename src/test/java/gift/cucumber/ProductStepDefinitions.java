@@ -17,7 +17,7 @@ public class ProductStepDefinitions {
     @When("^\"([^\"]*)\" 상품을 가격 (\\d+), 이미지 \"([^\"]*)\", 카테고리 \"([^\"]*)\"으로 등록하면$")
     public void 상품을_등록하면(String name, int price, String imageUrl, String categoryName) {
         long categoryId = scenarioContext.getId(categoryName);
-        int statusCode = RestAssured.given()
+        Response response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -28,17 +28,14 @@ public class ProductStepDefinitions {
                         }
                         """.formatted(name, price, imageUrl, categoryId))
                 .when()
-                .post("/api/products")
-                .then()
-                .extract()
-                .statusCode();
+                .post("/api/products");
 
-        scenarioContext.setResponseStatusCode(statusCode);
+        scenarioContext.setResponse(response);
     }
 
     @When("^\"([^\"]*)\" 상품을 가격 (\\d+), 이미지 \"([^\"]*)\", 존재하지 않는 카테고리로 등록하면$")
     public void 상품을_존재하지않는_카테고리로_등록하면(String name, int price, String imageUrl) {
-        int statusCode = RestAssured.given()
+        Response response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -49,12 +46,9 @@ public class ProductStepDefinitions {
                         }
                         """.formatted(name, price, imageUrl))
                 .when()
-                .post("/api/products")
-                .then()
-                .extract()
-                .statusCode();
+                .post("/api/products");
 
-        scenarioContext.setResponseStatusCode(statusCode);
+        scenarioContext.setResponse(response);
     }
 
     @Then("^상품이 (\\d+)개 등록되어 있다$")

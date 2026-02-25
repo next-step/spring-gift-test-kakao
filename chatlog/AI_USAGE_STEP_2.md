@@ -111,3 +111,12 @@
   - `GiftStepDefinitions.java`: 옵션 Given에 상품 이름 파라미터 추가(`상품 "초콜릿"에 옵션 "기본"`). When에서 이름으로 ID 조회.
   - `ProductStepDefinitions.java`: 카테고리 이름으로 ID 조회 후 API 호출. `존재하지 않는 카테고리로 등록` 별도 스텝 추가. Then에서 카테고리명으로 검증.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). `./gradlew test` BUILD SUCCESSFUL (6개). Feature 파일에서 숫자 ID 완전 제거. 시나리오가 자연어처럼 읽히는 비즈니스 명세 수준으로 개선됨.
+
+## 2-8. ScenarioContext에 Response 전체 저장으로 확장성 개선
+- **Prompt**: 피드백 반영. ScenarioContext에 `int responseStatusCode`만 저장하던 것을 RestAssured `Response` 객체 전체를 저장하도록 변경. 상태 코드 외 응답 바디 검증까지 확장 가능하도록 개선.
+- **Action**:
+  - `ScenarioContext.java`: `int responseStatusCode` → `Response response`로 변경. getter/setter도 `getResponse()` / `setResponse()`로 변경.
+  - `GiftStepDefinitions.java`: `.then().extract().statusCode()` 체이닝 제거. `.post()` 반환값인 `Response`를 그대로 `scenarioContext.setResponse()`에 저장.
+  - `ProductStepDefinitions.java`: 동일하게 `Response` 전체 저장으로 변경.
+  - `CommonStepDefinitions.java`: `scenarioContext.getResponseStatusCode()` → `scenarioContext.getResponse().statusCode()`로 변경.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). 기존 동작 유지하면서 향후 `response.jsonPath()`, `response.body()` 등으로 응답 바디 검증 확장 가능한 구조 확보.

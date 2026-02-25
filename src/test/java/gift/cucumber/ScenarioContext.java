@@ -1,6 +1,7 @@
 package gift.cucumber;
 
 import io.cucumber.spring.ScenarioScope;
+import io.restassured.response.Response;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -9,15 +10,15 @@ import java.util.Map;
 @Component
 @ScenarioScope
 public class ScenarioContext {
-    private int responseStatusCode;
+    private Response response;
     private final Map<String, Long> ids = new HashMap<>();
 
-    public int getResponseStatusCode() {
-        return responseStatusCode;
+    public Response getResponse() {
+        return response;
     }
 
-    public void setResponseStatusCode(int responseStatusCode) {
-        this.responseStatusCode = responseStatusCode;
+    public void setResponse(Response response) {
+        this.response = response;
     }
 
     public void storeId(String name, long id) {

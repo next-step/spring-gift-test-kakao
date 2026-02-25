@@ -59,7 +59,7 @@ public class CommonStepDefinitions {
 
     @Then("^응답 상태 코드는 (\\d+)이다$")
     public void 응답_상태_코드를_확인한다(int expectedStatusCode) {
-        assertThat(scenarioContext.getResponseStatusCode()).isEqualTo(expectedStatusCode);
+        assertThat(scenarioContext.getResponse().statusCode()).isEqualTo(expectedStatusCode);
     }
 
     private long insertAndReturnId(String sql, Object... params) {

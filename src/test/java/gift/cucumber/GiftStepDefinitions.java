@@ -4,6 +4,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -41,7 +42,7 @@ public class GiftStepDefinitions {
         long optionId = scenarioContext.getId(optionName);
         long receiverId = scenarioContext.getId(receiverName);
 
-        int statusCode = RestAssured.given()
+        Response response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", senderId)
                 .body("""
@@ -53,11 +54,8 @@ public class GiftStepDefinitions {
                         }
                         """.formatted(optionId, quantity, receiverId, message))
                 .when()
-                .post("/api/gifts")
-                .then()
-                .extract()
-                .statusCode();
+                .post("/api/gifts");
 
-        scenarioContext.setResponseStatusCode(statusCode);
+        scenarioContext.setResponse(response);
     }
 }
