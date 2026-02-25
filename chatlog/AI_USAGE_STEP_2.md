@@ -86,3 +86,11 @@
 - **Action**:
   - `README.md`: 전제 조건(Java 21, Docker), 빌드/테스트 명령어, 테스트 아키텍처 다이어그램(Host → App 컨테이너 :28080, Host → PostgreSQL 컨테이너 :25432) 작성.
 - **Outcome**: README.md 작성 완료.
+
+## 2-6. OptionRepository 의존 제거 — API-only 행동 검증으로 전환
+- **Prompt**: 피드백 반영. GiftStepDefinitions에서 OptionRepository로 재고를 직접 확인하는 방식을 제거하고, API 응답(성공/실패)만으로 재고 변화를 증명하는 행동 기반 시나리오로 재구성.
+- **Action**:
+  - `gift.feature`: 5개 시나리오로 재구성. `옵션 N의 재고는 N개이다` Then 스텝 제거. 대신 연속 선물 시도의 성공/실패 조합으로 재고 차감을 간접 증명 (예: 10개 중 3개 선물 → 200, 7개 더 → 200, 1개 더 → 500으로 정확한 차감량 증명. 실패 시 재고 미차감은 5개 시도 → 500 후 2개 시도 → 200으로 증명).
+  - `GiftStepDefinitions.java`: `OptionRepository` import/필드/`옵션의_재고를_확인한다` 스텝 메서드 완전 제거. Option, assertThat import도 제거.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (Cucumber 7 시나리오). `./gradlew test` BUILD SUCCESSFUL (RestAssured 6개). 프로덕션 코드(Repository) 의존 없이 순수 API 블랙박스 테스트 달성.
+- **교훈**: 인수 테스트는 시스템의 외부 인터페이스(API)만으로 검증해야 한다. 내부 구현(Repository)에 의존하면 화이트박스 테스트가 되어 인수 테스트 목적에 어긋남.

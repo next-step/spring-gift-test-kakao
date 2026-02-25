@@ -1,24 +1,16 @@
 package gift.cucumber;
 
-import gift.model.Option;
-import gift.model.OptionRepository;
 import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class GiftStepDefinitions {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    OptionRepository optionRepository;
 
     @Autowired
     ScenarioContext scenarioContext;
@@ -52,9 +44,4 @@ public class GiftStepDefinitions {
         scenarioContext.setResponseStatusCode(statusCode);
     }
 
-    @Then("^옵션 (\\d+)의 재고는 (\\d+)개이다$")
-    public void 옵션의_재고를_확인한다(long optionId, int expectedQuantity) {
-        Option option = optionRepository.findById(optionId).orElseThrow();
-        assertThat(option.getQuantity()).isEqualTo(expectedQuantity);
-    }
 }
