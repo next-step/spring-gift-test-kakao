@@ -18,14 +18,76 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+
+	// Cucumber BDD
+	testImplementation 'io.cucumber:cucumber-java:7.18.0'
+	testImplementation 'io.cucumber:cucumber-spring:7.18.0'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.18.0'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('checkDb', Exec) {
+	description = 'Start PostgreSQL test container and wait for healthcheck'
+	group = 'verification'
+
+	commandLine 'docker', 'compose', 'up', '-d', '--wait', 'postgres-test'
+}
+
+tasks.register('cucumberTest', Test) {
+	description = 'Run Cucumber BDD tests against Docker containers'
+	group = 'verification'
+
+	useJUnitPlatform()
+	systemProperty 'spring.profiles.active', 'docker'
+
+	filter {
+		includeTestsMatching 'gift.cucumber.*'
+	}
+}
+
+tasks.register('cucumberLocalTest', Test) {
+	description = 'Run Cucumber BDD tests with embedded server and PostgreSQL'
+	group = 'verification'
+
+	dependsOn 'checkDb'
+
+	useJUnitPlatform()
+	systemProperty 'spring.profiles.active', 'test'
+
+	filter {
+		includeTestsMatching 'gift.cucumber.*'
+	}
+}
+
+tasks.register('dockerBuild', Exec) {
+	description = 'Build Docker image for the application'
+	group = 'docker'
+
+	commandLine 'docker', 'compose', 'build', 'app'
+}
+
+tasks.register('dockerUp', Exec) {
+	description = 'Start all Docker containers'
+	group = 'docker'
+
+	commandLine 'docker', 'compose', 'up', '-d'
+}
+
+tasks.register('dockerDown', Exec) {
+	description = 'Stop and remove all Docker containers'
+	group = 'docker'
+
+	commandLine 'docker', 'compose', 'down'
 }
