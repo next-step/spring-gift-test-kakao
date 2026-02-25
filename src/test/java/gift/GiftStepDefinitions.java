@@ -21,7 +21,6 @@ import gift.model.Option;
 import gift.model.OptionRepository;
 import gift.model.Product;
 import gift.model.ProductRepository;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -30,6 +29,9 @@ public class GiftStepDefinitions {
 	private static final String BASE_URL = "http://localhost:28080/api";
 
 	private final RestTemplate restTemplate = new RestTemplate();
+
+	@Autowired
+	private SharedContext sharedContext;
 
 	@Autowired
 	private CategoryRepository categoryRepository;
@@ -48,19 +50,6 @@ public class GiftStepDefinitions {
 	private Option option;
 	private Long invalidOptionId;
 	private Long invalidSenderId;
-	private ResponseEntity<Void> response;
-
-	@Before
-	public void setUp() {
-		optionRepository.deleteAll();
-		productRepository.deleteAll();
-		categoryRepository.deleteAll();
-		memberRepository.deleteAll();
-		option = null;
-		invalidOptionId = null;
-		invalidSenderId = null;
-		response = null;
-	}
 
 	// === Background Steps ===
 
@@ -100,12 +89,12 @@ public class GiftStepDefinitions {
 	@When("선물할 개수를 {int}개로 선택한다.")
 	public void 선물할_개수를_N개로_선택한다(int quantity) {
 		Long optionId = (invalidOptionId != null) ? invalidOptionId : option.getId();
-		response = sendGift(optionId, quantity, sender.getId());
+		sendGift(optionId, quantity, sender.getId());
 	}
 
 	@When("존재하지 않는 발신자가 선물할 개수를 {int}개로 선택한다.")
 	public void 존재하지_않는_발신자가_선물할_개수를_N개로_선택한다(int quantity) {
-		response = sendGift(option.getId(), quantity, invalidSenderId);
+		sendGift(option.getId(), quantity, invalidSenderId);
 	}
 
 	// === Then Steps ===
@@ -118,14 +107,9 @@ public class GiftStepDefinitions {
 		assertThat(actualStock).isEqualTo(expectedStock);
 	}
 
-	@Then("응답 상태 코드는 {int}을 반환한다.")
-	public void 응답_상태_코드는_N을_반환한다(int statusCode) {
-		assertThat(response.getStatusCode().value()).isEqualTo(statusCode);
-	}
-
 	// === Helper ===
 
-	private ResponseEntity<Void> sendGift(Long optionId, int quantity, Long senderId) {
+	private void sendGift(Long optionId, int quantity, Long senderId) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Member-Id", String.valueOf(senderId));
@@ -138,14 +122,15 @@ public class GiftStepDefinitions {
 		);
 
 		try {
-			return restTemplate.exchange(
+			ResponseEntity<Void> response = restTemplate.exchange(
 				BASE_URL + "/gifts",
 				HttpMethod.POST,
 				new HttpEntity<>(request, headers),
 				Void.class
 			);
+			sharedContext.setStatusCode(response.getStatusCode().value());
 		} catch (HttpStatusCodeException e) {
-			return ResponseEntity.status(e.getStatusCode()).build();
+			sharedContext.setStatusCode(e.getStatusCode().value());
 		}
 	}
 }
