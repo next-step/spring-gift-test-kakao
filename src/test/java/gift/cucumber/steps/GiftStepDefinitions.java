@@ -52,8 +52,8 @@ public class GiftStepDefinitions {
         context.set("receiverId", receiver.getId());
     }
 
-    @When("회원이 {string} 옵션 {int}개를 선물한다")
-    public void 회원이_옵션을_선물한다(String optionName, int quantity) {
+    @When("회원이 해당 옵션 {int}개를 선물한다")
+    public void 회원이_해당_옵션을_선물한다(int quantity) {
         Long optionId = context.get("optionId", Long.class);
         Long senderId = context.get("senderId", Long.class);
         Long receiverId = context.get("receiverId", Long.class);
