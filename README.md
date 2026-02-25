@@ -24,7 +24,7 @@ colima start
 | 명령어 | 대상 | DB | 앱 실행 방식 |
 |--------|------|----|-------------|
 | `./gradlew test` | Java 인수 테스트 (13개) | H2 (인메모리) | 내장 톰캣 (RANDOM_PORT) |
-| `./gradlew cucumberTest` | Cucumber 시나리오 (13개) | PostgreSQL (Docker) | Spring Boot (Docker) |
+| `./gradlew cucumberTest` | Cucumber 시나리오 (12개) | PostgreSQL (Docker) | Spring Boot (Docker) |
 
 ## Java 인수 테스트
 
@@ -36,21 +36,14 @@ Docker 없이 즉시 실행 가능합니다.
 
 ## Cucumber 인수 테스트 (Docker)
 
-### 단계별 실행
+### 실행
 
 ```bash
-# 1. Docker 이미지 빌드
-./gradlew dockerBuild
-
-# 2. 컨테이너 시작 (PostgreSQL + Spring Boot)
-./gradlew dockerUp
-
-# 3. Cucumber 테스트 실행
 ./gradlew cucumberTest
-
-# 4. 컨테이너 종료
-./gradlew dockerDown
 ```
+
+한 명령으로 빌드 → 컨테이너 시작 → 테스트 → 컨테이너 종료가 자동 실행됩니다.
+테스트 실패 시에도 컨테이너는 자동으로 정리됩니다.
 
 ### 컨테이너 구조
 
