@@ -22,10 +22,46 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.20.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.20.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeEngines 'cucumber'
+	}
+}
+
+task dockerBuild(type: Exec) {
+	commandLine 'docker', 'build', '-t', 'spring-gift-test:latest', '.'
+}
+
+task dockerUp(type: Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+task dockerDown(type: Exec) {
+	commandLine 'docker', 'compose', 'down'
+}
+
+dockerUp.dependsOn dockerBuild
+
+task cucumberTest(type: Test) {
+	description = 'Runs Cucumber tests with PostgreSQL via Docker Compose'
+	group = 'verification'
+
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'spring.profiles.active', 'cucumber'
+	systemProperty 'test.target.port', '28080'
+	systemProperty 'spring.jpa.hibernate.ddl-auto', 'none'
+
+	dependsOn dockerUp
+	finalizedBy dockerDown
 }
