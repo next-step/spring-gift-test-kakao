@@ -23,6 +23,7 @@ public class ProductStepDefinitions {
     CategoryRepository categoryRepository;
 
     private ProductFixture fixture;
+    private ExtractableResponse<Response> listResponse;
     private Response response;
 
     @Given("{string} 카테고리가 준비되어 있다")
@@ -57,15 +58,18 @@ public class ProductStepDefinitions {
                 .extract().response();
     }
 
-    @Then("상품 목록을 조회하면 {string} 상품이 포함되어 있다")
-    public void 상품_목록을_조회하면_상품이_포함되어_있다(String productName) {
-        ExtractableResponse<Response> listResponse = RestAssured.given().log().all()
+    @When("상품 목록을 조회하면")
+    public void 상품_목록을_조회하면() {
+        listResponse = RestAssured.given().log().all()
                 .when()
                 .get("/api/products")
                 .then().log().all()
                 .statusCode(HttpStatus.OK.value())
                 .extract();
+    }
 
+    @Then("상품 목록에 {string} 상품이 포함되어 있다")
+    public void 상품_목록에_상품이_포함되어_있다(String productName) {
         List<String> names = listResponse.jsonPath().getList("name", String.class);
         assertThat(names).contains(productName);
     }
