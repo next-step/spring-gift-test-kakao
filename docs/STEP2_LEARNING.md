@@ -128,6 +128,53 @@ src/test/
 도메인별로 나누되, 여러 도메인에서 공유되는 step(데이터 준비, 응답 검증)은 CommonStepDefs에 둔다.
 데이터 준비 step은 카테고리 insert가 상품 feature에서도 쓰이는 등 도메인을 넘나들기 때문에 Common이 적절하다.
 
+## SharedContext 구현 방식 비교
+
+현재는 `@Component` + `@ScenarioScope`로 Spring 컨테이너에 빈으로 등록하여 StepDefs 간 Response를 공유한다.
+
+### 대안 1: Cucumber PicoContainer
+
+Spring 대신 Cucumber의 기본 경량 DI 컨테이너를 사용하는 방법.
+
+```groovy
+// build.gradle - spring 대신 picocontainer 의존성
+testImplementation 'io.cucumber:cucumber-picocontainer:7.x.x'
+```
+
+- `@Component`, `@ScenarioScope` 불필요. 순수 POJO로 작성.
+- 생성자 주입만으로 동작. PicoContainer가 시나리오마다 새 인스턴스를 자동 생성하므로 `@ScenarioScope`와 동일한 효과.
+- **단점**: Spring 빈(JdbcTemplate 등)을 자동 주입받을 수 없다.
+
+### 대안 2: Static 필드
+
+- 어노테이션도 DI도 필요 없는 가장 단순한 방법.
+- **단점**: 시나리오 간 상태가 격리되지 않고, 병렬 실행 시 충돌. 매 시나리오 전에 수동 초기화 필요.
+
+### 대안 3: ThreadLocal
+
+- Static의 병렬 실행 문제를 해결. 스레드별로 격리됨.
+- **단점**: `@Before`에서 `clear()`를 수동으로 호출해야 하고, DI 패턴에서 벗어남.
+
+### PicoContainer 사용 시 JdbcTemplate 문제
+
+PicoContainer는 Spring 빈을 모르므로 JdbcTemplate을 자동 주입받을 수 없다. 두 가지 방법이 있다:
+
+1. **Raw JDBC**: `DriverManager.getConnection()`으로 직접 커넥션을 생성하고 `PreparedStatement`로 쿼리 실행. Spring 의존 완전 제거 가능하지만 boilerplate가 늘어남.
+2. **JdbcTemplate 수동 생성**: `new HikariDataSource()` → `new JdbcTemplate(dataSource)`로 Spring 컨테이너 없이 직접 생성. `spring-jdbc` 의존성은 필요하고, DB 접속 정보가 코드에 하드코딩됨 (`application.properties` 자동 바인딩 불가).
+
+어느 방식이든 Spring이 자동으로 해주던 것(DataSource 생성, 커넥션 풀 설정, properties 바인딩, 예외 변환)을 수동으로 처리해야 하므로 오히려 코드가 복잡해진다.
+
+### 결론
+
+| 방식 | 장점 | 단점 |
+|------|------|------|
+| **Spring `@ScenarioScope` (현재)** | Spring 빈과 자연스럽게 통합, 시나리오별 자동 격리 | Spring 의존, 어노테이션 필요 |
+| **PicoContainer** | 경량, 순수 POJO, 시나리오별 자동 격리 | Spring 빈 사용 불가, DB 접근 시 수동 처리 필요 |
+| **Static** | 가장 단순 | 격리 안 됨, 병렬 실행 불가 |
+| **ThreadLocal** | 병렬 실행 가능 | 수동 정리 필요, DI 패턴 이탈 |
+
+이 프로젝트에서는 Spring 기반 `@ScenarioScope`를 유지하는게 가장 합리적인 선택이라고 판단했다.
+
 ---
 
 # Step 2: PostgreSQL + Docker Compose 학습 기록
