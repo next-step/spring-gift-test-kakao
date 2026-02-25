@@ -1,4 +1,4 @@
-# spring-gift-test
+# 📑 TEST_STRATEGY.md
 
 ## 1. 비즈니스 맥락 및 검증 범위
 본 프로젝트는 '카카오톡 선물하기'의 핵심 도메인인 제품 관리와 선물 발송 로직을 검증한다. 현재 시스템은 **옵션 재고 차감 기반**으로 동작하며, 인증은 **HTTP Header(Member-Id)**를 통해 수행되는 구조를 따른다.
@@ -58,58 +58,3 @@
 - `GET /api/options/{id}`: 옵션 재고 수량 확인용.
 - `GET /api/gifts/{id}`: 선물 발송 내역 확인용.
 3. **DatabaseCleaner**: 테스트 격리를 위한 TRUNCATE 유틸리티.
-
----
-
-## 6. Step 2 - Cucumber BDD 적용
-
-Step 2 요구사항 1에서 기존 RestAssured 기반 인수 테스트를 Cucumber BDD 형식으로 전환했습니다.
-
-변경 사항 및 학습 내용은 [CUCUMBER_COMPARISON.md](CUCUMBER_COMPARISON.md)를 참고해주세요.
-
----
-
-## 7. Step 2 - PostgreSQL + Docker Compose 통합
-
-Step 2 요구사항 2에서 프로덕션 환경과 동일한 PostgreSQL로 Cucumber 테스트를 실행할 수 있도록 Docker Compose 통합을 추가했습니다.
-
-### 실행 방법
-
-```bash
-# H2 인메모리 테스트 (기존 방식, Docker 불필요)
-./gradlew test
-
-# PostgreSQL Cucumber 테스트 (Docker 자동 관리)
-./gradlew cucumberTest
-```
-
-`cucumberTest`는 Docker Compose로 PostgreSQL을 자동으로 시작하고, 테스트 완료 후 자동으로 종료합니다.
-
-변경 사항 및 H2 vs PostgreSQL 비교는 [POSTGRESQL_COMPARISON.md](POSTGRESQL_COMPARISON.md)를 참고해주세요.
-
----
-
-## 8. Step 2 - Application 컨테이너화 (Docker E2E)
-
-Step 2 요구사항 3에서 Spring Boot 애플리케이션까지 Docker 컨테이너로 실행하여 프로덕션과 동일한 환경에서 E2E 테스트를 수행할 수 있도록 했습니다.
-
-### 실행 방법
-
-```bash
-# 1. Docker 이미지 빌드
-./gradlew dockerBuild
-
-# 2. 전체 스택 시작 (app + postgres)
-./gradlew dockerUp
-
-# 3. 앱 응답 확인
-curl http://localhost:28080/api/categories
-
-# 4. Docker 환경에서 Cucumber 테스트 실행
-./gradlew cucumberTest
-
-# 5. 전체 스택 종료
-./gradlew dockerDown
-```
-
-구현 과정 및 설계 결정은 [DOCKER_IMPLEMENTATION.md](DOCKER_IMPLEMENTATION.md)를 참고해주세요.
