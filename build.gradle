@@ -7,6 +7,10 @@ plugins {
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
+bootJar {
+	archiveFileName = 'app.jar'
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -22,10 +26,46 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.20.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.20.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+	testImplementation 'org.junit.platform:junit-platform-suite:1.11.4'
 }
 
 tasks.named('test') {
+	useJUnitPlatform {
+		excludeEngines 'cucumber'
+	}
+	exclude '**/cucumber/**'
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'build', '-t', 'gift-app', '.'
+	description = 'Build Docker image for the application'
+	group = 'docker'
+}
+
+tasks.register('composeUp', Exec) {
+	dependsOn dockerBuild
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+	description = 'Start application and PostgreSQL via Docker Compose'
+	group = 'docker'
+}
+
+tasks.register('composeDown', Exec) {
+	commandLine 'docker', 'compose', 'down', '-v'
+	description = 'Stop PostgreSQL via Docker Compose'
+	group = 'docker'
+}
+
+tasks.register('cucumberTest', Test) {
 	useJUnitPlatform()
+	include '**/RunCucumberTest.class'
+	description = 'Runs Cucumber tests with PostgreSQL'
+	group = 'verification'
+	dependsOn composeUp
+	finalizedBy composeDown
 }

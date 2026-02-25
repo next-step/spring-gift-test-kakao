@@ -1,167 +1,132 @@
 package gift;
 
-import gift.model.Category;
-import gift.model.CategoryRepository;
-import gift.model.Member;
-import gift.model.MemberRepository;
-import gift.model.Option;
-import gift.model.OptionRepository;
-import gift.model.Product;
-import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AcceptanceTest
 class GiftAcceptanceTest {
 
-    @LocalServerPort
-    int port;
-
     @Autowired
-    DatabaseCleaner databaseCleaner;
-
-    @Autowired
-    CategoryRepository categoryRepository;
-
-    @Autowired
-    ProductRepository productRepository;
-
-    @Autowired
-    OptionRepository optionRepository;
-
-    @Autowired
-    MemberRepository memberRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-        databaseCleaner.clear();
-    }
+    JdbcTemplate jdbcTemplate;
 
     @Test
+    @Sql("/sql/선물_보내기_정상.sql")
     void 정상_선물_보내기() {
-        var category = categoryRepository.save(new Category("식품"));
-        var product = productRepository.save(new Product("케이크", 30000, "https://example.com/cake.jpg", category));
-        var option = optionRepository.save(new Option("기본", 10, product));
-        var sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
-        var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
+        int 초기재고 = 10;
+        int 선물수량 = 3;
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
+                .header("Member-Id", 1)
                 .body("""
                         {
-                            "optionId": %d,
-                            "quantity": 3,
-                            "receiverId": %d,
+                            "optionId": 1,
+                            "quantity": %d,
+                            "receiverId": 2,
                             "message": "생일 축하해!"
                         }
-                        """.formatted(option.getId(), receiver.getId()))
+                        """.formatted(선물수량))
                 .when()
                 .post("/api/gifts")
                 .then()
                 .statusCode(200);
 
-        var updatedOption = optionRepository.findById(option.getId()).orElseThrow();
-        assertThat(updatedOption.getQuantity()).isEqualTo(7);
+        var quantity = jdbcTemplate.queryForObject("SELECT quantity FROM option WHERE id = 1", Integer.class);
+        assertThat(quantity).isEqualTo(초기재고 - 선물수량);
     }
 
     @Test
+    @Sql("/sql/선물_보내기_재고부족.sql")
     void 재고_부족_시_실패() {
-        var category = categoryRepository.save(new Category("식품"));
-        var product = productRepository.save(new Product("케이크", 30000, "https://example.com/cake.jpg", category));
-        var option = optionRepository.save(new Option("기본", 5, product));
-        var sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
-        var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
+        int 초기재고 = 5;
+        int 요청수량 = 10;
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
+                .header("Member-Id", 1)
                 .body("""
                         {
-                            "optionId": %d,
-                            "quantity": 10,
-                            "receiverId": %d,
+                            "optionId": 1,
+                            "quantity": %d,
+                            "receiverId": 2,
                             "message": "선물!"
                         }
-                        """.formatted(option.getId(), receiver.getId()))
+                        """.formatted(요청수량))
                 .when()
                 .post("/api/gifts")
                 .then()
                 .statusCode(500);
 
-        var updatedOption = optionRepository.findById(option.getId()).orElseThrow();
-        assertThat(updatedOption.getQuantity()).isEqualTo(5);
+        var quantity = jdbcTemplate.queryForObject("SELECT quantity FROM option WHERE id = 1", Integer.class);
+        assertThat(quantity).isEqualTo(초기재고);
     }
 
     @Test
+    @Sql("/sql/선물_보내기_재고경계값.sql")
     void 재고_경계값_두_번째_선물이_실패() {
-        var category = categoryRepository.save(new Category("식품"));
-        var product = productRepository.save(new Product("케이크", 30000, "https://example.com/cake.jpg", category));
-        var option = optionRepository.save(new Option("기본", 1, product));
-        var sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
-        var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
+        int 초기재고 = 1;
+        int 선물수량 = 1;
 
         var requestBody = """
                 {
-                    "optionId": %d,
-                    "quantity": 1,
-                    "receiverId": %d,
+                    "optionId": 1,
+                    "quantity": %d,
+                    "receiverId": 2,
                     "message": "선물!"
                 }
-                """.formatted(option.getId(), receiver.getId());
+                """.formatted(선물수량);
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
+                .header("Member-Id", 1)
                 .body(requestBody)
                 .when()
                 .post("/api/gifts")
                 .then()
                 .statusCode(200);
 
-        var afterFirst = optionRepository.findById(option.getId()).orElseThrow();
-        assertThat(afterFirst.getQuantity()).isEqualTo(0);
+        var afterFirst = jdbcTemplate.queryForObject("SELECT quantity FROM option WHERE id = 1", Integer.class);
+        assertThat(afterFirst).isEqualTo(초기재고 - 선물수량);
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
+                .header("Member-Id", 1)
                 .body(requestBody)
                 .when()
                 .post("/api/gifts")
                 .then()
                 .statusCode(500);
 
-        var afterSecond = optionRepository.findById(option.getId()).orElseThrow();
-        assertThat(afterSecond.getQuantity()).isEqualTo(0);
+        var afterSecond = jdbcTemplate.queryForObject("SELECT quantity FROM option WHERE id = 1", Integer.class);
+        assertThat(afterSecond).isEqualTo(초기재고 - 선물수량);
     }
 
     @Test
+    @Sql("/sql/선물_보내기_옵션없음.sql")
     void 존재하지_않는_옵션으로_선물_시도() {
-        var sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
-        var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
-
         RestAssured.given()
                 .contentType(ContentType.JSON)
-                .header("Member-Id", sender.getId())
+                .header("Member-Id", 1)
                 .body("""
                         {
                             "optionId": 999999,
                             "quantity": 1,
-                            "receiverId": %d,
+                            "receiverId": 2,
                             "message": "선물!"
                         }
-                        """.formatted(receiver.getId()))
+                        """)
                 .when()
                 .post("/api/gifts")
                 .then()
                 .statusCode(500);
+
+        var optionCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM option", Integer.class);
+        assertThat(optionCount).isEqualTo(0);
     }
 }
