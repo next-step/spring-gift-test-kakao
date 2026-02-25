@@ -21,11 +21,112 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.22.0'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.0'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
+// --- test: H2로 JUnit 테스트만 실행 (도커 불필요) ---
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude '**/CucumberTest*'
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		showStandardStreams = false
+		exceptionFormat = 'full'
+	}
+}
+
+// --- cucumberTest: Docker + PostgreSQL로 Cucumber 테스트 실행 ---
+tasks.register('composeUp', Exec) {
+	description 'Start PostgreSQL and app with docker-compose'
+	commandLine 'docker', 'compose', 'up', '-d', '--build'
+}
+
+tasks.register('composeDown', Exec) {
+	description 'Stop all containers with docker-compose'
+	commandLine 'docker', 'compose', 'down'
+}
+
+tasks.register('waitForPostgres') {
+	description 'Wait for PostgreSQL to be ready'
+	dependsOn composeUp
+	doLast {
+		def maxRetries = 5
+		for (int i = 1; i <= maxRetries; i++) {
+			def proc = ['docker', 'exec', 'gift-test-db', 'pg_isready', '-U', 'postgres'].execute()
+			proc.waitFor()
+			if (proc.exitValue() == 0) {
+				logger.lifecycle("PostgreSQL is ready.")
+				return
+			}
+			if (i < maxRetries) {
+				logger.lifecycle("PostgreSQL not ready, retrying... (${i}/${maxRetries})")
+				Thread.sleep(2000)
+			} else {
+				throw new GradleException("PostgreSQL failed to start after ${maxRetries} retries")
+			}
+		}
+	}
+}
+
+tasks.register('waitForApp') {
+	description 'Wait for Spring app to be ready'
+	dependsOn waitForPostgres
+	doLast {
+		def maxRetries = 10
+		for (int i = 1; i <= maxRetries; i++) {
+			try {
+				def proc = ['curl', '-sf', 'http://localhost:18080/actuator/health'].execute()
+				proc.waitFor()
+				if (proc.exitValue() == 0) {
+					logger.lifecycle("Spring app is ready.")
+					return
+				}
+			} catch (Exception e) {
+				// ignore
+			}
+			if (i < maxRetries) {
+				logger.lifecycle("Spring app not ready, retrying... (${i}/${maxRetries})")
+				Thread.sleep(3000)
+			} else {
+				throw new GradleException("Spring app failed to start after ${maxRetries} retries")
+			}
+		}
+	}
+}
+
+tasks.register('resetDatabase') {
+	description 'Drop and recreate the test database'
+	dependsOn waitForPostgres
+	doLast {
+		def drop = ['docker', 'exec', 'gift-test-db',
+			'dropdb', '-U', 'postgres', '--if-exists', 'testdb'].execute()
+		drop.waitFor()
+		def create = ['docker', 'exec', 'gift-test-db',
+			'createdb', '-U', 'postgres', 'testdb'].execute()
+		create.waitFor()
+		if (create.exitValue() != 0) {
+			throw new GradleException("Failed to reset database: ${create.err.text}")
+		}
+		logger.lifecycle("Database 'testdb' has been reset.")
+	}
+}
+
+tasks.register('cucumberTest', Test) {
+	description 'Run Cucumber tests with Docker PostgreSQL'
+	useJUnitPlatform()
+	include '**/CucumberTest*'
+	dependsOn resetDatabase, waitForApp
+	finalizedBy composeDown
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		showStandardStreams = false
+		exceptionFormat = 'full'
+	}
 }

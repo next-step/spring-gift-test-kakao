@@ -6,6 +6,7 @@ import gift.model.OptionRepository;
 import gift.model.ProductRepository;
 import gift.model.WishRepository;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +90,7 @@ class CategoryAcceptanceTest {
     ExtractableResponse<Response> createCategory(String name) {
         return RestAssured.given().log().all()
                 .port(port)
-                .contentType("application/json")
+                .contentType(ContentType.JSON)
                 .body(Map.of("name", name))
                 .when()
                 .post("/api/categories")

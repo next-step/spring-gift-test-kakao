@@ -41,10 +41,7 @@ class ProductAcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        wishRepository.deleteAll();
-        optionRepository.deleteAll();
-        productRepository.deleteAll();
-        categoryRepository.deleteAll();
+        initDatabase();
     }
 
     @DisplayName("상품을 생성한다")
@@ -115,5 +112,12 @@ class ProductAcceptanceTest {
                 .post("/api/products")
                 .then().log().all()
                 .extract();
+    }
+
+    private void initDatabase() {
+        wishRepository.deleteAll();
+        optionRepository.deleteAll();
+        productRepository.deleteAll();
+        categoryRepository.deleteAll();
     }
 }

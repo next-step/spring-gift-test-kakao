@@ -65,8 +65,16 @@ class GiftAcceptanceTest {
         var response = giveGift(option.getId(), 3, receiver.getId(), "생일 축하해!", sender.getId());
 
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-        Option updated = optionRepository.findById(option.getId()).orElseThrow();
-        assertThat(updated.getQuantity()).isEqualTo(7);
+    }
+
+    @DisplayName("선물을 보내면 재고가 차감된다")
+    @Test
+    void 선물을_보내면_재고가_차감된다() {
+        var response = giveGift(option.getId(), 10, receiver.getId(), "생일 축하해!", sender.getId());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+
+        var retryResponse = giveGift(option.getId(), 1, receiver.getId(), "한 번 더!", sender.getId());
+        assertThat(retryResponse.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 
     @DisplayName("존재하지 않는 옵션으로 선물하면 실패한다")
