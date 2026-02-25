@@ -44,10 +44,14 @@ tasks.named('test') {
     exclude '**/CucumberTest*'
 }
 
+tasks.withType(Exec).configureEach {
+    environment 'PATH', System.getenv('PATH')
+}
+
 task dockerDbUp(type: Exec) {
     description = 'Start database container'
     group = 'docker'
-    commandLine '/usr/local/bin/docker', 'compose', 'up', '-d', '--wait', 'db'
+    commandLine 'docker', 'compose', 'up', '-d', '--wait', 'db'
 }
 
 bootRun {
@@ -58,19 +62,19 @@ bootRun {
 task dockerBuild(type: Exec) {
     description = 'Build Docker image for the application'
     group = 'docker'
-    commandLine '/usr/local/bin/docker', 'compose', 'build'
+    commandLine 'docker', 'compose', 'build'
 }
 
 task dockerUp(type: Exec) {
     description = 'Start all Docker containers'
     group = 'docker'
-    commandLine '/usr/local/bin/docker', 'compose', 'up', '-d', '--wait'
+    commandLine 'docker', 'compose', 'up', '-d', '--wait'
 }
 
 task dockerDown(type: Exec) {
     description = 'Stop all Docker containers'
     group = 'docker'
-    commandLine '/usr/local/bin/docker', 'compose', 'down'
+    commandLine 'docker', 'compose', 'down'
 }
 
 dockerUp.mustRunAfter dockerBuild
