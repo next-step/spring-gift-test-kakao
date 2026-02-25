@@ -24,8 +24,125 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+
+	// Cucumber 핵심
+	testImplementation 'io.cucumber:cucumber-java:7.20.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.20.1'
+
+	// JUnit Platform에서 Cucumber 실행
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+	testImplementation 'org.junit.platform:junit-platform-suite:1.11.4'
+
+	// PostgreSQL 드라이버
+	runtimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/acceptance/**'
+
+	testLogging {
+		events 'PASSED', 'FAILED', 'SKIPPED'
+	}
+}
+
+configurations {
+	cucumberRuntime {
+		extendsFrom testImplementation, testRuntimeOnly
+	}
+}
+
+tasks.register('dockerBuild') {
+	doLast {
+		exec {
+			commandLine 'docker-compose', 'build'
+		}
+	}
+}
+
+tasks.register('dockerUp') {
+	dependsOn 'dockerBuild'
+
+	doLast {
+		exec {
+			commandLine 'docker-compose', 'up', '-d'
+		}
+
+		// PostgreSQL 준비 대기
+		def maxRetries = 20
+		def sleepMs = 3000
+		def ready = false
+
+		for (int i = 0; i < maxRetries; i++) {
+			try {
+				def result = exec {
+					commandLine 'docker-compose', 'exec', '-T', 'postgres',
+							'pg_isready', '-U', 'gift', '-d', 'gift_test'
+					ignoreExitValue = true
+				}
+				if (result.exitValue == 0) {
+					ready = true
+					logger.lifecycle("PostgreSQL is ready!")
+					break
+				}
+			} catch (Exception e) {
+				// 컨테이너가 아직 시작 안 된 경우
+			}
+			logger.lifecycle("Waiting for PostgreSQL... (${i + 1}/${maxRetries})")
+			Thread.sleep(sleepMs)
+		}
+
+		if (!ready) {
+			throw new GradleException("PostgreSQL failed to start within ${maxRetries * sleepMs / 1000} seconds")
+		}
+
+		// Spring Boot 앱 준비 대기
+		ready = false
+		for (int i = 0; i < maxRetries; i++) {
+			try {
+				def result = exec {
+					commandLine 'curl', '-sf', 'http://localhost:28080/api/categories'
+					ignoreExitValue = true
+				}
+				if (result.exitValue == 0) {
+					ready = true
+					logger.lifecycle("Spring Boot app is ready!")
+					break
+				}
+			} catch (Exception e) {
+				// 앱이 아직 시작 안 된 경우
+			}
+			logger.lifecycle("Waiting for Spring Boot app... (${i + 1}/${maxRetries})")
+			Thread.sleep(sleepMs)
+		}
+
+		if (!ready) {
+			throw new GradleException("Spring Boot app failed to start within ${maxRetries * sleepMs / 1000} seconds")
+		}
+	}
+}
+
+tasks.register('cucumberTest') {
+	dependsOn testClasses, 'dockerUp'
+	finalizedBy 'dockerDown'
+
+	doLast {
+		javaexec {
+			mainClass = 'io.cucumber.core.cli.Main'
+			classpath = configurations.cucumberRuntime + sourceSets.test.output + sourceSets.main.output
+			args = [
+					'--glue', 'gift.acceptance',
+					'--plugin', 'pretty',
+					'src/test/resources/features'
+			]
+		}
+	}
+}
+
+tasks.register('dockerDown') {
+	doLast {
+		exec {
+			commandLine 'docker-compose', 'down', '-v'
+		}
+	}
 }
