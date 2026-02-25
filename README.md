@@ -9,7 +9,7 @@ Spring Boot 기반의 선물하기 서비스 API 서버입니다. 카테고리�
 | Framework | Spring Boot 3.5.8 |
 | Build Tool | Gradle 8.4 |
 | Java | 25 |
-| Database | H2 (인메모리) |
+| Database | H2 (인메모리), PostgreSQL 17 (Docker, 테스트용) |
 | 아키텍처 | 계층형 (UI → Application → Model → Infrastructure) |
 
 ### 의존성
@@ -20,7 +20,11 @@ Spring Boot 기반의 선물하기 서비스 API 서버입니다. 카테고리�
 | `spring-boot-starter-thymeleaf` | 템플릿 엔진 (현재 미사용) |
 | `spring-boot-starter-web` | REST API 서버 |
 | `com.h2database:h2` | 인메모리 데이터베이스 |
-| `spring-boot-starter-test` | 테스트 (현재 미작성) |
+| `org.postgresql:postgresql` | PostgreSQL JDBC 드라이버 (Cucumber 테스트용) |
+| `spring-boot-starter-test` | 테스트 프레임워크 |
+| `io.rest-assured:rest-assured` | REST API 인수 테스트 |
+| `io.cucumber:cucumber-java` | Cucumber BDD 프레임워크 |
+| `io.cucumber:cucumber-spring` | Cucumber + Spring 통합 |
 
 ---
 
@@ -405,6 +409,7 @@ kakao.social.url=https://kapi.kakao.com/v1/api/talk       # 카카오 소셜 API
 
 - Java 25 이상
 - Gradle 8.4 이상 (Gradle Wrapper 포함)
+- Docker (Cucumber 테스트 실행 시 필요)
 
 ### 빌드 & 실행
 
@@ -420,6 +425,48 @@ java -jar build/libs/spring-gift-test-0.0.1-SNAPSHOT.jar
 ```
 
 서버는 `http://localhost:8080`에서 실행됩니다.
+
+### 테스트 실행
+
+```bash
+# 인수 테스트 (H2, Docker 불필요)
+./gradlew test
+
+# Cucumber BDD 테스트 (Docker: PostgreSQL + App)
+./gradlew cucumberTest
+```
+
+| 명령어 | DB | 앱 실행 위치 | 대상 | Docker 필요 |
+|--------|-----|------------|------|------------|
+| `./gradlew test` | H2 | Host JVM (내장 Tomcat) | AcceptanceTest | 아니오 |
+| `./gradlew cucumberTest` | PostgreSQL (Docker) | Docker 컨테이너 | Cucumber 시나리오 | 예 |
+
+`cucumberTest`는 자동으로 Docker 이미지 빌드 → PostgreSQL + App 컨테이너 시작 → 테스트 실행 → 컨테이너 정리를 수행합니다.
+
+### Docker 개별 명령어
+
+```bash
+./gradlew dockerBuild   # Docker 이미지 빌드
+./gradlew dockerUp      # PostgreSQL + App 시작 (healthcheck 대기)
+curl http://localhost:28080/api/categories  # 앱 응답 확인
+./gradlew dockerDown    # 컨테이너 정리
+```
+
+테스트 결과 리포트:
+- `build/reports/tests/test/index.html`
+- `build/reports/tests/cucumberTest/index.html`
+
+#### Cucumber BDD 시나리오
+
+Feature 파일 위치: `src/test/resources/features/`
+
+| Feature | 시나리오 수 | 설명 |
+|---------|-----------|------|
+| `category.feature` | 2 | 카테고리 생성 및 목록 조회 |
+| `product.feature` | 2 | 상품 생성/조회, 존재하지 않는 카테고리 실패 |
+| `gift.feature` | 4 | 선물하기, 재고 차감, 재고 초과/옵션 없음 실패 |
+
+시나리오는 한글 Gherkin(조건/만일/그러면)으로 작성되어 있어 비개발자도 읽고 이해할 수 있습니다.
 
 ### H2 콘솔 접속
 

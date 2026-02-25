@@ -48,6 +48,6 @@ class ProductAcceptanceTest extends AcceptanceTest {
         .when()
                 .post("/api/products")
         .then()
-                .statusCode(500); // TODO: 에러 핸들링 구현 후 적절한 상태 코드로 변경
+                .statusCode(404);
     }
 }
