@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 핵심 원칙
 
 - **main 코드 수정 금지**: `src/main/` 하위의 코드를 수정하거나 추가하지 않는다. 오직 `src/test/` 하위의 테스트 코드만 작성한다.
-- `build.gradle`의 `testImplementation` 의존성 추가는 테스트 인프라이므로 허용한다.
+- `build.gradle`의 `testImplementation`/`testRuntimeOnly` 의존성 추가 및 커스텀 Gradle task 정의는 테스트 인프라이므로 허용한다.
+- 프로젝트 루트의 인프라 파일 (`Dockerfile`, `docker-compose.yml`, `.dockerignore`) 생성/수정은 허용한다.
 
 ## Build & Run Commands
 
@@ -60,7 +61,12 @@ ui (REST Controllers)  →  application (Services + DTOs)  →  model (Entities 
 
 ```
 docs/
-├── SYSTEM_OVERVIEW.md  # 도메인 모델, 패키지 구조, API 엔드포인트, 핵심 플로우
-├── TEST_DESIGN.md      # 단위 vs 인수 테스트 개념, 시나리오 정의, 테스트 구조
-├── TEST_STRATEGY.md    # 행위 선정 기준, 데이터 전략, 검증 전략, 의사결정 근거
+├── SYSTEM_OVERVIEW.md      # 도메인 모델, 패키지 구조, API 엔드포인트, 핵심 플로우
+├── TEST_DESIGN.md          # 단위 vs 인수 테스트 개념, 시나리오 정의, 테스트 구조
+├── TEST_STRATEGY.md        # 행위 선정 기준, 데이터 전략, 검증 전략, 의사결정 근거
+└── step2/
+    ├── STEP2_PLAN.md           # 2단계 미션 요구사항 (Cucumber BDD, PostgreSQL, Docker)
+    ├── CUCUMBER_BDD.md         # 요구사항 1 구현 가이드 (Cucumber BDD 적용)
+    ├── POSTGRESQL_DOCKER.md    # 요구사항 2 구현 가이드 (PostgreSQL + Docker Compose)
+    └── APP_CONTAINERIZATION.md # 요구사항 3 구현 가이드 (Application 컨테이너화)
 ```

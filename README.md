@@ -1,27 +1,88 @@
-레거시 시스템 분석과 AI 페어 프로그래밍 활용 기록
+# Gift Platform
 
-오늘은 강사님의 조언을 바탕으로 AI를 활용해 레거시 시스템을 분석하고 인수 테스트를 설계하는 전체 과정을 기록으로 남겨본다. AI에게 무작정 코드를 짜라고 하기보다, 컨텍스트를 주고 문서를 먼저 작성하게 한 뒤 이를 바탕으로 코드를 유도하는 방식으로 진행했다.
+Spring Boot 기반 선물하기 플랫폼의 인수 테스트 프로젝트입니다.
 
-## 1. 시스템 분석 및 구조 문서화
+## 요구사항
 
-먼저 AI에게 시스템 분석 방법에 대한 조언을 구했다. 현재 시스템의 전반적인 구조와 서비스의 목적을 확실히 이해하기 위해, 분석 내용을 바탕으로 `SYSTEM_OVERVIEW.md`를 작성하도록 했다. 이어서 인수 테스트를 설계하는 방식에 대한 설명도 문서화하여 프로젝트의 뼈대를 잡았다.
+- Java 21
+- Gradle 8.4 (wrapper 포함)
+- Docker + Docker Compose (Cucumber 테스트 실행 시 필요)
 
-## 2. 테스트 전략 수립을 위한 프롬프트 엔지니어링
+## 빌드 및 실행
 
-현재 레거시 코드 인수 테스트 프로젝트를 맡고 있다는 상황을 AI에게 명확히 인지시키고, 아래 요구사항을 바탕으로 `TEST_STRATEGY.md`를 작성하도록 프롬프트를 구성했다.
+```bash
+./gradlew build      # 빌드 + 테스트
+./gradlew bootRun    # 애플리케이션 실행
+```
 
-- **테스트 전략 문서**: 검증할 행위 목록과 선택 기준, 테스트 데이터 준비/정리 전략, 검증 전략, 주요 의사결정 과정 포함
-- **테스트 코드 작성**: 단순히 5개의 테스트가 아닌, '최소 5개 이상의 행위'를 검증하는 테스트 작성
-- **작업 흐름 제어**: 무작정 코드를 짜지 말고, 기존 문서들을 분석한 뒤 어떤 식으로 진행할지 먼저 나에게 설명하고, 내 동의를 얻은 후에만 작업을 시작하도록 지시
+## 테스트 실행
 
-## 3. AI 제어 및 테스트 책임 분리 (트러블 슈팅)
+### 단위 테스트 + RestAssured 인수 테스트 (H2)
 
-작업 과정에서 두 가지 문제를 바로잡았다.
+Docker 없이 실행 가능합니다.
 
-- **프로덕션 코드 수정 제어**: AI가 테스트 전략을 바탕으로 main 폴더의 프로덕션 코드까지 수정하려는 돌발 행동을 보였다. 즉시 `CLAUDE.md` 파일에 "main 폴더는 읽기 전용(Read-only)이며 수정하지 말 것"이라는 규칙을 명시했고, `TEST_STRATEGY.md` 역시 순수하게 테스트 전략만 담도록 목적을 분명히 제한했다.
+```bash
+./gradlew test
+```
 
-- **인수/단위 테스트 분리**: AI가 작성한 인수 테스트 코드 중에 수량 체크 로직(`assertThat(unchanged.getQuantity()).isEqualTo(100);`)이 포함되어 있었다. 인수 테스트보다는 단위 테스트에 가까운 성격이라 판단되어 AI에게 "이게 단위 테스트가 맞지 않냐"고 물어보니 AI도 이를 인정했다. 즉시 인수 테스트와 단위 테스트의 책임을 분리하여 코드를 재작성하도록 지시하고, 변경된 방향성을 `TEST_STRATEGY.md`에 반영했다.
+| 테스트 클래스 | 메서드 수 | DB |
+|-------------|----------|-----|
+| OptionTest | 2 | - (순수 단위 테스트) |
+| CategoryApiTest | 2 | H2 |
+| ProductApiTest | 2 | H2 |
+| GiftApiTest | 2 | H2 |
 
-## 4. Git 컨벤션 자동화 시도
+### Cucumber BDD 인수 테스트 (PostgreSQL + Docker)
 
-AI의 Skills 기능을 활용해 Git Commit Convention을 준수하는 자동 커밋 메시지 생성 기능을 구축해 보았다.
+Docker Compose로 PostgreSQL을 자동 관리합니다. 한 줄로 DB 시작 → 테스트 → DB 종료가 이루어집니다.
+
+```bash
+./gradlew cucumberTest
+```
+
+| Feature 파일 | 시나리오 수 | DB |
+|-------------|-----------|-----|
+| category.feature | 2 | PostgreSQL |
+| product.feature | 2 | PostgreSQL |
+| gift.feature | 2 | PostgreSQL |
+
+### 특정 테스트만 실행
+
+```bash
+./gradlew test --tests "gift.model.OptionTest"              # 클래스 지정
+./gradlew test --tests "gift.model.OptionTest.decrease_*"   # 메서드 패턴
+```
+
+## 프로젝트 구조
+
+```
+src/
+├── main/java/gift/          # 프로덕션 코드 (수정 금지)
+│   ├── ui/                  # REST Controllers
+│   ├── application/         # Services + DTOs
+│   ├── model/               # Entities + Repositories
+│   └── infrastructure/      # Config + Implementations
+└── test/
+    ├── java/gift/
+    │   ├── model/           # 단위 테스트 (OptionTest)
+    │   ├── cucumber/        # Cucumber BDD 테스트
+    │   │   ├── steps/       # Step Definitions
+    │   │   └── hooks/       # DB 정리 Hook
+    │   ├── ApiTest.java     # RestAssured 베이스 클래스
+    │   ├── CategoryApiTest.java
+    │   ├── ProductApiTest.java
+    │   └── GiftApiTest.java
+    └── resources/
+        └── features/        # Gherkin 시나리오 (.feature)
+```
+
+## 문서
+
+| 문서 | 설명 |
+|------|------|
+| [SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) | 도메인 모델, 패키지 구조, API 엔드포인트 |
+| [TEST_DESIGN.md](docs/TEST_DESIGN.md) | 단위 vs 인수 테스트, 시나리오 정의 |
+| [TEST_STRATEGY.md](docs/TEST_STRATEGY.md) | 행위 선정 기준, 검증 전략, 의사결정 근거 |
+| [STEP2_PLAN.md](docs/step2/STEP2_PLAN.md) | 2단계 미션 요구사항 |
+| [CUCUMBER_BDD.md](docs/step2/CUCUMBER_BDD.md) | Cucumber BDD 구현 가이드 |
+| [RETROSPECTIVE.md](docs/RETROSPECTIVE.md) | AI 페어 프로그래밍 회고 |
