@@ -5,6 +5,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.restassured.RestAssured;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -21,10 +22,16 @@ public class CommonStepDefinitions {
     @Autowired
     ScenarioContext scenarioContext;
 
+    @Value("${test.app.host}")
+    String appHost;
+
+    @Value("${test.app.port}")
+    int appPort;
+
     @Before
     public void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 28080;
+        RestAssured.baseURI = "http://" + appHost;
+        RestAssured.port = appPort;
         jdbcTemplate.execute("TRUNCATE TABLE wish, option, product, category, member RESTART IDENTITY CASCADE");
     }
 

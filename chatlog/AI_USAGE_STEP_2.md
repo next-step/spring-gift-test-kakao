@@ -120,3 +120,11 @@
   - `ProductStepDefinitions.java`: 동일하게 `Response` 전체 저장으로 변경.
   - `CommonStepDefinitions.java`: `scenarioContext.getResponseStatusCode()` → `scenarioContext.getResponse().statusCode()`로 변경.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). 기존 동작 유지하면서 향후 `response.jsonPath()`, `response.body()` 등으로 응답 바디 검증 확장 가능한 구조 확보.
+
+## 2-9. 하드코딩된 호스트/포트를 프로퍼티로 외부화
+- **Prompt**: 피드백 반영. CommonStepDefinitions에 하드코딩된 `RestAssured.baseURI = "http://localhost"`, `RestAssured.port = 28080`을 `application-cucumber.properties`에서 주입받도록 변경. docker-compose 설정 변경 시 Java 코드 수정 불필요하도록 개선.
+- **Action**:
+  - `application-cucumber.properties`: `test.app.host=localhost`, `test.app.port=28080` 프로퍼티 추가.
+  - `CommonStepDefinitions.java`: `@Value("${test.app.host}") String appHost`, `@Value("${test.app.port}") int appPort` 필드 추가. `@Before`에서 `RestAssured.baseURI = "http://" + appHost`, `RestAssured.port = appPort`으로 변경.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). 호스트/포트 변경 시 properties 파일만 수정하면 되며 Java 코드 변경 불필요.
+- **참고**: `.env` 단일 소스 방안도 검토했으나, `.env`는 `.gitignore` 대상이라 clone 후 실행이 안 되는 문제로 properties 방식 유지.
