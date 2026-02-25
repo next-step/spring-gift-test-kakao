@@ -98,6 +98,7 @@ Feature: 선물 전달
     And 회원이 존재한다
     When 회원이 "ICE" 옵션 1개를 선물한다
     Then 선물 발송이 성공한다
+    And 해당 옵션의 재고가 9개이다
 
   Scenario: 재고가 부족하면 선물 발송에 실패한다
     Given "ICE" 옵션의 재고가 1개 있다
@@ -177,6 +178,5 @@ src/test/
 
 - `OptionService`, `WishService`는 컨트롤러가 없어 API 레벨 검증 불가 — Step Definitions에서 Repository로 직접 준비
 - `CategoryRestController`, `ProductRestController`의 `create` 메서드에 `@RequestBody`가 없으므로, 테스트 시 JSON이 아닌 form parameter 방식으로 요청해야 함
-- 선물 전달의 사이드 이펙트(재고 차감)는 직접 DB 조회 대신, 동일 옵션으로 재차 선물 시도 시 재고 부족 여부로 간접 검증 가능
 - 테스트 DB는 Docker Compose로 기동하는 PostgreSQL을 사용하며, Spring 프로파일로 테스트/개발 환경을 분리한다
 - 각 시나리오 전 `@Before` 훅에서 전체 테이블을 truncate하여 데이터 격리를 보장한다

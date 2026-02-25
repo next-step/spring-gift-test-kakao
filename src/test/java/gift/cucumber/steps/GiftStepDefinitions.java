@@ -3,6 +3,7 @@ package gift.cucumber.steps;
 import gift.cucumber.ScenarioContext;
 import gift.model.Member;
 import gift.model.Option;
+import gift.model.OptionRepository;
 import gift.support.MemberFixture;
 import gift.support.OptionFixture;
 import io.cucumber.java.en.Given;
@@ -14,17 +15,20 @@ import io.restassured.response.Response;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class GiftStepDefinitions {
 
     private final ScenarioContext context;
     private final OptionFixture optionFixture;
     private final MemberFixture memberFixture;
+    private final OptionRepository optionRepository;
 
-    public GiftStepDefinitions(ScenarioContext context, OptionFixture optionFixture, MemberFixture memberFixture) {
+    public GiftStepDefinitions(ScenarioContext context, OptionFixture optionFixture, MemberFixture memberFixture, OptionRepository optionRepository) {
         this.context = context;
         this.optionFixture = optionFixture;
         this.memberFixture = memberFixture;
+        this.optionRepository = optionRepository;
     }
 
     @Given("{string} 옵션의 재고가 {int}개 있다")
@@ -109,5 +113,12 @@ public class GiftStepDefinitions {
         Response response = context.get("response", Response.class);
         response.then()
                 .statusCode(500);
+    }
+
+    @Then("해당 옵션의 재고가 {int}개이다")
+    public void 해당_옵션의_재고가_개이다(int expectedQuantity) {
+        Long optionId = context.get("optionId", Long.class);
+        Option option = optionRepository.findById(optionId).orElseThrow();
+        assertThat(option.getQuantity()).isEqualTo(expectedQuantity);
     }
 }
