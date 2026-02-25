@@ -2,12 +2,15 @@ package gift.acceptance.steps;
 
 import gift.acceptance.TestContext;
 import io.cucumber.java.ko.그러면;
+import io.cucumber.java.ko.그리고;
 import io.cucumber.java.ko.먼저;
 import io.cucumber.java.ko.만일;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import static org.hamcrest.Matchers.equalTo;
 
 public class GiftSteps {
 
@@ -71,12 +74,21 @@ public class GiftSteps {
                         """, testContext.getOptionId(), quantity, testContext.getReceiverId()))
                 .when()
                 .post("/api/gifts");
-        testContext.setLastStatusCode(lastGiftResponse.statusCode());
     }
 
     @그러면("응답 상태코드가 {int}이다")
     public void 응답_상태코드_확인(int expectedStatusCode) {
         lastGiftResponse.then()
                 .statusCode(expectedStatusCode);
+    }
+
+    @그리고("옵션의 재고가 {int}이다")
+    public void 옵션의_재고_확인(int expectedQuantity) {
+        RestAssured.given()
+                .when()
+                .get("/api/options")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == " + testContext.getOptionId() + " }.quantity", equalTo(expectedQuantity));
     }
 }

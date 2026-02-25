@@ -33,7 +33,7 @@ public class Option {
 
     public void decrease(final int quantity) {
         if (this.quantity < quantity) {
-            throw new IllegalStateException();
+            throw new InsufficientStockException(quantity, this.quantity);
         }
         this.quantity -= quantity;
     }

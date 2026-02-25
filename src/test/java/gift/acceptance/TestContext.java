@@ -12,7 +12,6 @@ public class TestContext {
     private Long optionId;
     private Long senderId;
     private Long receiverId;
-    private int lastStatusCode;
 
     public Long getCategoryId() {
         return categoryId;
@@ -52,13 +51,5 @@ public class TestContext {
 
     public void setReceiverId(Long receiverId) {
         this.receiverId = receiverId;
-    }
-
-    public int getLastStatusCode() {
-        return lastStatusCode;
-    }
-
-    public void setLastStatusCode(int lastStatusCode) {
-        this.lastStatusCode = lastStatusCode;
     }
 }
