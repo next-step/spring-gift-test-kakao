@@ -46,7 +46,6 @@ tasks.register('dockerPostgresDown', Exec) {
 tasks.register('dockerBuild', Exec) {
 	description = 'Build Docker image for the application'
 	group = 'docker'
-	dependsOn 'bootJar'
 	commandLine 'docker', 'compose', '-f', 'docker-compose-test.yml', '--profile', 'docker', 'build'
 }
 
@@ -84,5 +83,7 @@ tasks.register('cucumberTest', Test) {
 		dependsOn 'dockerPostgresUp'
 		finalizedBy 'dockerPostgresDown'
 		include '**/RunCucumberPostgresTest*'
+	} else {
+		include '**/RunCucumberH2Test*'
 	}
 }
