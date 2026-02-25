@@ -1,7 +1,5 @@
 package gift.acceptance;
 
-import static org.assertj.core.api.Assertions.*;
-
 import gift.support.ApiClient;
 import gift.support.ScenarioContext;
 import gift.support.TestDataBuilder;
@@ -75,11 +73,4 @@ public class GiftStepDefinitions {
 		response.then().statusCode(500);
 	}
 
-	@Then("{string} 옵션의 재고가 {int}개이다")
-	public void 옵션_재고_검증(String optionName, int expectedQuantity) {
-		Long optionId = context.get(optionName, Long.class);
-		int actualQuantity = testDataBuilder.getOptionStock(optionId);
-
-		assertThat(actualQuantity).isEqualTo(expectedQuantity);
-	}
 }

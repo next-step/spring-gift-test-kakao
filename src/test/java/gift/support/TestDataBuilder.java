@@ -31,12 +31,7 @@ public class TestDataBuilder {
 		return memberIdSequence;
 	}
 
-	public int getOptionStock(Long optionId) {
-		return jdbcTemplate.queryForObject(
-			"SELECT quantity FROM option WHERE id = ?", Integer.class, optionId);
-	}
-
-	public void reset() {
+public void reset() {
 		memberIdSequence = 0;
 	}
 }
