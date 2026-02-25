@@ -2,9 +2,9 @@ services:
   db-dev:
     image: postgres:17
     environment:
-      POSTGRES_DB: gift_dev
-      POSTGRES_USER: kakao
-      POSTGRES_PASSWORD: choonsik
+      POSTGRES_DB: ${DB_DEV_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -13,13 +13,13 @@ services:
   db-test:
     image: postgres:17
     environment:
-      POSTGRES_DB: gift_test
-      POSTGRES_USER: kakao
-      POSTGRES_PASSWORD: choonsik
+      POSTGRES_DB: ${DB_TEST_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U kakao -d gift_test" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_TEST_NAME}" ]
       interval: 10s
       timeout: 60s
       retries: 5
@@ -29,9 +29,9 @@ services:
     ports:
       - "28080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db-test:5432/gift_test
-      SPRING_DATASOURCE_USERNAME: kakao
-      SPRING_DATASOURCE_PASSWORD: choonsik
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-test:5432/${DB_TEST_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       db-test:
