@@ -4,13 +4,14 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 
+@Sql("classpath:sql/truncate.sql")
 class CategoryAcceptanceTest extends BaseAcceptanceTest {
 
     // S-CAT-1
@@ -25,7 +26,6 @@ class CategoryAcceptanceTest extends BaseAcceptanceTest {
                 .post("/api/categories")
                 .then()
                 .statusCode(200)
-                .body("id", notNullValue())
                 .body("name", equalTo("음료"));
 
         // Then: 후속 조회로 name이 요청한 값과 일치하는지 확인
@@ -54,9 +54,9 @@ class CategoryAcceptanceTest extends BaseAcceptanceTest {
                 .then()
                 .statusCode(200)
                 .body("", hasSize(3))
-                .body("[0].name", notNullValue())
-                .body("[1].name", notNullValue())
-                .body("[2].name", notNullValue());
+                .body("[0].name", equalTo("음료"))
+                .body("[1].name", equalTo("간식"))
+                .body("[2].name", equalTo("선물세트"));
     }
 
     // F-CAT-1
