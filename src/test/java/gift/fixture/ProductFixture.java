@@ -20,7 +20,7 @@ public class ProductFixture {
 
     public static class Builder {
         private final CategoryRepository categoryRepository;
-        private String categoryName = "";
+        private String categoryName = "테스트카테고리";
 
         private Builder(final CategoryRepository categoryRepository) {
             this.categoryRepository = categoryRepository;

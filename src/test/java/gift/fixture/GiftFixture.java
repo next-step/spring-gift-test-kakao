@@ -53,15 +53,15 @@ public class GiftFixture {
         private final ProductRepository productRepository;
         private final OptionRepository optionRepository;
 
-        private String senderName = "";
-        private String senderEmail = "";
-        private String receiverName = "";
-        private String receiverEmail = "";
-        private String categoryName = "";
-        private String productName = "";
+        private String senderName = "보내는사람";
+        private String senderEmail = "sender@example.com";
+        private String receiverName = "받는사람";
+        private String receiverEmail = "receiver@example.com";
+        private String categoryName = "테스트카테고리";
+        private String productName = "테스트상품";
         private int productPrice = 1000;
-        private String productImageUrl = "";
-        private String optionName = "";
+        private String productImageUrl = "https://example.com/image.png";
+        private String optionName = "테스트옵션";
         private int optionQuantity = 1;
 
         private Builder(
