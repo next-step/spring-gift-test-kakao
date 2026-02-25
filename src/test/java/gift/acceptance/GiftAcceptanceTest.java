@@ -1,12 +1,10 @@
 package gift.acceptance;
 
-import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.Member;
 import gift.model.MemberRepository;
 import gift.model.Option;
 import gift.model.OptionRepository;
-import gift.model.Product;
 import gift.model.ProductRepository;
 import gift.model.WishRepository;
 import io.restassured.RestAssured;
@@ -50,6 +48,7 @@ class GiftAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
         wishRepository.deleteAllInBatch();
         optionRepository.deleteAllInBatch();
@@ -103,7 +102,7 @@ class GiftAcceptanceTest {
     @Test
     void 존재하지_않는_옵션으로_선물시_실패한다() {
         // given
-        var nonExistentOptionId = 999999L;
+        var nonExistentOptionId = Long.MAX_VALUE;
 
         // when
         var response = 선물_전달(nonExistentOptionId, 1);
@@ -116,10 +115,10 @@ class GiftAcceptanceTest {
     void 존재하지_않는_회원이_선물시_실패한다() {
         // given
         var option = 옵션_생성(10);
-        var nonExistentMemberId = 999999L;
+        var nonExistentMemberId = Long.MAX_VALUE;
 
         // when
-        var response = RestAssured.given().log().all()
+        var response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", nonExistentMemberId)
                 .body(Map.of(
@@ -130,7 +129,7 @@ class GiftAcceptanceTest {
                 ))
                 .when()
                 .post("/api/gifts")
-                .then().log().all()
+                .then()
                 .extract();
 
         // then
@@ -144,7 +143,7 @@ class GiftAcceptanceTest {
         var option = 옵션_생성(10);
 
         // when
-        var response = RestAssured.given().log().all()
+        var response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "optionId", option.getId(),
@@ -154,7 +153,7 @@ class GiftAcceptanceTest {
                 ))
                 .when()
                 .post("/api/gifts")
-                .then().log().all()
+                .then()
                 .extract();
 
         // then
@@ -164,8 +163,13 @@ class GiftAcceptanceTest {
     @Test
     void 상품_등록부터_선물하기_전체_흐름() {
         // given
-        var category = categoryRepository.save(new Category("음료"));
-        var product = productRepository.save(new Product("아메리카노", 4500, "http://example.com/image.jpg", category));
+        var categoryResponse = 카테고리_생성("음료");
+        assertThat(categoryResponse.statusCode()).isEqualTo(200);
+
+        var productResponse = 상품_생성("아메리카노", 4500, "http://example.com/image.jpg", categoryResponse.jsonPath().getLong("id"));
+        assertThat(productResponse.statusCode()).isEqualTo(200);
+
+        var product = productRepository.findById(productResponse.jsonPath().getLong("id")).get();
         var option = optionRepository.save(new Option("ICE", 10, product));
 
         // when
@@ -180,8 +184,14 @@ class GiftAcceptanceTest {
     void 연속_선물로_재고_소진_후_추가_선물시_실패한다() {
         // given
         var option = 옵션_생성(5);
-        선물_전달(option.getId(), 3);
-        선물_전달(option.getId(), 2);
+
+        var first = 선물_전달(option.getId(), 3);
+        assertThat(first.statusCode()).isEqualTo(200);
+        assertThat(optionRepository.findById(option.getId()).get().getQuantity()).isEqualTo(2);
+
+        var second = 선물_전달(option.getId(), 2);
+        assertThat(second.statusCode()).isEqualTo(200);
+        assertThat(optionRepository.findById(option.getId()).get().getQuantity()).isEqualTo(0);
 
         // when
         var response = 선물_전달(option.getId(), 1);
@@ -192,13 +202,43 @@ class GiftAcceptanceTest {
     }
 
     private Option 옵션_생성(int quantity) {
-        var category = categoryRepository.save(new Category("음료"));
-        var product = productRepository.save(new Product("아메리카노", 4500, "http://example.com/image.jpg", category));
+        var categoryResponse = 카테고리_생성("음료");
+        assertThat(categoryResponse.statusCode()).isEqualTo(200);
+
+        var productResponse = 상품_생성("아메리카노", 4500, "http://example.com/image.jpg", categoryResponse.jsonPath().getLong("id"));
+        assertThat(productResponse.statusCode()).isEqualTo(200);
+
+        var product = productRepository.findById(productResponse.jsonPath().getLong("id")).get();
         return optionRepository.save(new Option("ICE", quantity, product));
     }
 
+    private ExtractableResponse<Response> 카테고리_생성(String name) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", name))
+                .when()
+                .post("/api/categories")
+                .then()
+                .extract();
+    }
+
+    private ExtractableResponse<Response> 상품_생성(String name, int price, String imageUrl, Long categoryId) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "name", name,
+                        "price", price,
+                        "imageUrl", imageUrl,
+                        "categoryId", categoryId
+                ))
+                .when()
+                .post("/api/products")
+                .then()
+                .extract();
+    }
+
     private ExtractableResponse<Response> 선물_전달(Long optionId, int quantity) {
-        return RestAssured.given().log().all()
+        return RestAssured.given()
                 .contentType(ContentType.JSON)
                 .header("Member-Id", senderId)
                 .body(Map.of(
@@ -209,7 +249,7 @@ class GiftAcceptanceTest {
                 ))
                 .when()
                 .post("/api/gifts")
-                .then().log().all()
+                .then()
                 .extract();
     }
 }

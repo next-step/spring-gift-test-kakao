@@ -1,13 +1,13 @@
 package gift.acceptance;
 
-import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.OptionRepository;
-import gift.model.Product;
 import gift.model.ProductRepository;
 import gift.model.WishRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +40,7 @@ class ProductAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         wishRepository.deleteAllInBatch();
         optionRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
@@ -49,22 +50,10 @@ class ProductAcceptanceTest {
     @Test
     void 상품_생성_성공() {
         // given
-        var category = categoryRepository.save(new Category("음료"));
-        var request = Map.of(
-                "name", "아메리카노",
-                "price", 4500,
-                "imageUrl", "http://example.com/image.jpg",
-                "categoryId", category.getId()
-        );
+        var categoryId = 카테고리_생성("음료").jsonPath().getLong("id");
 
         // when
-        var response = RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/products")
-                .then().log().all()
-                .extract();
+        var response = 상품_생성("아메리카노", 4500, "http://example.com/image.jpg", categoryId);
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
@@ -75,22 +64,8 @@ class ProductAcceptanceTest {
 
     @Test
     void 존재하지_않는_카테고리로_상품_생성시_실패한다() {
-        // given
-        var request = Map.of(
-                "name", "아메리카노",
-                "price", 4500,
-                "imageUrl", "http://example.com/image.jpg",
-                "categoryId", 999999
-        );
-
         // when
-        var response = RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/products")
-                .then().log().all()
-                .extract();
+        var response = 상품_생성("아메리카노", 4500, "http://example.com/image.jpg", Long.MAX_VALUE);
 
         // then
         assertThat(response.statusCode()).isEqualTo(500);
@@ -99,30 +74,61 @@ class ProductAcceptanceTest {
     @Test
     void 상품_목록_조회_성공() {
         // given
-        var category = categoryRepository.save(new Category("음료"));
-        productRepository.save(new Product("아메리카노", 4500, "http://example.com/image.jpg", category));
-        productRepository.save(new Product("카페라떼", 5000, "http://example.com/latte.jpg", category));
+        var categoryId = 카테고리_생성("음료").jsonPath().getLong("id");
+        assertThat(상품_생성("아메리카노", 4500, "http://example.com/image.jpg", categoryId).statusCode()).isEqualTo(200);
+        assertThat(상품_생성("카페라떼", 5000, "http://example.com/latte.jpg", categoryId).statusCode()).isEqualTo(200);
 
         // when
-        var response = RestAssured.given().log().all()
+        var response = RestAssured.given()
                 .when()
                 .get("/api/products")
-                .then().log().all()
+                .then()
                 .extract();
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
+
+        assertThat(response.jsonPath().getList("id")).doesNotContainNull();
         assertThat(response.jsonPath().getList("name"))
                 .containsExactlyInAnyOrder("아메리카노", "카페라떼");
+        assertThat(response.jsonPath().getList("price"))
+                .containsExactlyInAnyOrder(4500, 5000);
+        assertThat(response.jsonPath().getList("imageUrl")).doesNotContainNull();
+        assertThat(response.jsonPath().getList("category")).doesNotContainNull();
+    }
+
+    private ExtractableResponse<Response> 카테고리_생성(String name) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", name))
+                .when()
+                .post("/api/categories")
+                .then()
+                .extract();
+    }
+
+    private ExtractableResponse<Response> 상품_생성(String name, int price, String imageUrl, Long categoryId) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "name", name,
+                        "price", price,
+                        "imageUrl", imageUrl,
+                        "categoryId", categoryId
+                ))
+                .when()
+                .post("/api/products")
+                .then()
+                .extract();
     }
 
     @Test
     void 상품_없을때_빈_목록을_반환한다() {
         // when
-        RestAssured.given().log().all()
+        RestAssured.given()
                 .when()
                 .get("/api/products")
-                .then().log().all()
+                .then()
                 .statusCode(200)
                 .body("$", hasSize(0));
     }

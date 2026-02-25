@@ -1,12 +1,13 @@
 package gift.acceptance;
 
-import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.OptionRepository;
 import gift.model.ProductRepository;
 import gift.model.WishRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ class CategoryAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         wishRepository.deleteAllInBatch();
         optionRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
@@ -47,17 +49,8 @@ class CategoryAcceptanceTest {
 
     @Test
     void 카테고리_생성_성공() {
-        // given
-        var request = Map.of("name", "음료");
-
         // when
-        var response = RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/categories")
-                .then().log().all()
-                .extract();
+        var response = 카테고리_생성("음료");
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
@@ -68,29 +61,41 @@ class CategoryAcceptanceTest {
     @Test
     void 카테고리_목록_조회_성공() {
         // given
-        categoryRepository.save(new Category("음료"));
-        categoryRepository.save(new Category("디저트"));
+        assertThat(카테고리_생성("음료").statusCode()).isEqualTo(200);
+        assertThat(카테고리_생성("디저트").statusCode()).isEqualTo(200);
 
         // when
-        var response = RestAssured.given().log().all()
+        var response = RestAssured.given()
                 .when()
                 .get("/api/categories")
-                .then().log().all()
+                .then()
                 .extract();
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
+
+        assertThat(response.jsonPath().getList("id")).doesNotContainNull();
         assertThat(response.jsonPath().getList("name"))
                 .containsExactlyInAnyOrder("음료", "디저트");
+    }
+
+    private ExtractableResponse<Response> 카테고리_생성(String name) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", name))
+                .when()
+                .post("/api/categories")
+                .then()
+                .extract();
     }
 
     @Test
     void 카테고리_없을때_빈_목록을_반환한다() {
         // when
-        RestAssured.given().log().all()
+        RestAssured.given()
                 .when()
                 .get("/api/categories")
-                .then().log().all()
+                .then()
                 .statusCode(200)
                 .body("$", hasSize(0));
     }
