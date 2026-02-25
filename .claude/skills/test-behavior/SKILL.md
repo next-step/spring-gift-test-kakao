@@ -1,121 +1,178 @@
-# /test-behavior — 행위 기반 인수 테스트 작성
+# /test-behavior — Cucumber/Gherkin 기반 인수 테스트 작성
 
-사용자가 검증할 행위를 설명하면, CLAUDE.md의 테스트 가이드에 따라 인수 테스트 코드를 작성한다.
+사용자가 검증할 행위를 설명하면, Gherkin 시나리오(.feature)와 Step Definition을 작성한다.
 
 ## 실행 전 확인
 
-1. `build.gradle`에 RestAssured 의존성이 있는지 확인. 없으면 추가:
+1. `build.gradle`에 Cucumber + RestAssured 의존성이 있는지 확인. 없으면 추가:
    ```groovy
    testImplementation 'io.rest-assured:rest-assured'
+   testImplementation 'io.cucumber:cucumber-java:7.22.1'
+   testImplementation 'io.cucumber:cucumber-spring:7.22.1'
+   testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
+   testImplementation 'org.junit.platform:junit-platform-suite'
    ```
-2. `src/test/resources/cleanup.sql`이 존재하는지 확인. 없으면 생성.
-3. 테스트에 필요한 사전 데이터 SQL(`src/test/resources/` 하위)이 있는지 확인. 없으면 생성.
+2. Cucumber 인프라 파일 존재 여부 확인. 없으면 생성:
+   - `src/test/java/gift/cucumber/CucumberTest.java` — @Suite 엔트리포인트
+   - `src/test/java/gift/cucumber/CucumberSpringConfig.java` — @CucumberContextConfiguration + @SpringBootTest
+3. `src/test/resources/features/` 디렉토리 존재 여부 확인. 없으면 생성.
+4. `src/test/resources/cleanup.sql` 존재 여부 확인. 없으면 생성.
 
-## 테스트 코드 작성 규칙
+## Gherkin 시나리오 작성 규칙
 
-### 원칙: "어떻게 되는가"를 검증한다
+### 원칙: 비즈니스 언어로 작성한다
+- **기획자/QA가 읽고 이해할 수 있어야 한다.**
+- HTTP 메서드, 상태 코드, JSON 필드명, URL 경로 등 구현 세부사항을 시나리오에 쓰지 않는다.
+- 한국어 Gherkin 키워드를 사용한다: `기능`, `시나리오`, `주어진`/`그리고`/`만일`/`그러면`
+
+### 좋은 예시
+```gherkin
+# language: ko
+기능: 선물하기
+
+  시나리오: 재고가 충분하면 선물하기에 성공한다
+    주어진 "교환권" 카테고리가 등록되어 있다
+    그리고 "교환권" 카테고리에 "아이스 아메리카노" 상품이 등록되어 있다
+    그리고 "아이스 아메리카노" 상품에 재고가 5개인 "톨 사이즈" 옵션이 있다
+    그리고 회원 "철수"와 "영희"가 등록되어 있다
+    만일 "철수"가 "영희"에게 "아이스 아메리카노"의 "톨 사이즈" 1개를 선물한다
+    그러면 선물하기가 성공한다
+```
+
+### 나쁜 예시
+```gherkin
+  시나리오: 선물 API 호출
+    Given POST /api/gifts에 JSON body를 전송한다
+    Then HTTP 200 응답을 받는다
+```
+
+### "어떻게 되는가"를 검증한다
 - 내부 구현(repository, 엔티티, 서비스 로직)에 직접 의존하지 않는다.
-- **사용자 입력(HTTP 요청) → 결과(HTTP 응답 또는 후속 행위의 성공/실패)**로만 검증한다.
+- **사용자 입력 → 결과(성공/실패)**로만 검증한다.
 - DB를 직접 조회해서 상태를 확인하지 않는다.
-- 리팩토링해도 깨지지 않는 테스트를 목표로 한다.
 
 ### 검증 패턴: 다음 행동으로 이전 행동을 검증
 - 생성 → 조회에서 확인 (시나리오 체이닝)
 - 재고 소진 → 재시도 시 실패로 재고 감소 검증
 
-### 테스트 클래스 구조
+## Step Definition 작성 규칙
 
+### 파일 구조
+```
+src/test/java/gift/cucumber/
+├── CucumberTest.java
+├── CucumberSpringConfig.java
+└── steps/
+    ├── CategorySteps.java
+    ├── ProductSteps.java
+    └── GiftSteps.java
+```
+
+### Step Definition 클래스 구조
 ```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class SomeAcceptanceTest {
+public class GiftSteps {
 
     @LocalServerPort
     int port;
 
-    @BeforeEach
-    void setUp() {
+    private ExtractableResponse<Response> response;
+
+    @Before
+    public void setUp() {
         RestAssured.port = port;
     }
 
-    @Test
-    void 행위를_한글로_서술한다() {
-        // given — 사전 조건 (필요 시 API 호출로 준비)
-        // when — 검증 대상 행위 실행
-        // then — 결과 확인 (HTTP 응답 또는 후속 행위)
+    @주어진("회원 {string}와 {string}가 등록되어 있다")
+    public void 회원이_등록되어_있다(String sender, String receiver) {
+        // SQL 스크립트 또는 API 호출로 데이터 준비
+    }
+
+    @만일("{string}가 {string}에게 {string}의 {string} {int}개를 선물한다")
+    public void 선물한다(String sender, String receiver, String product, String option, int qty) {
+        response = RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .header("Member-Id", senderId)
+                .body(Map.of("optionId", optionId, "quantity", qty,
+                             "receiverId", receiverId, "message", "선물"))
+                .when().post("/api/gifts")
+                .then().log().all().extract();
+    }
+
+    @그러면("선물하기가 성공한다")
+    public void 선물하기_성공() {
+        assertThat(response.statusCode()).isEqualTo(200);
     }
 }
 ```
 
 ### RestAssured 요청 작성
 
-#### form params 방식 (Product, Category 생성)
-`POST /api/products`와 `POST /api/categories`는 `@RequestBody`가 없다. form params로 전송해야 한다.
+모든 POST 엔드포인트에 `@RequestBody`가 있으므로 **JSON body**로 전송한다.
 
 ```java
-ExtractableResponse<Response> response = RestAssured.given().log().all()
-        .contentType(ContentType.FORM)
-        .formParam("name", "테스트 상품")
-        .formParam("price", 10000)
-        .formParam("imageUrl", "http://example.com/img.png")
-        .formParam("categoryId", 1)
+// 카테고리 생성
+RestAssured.given().log().all()
+        .contentType(ContentType.JSON)
+        .body(Map.of("name", "카테고리명"))
+        .when().post("/api/categories")
+        .then().log().all().extract();
+
+// 상품 생성
+RestAssured.given().log().all()
+        .contentType(ContentType.JSON)
+        .body(Map.of("name", "상품명", "price", 10000,
+                     "imageUrl", "http://example.com/img.png", "categoryId", 1))
         .when().post("/api/products")
         .then().log().all().extract();
-```
 
-#### JSON body 방식 (Gift 생성)
-`POST /api/gifts`는 `@RequestBody`가 있다. JSON body로 전송해야 한다.
-
-```java
-ExtractableResponse<Response> response = RestAssured.given().log().all()
+// 선물하기
+RestAssured.given().log().all()
         .contentType(ContentType.JSON)
         .header("Member-Id", senderId)
-        .body(Map.of(
-                "optionId", optionId,
-                "quantity", 1,
-                "receiverId", receiverId,
-                "message", "선물 메시지"
-        ))
+        .body(Map.of("optionId", optionId, "quantity", 1,
+                     "receiverId", receiverId, "message", "선물 메시지"))
         .when().post("/api/gifts")
         .then().log().all().extract();
 ```
 
-### 테스트 데이터 전략
+### 기존 헬퍼 재사용
+- `AcceptanceTestSupport` 클래스의 공통 헬퍼 메서드를 Step Definition에서 활용할 수 있다.
+- 필요 시 헬퍼를 추가/확장한다.
 
-#### SQL 스크립트 사용 (@Sql)
-- `cleanup.sql` — 매 테스트 전 모든 테이블 초기화 (FK 역순으로 DELETE)
-- `test-data.sql` — 테스트에 필요한 기본 데이터 INSERT
-- H2 컬럼명은 JPA 기본 네이밍 전략: camelCase → snake_case (예: `imageUrl` → `image_url`)
+## 테스트 데이터 전략
 
-#### cleanup.sql 예시
+### Cucumber에서의 데이터 준비
+- `@Before` 훅에서 cleanup SQL을 실행하거나, Step Definition 내에서 API 호출로 데이터를 준비한다.
+- `Given` 스텝에서 API 호출로 사전 데이터를 생성하면 시나리오가 자기 완결적이 된다.
+
+### cleanup.sql (TRUNCATE 방식)
 ```sql
-DELETE FROM wish;
-DELETE FROM gift;
-DELETE FROM option;
-DELETE FROM product;
-DELETE FROM member;
-DELETE FROM category;
+SET REFERENTIAL_INTEGRITY FALSE;
+TRUNCATE TABLE wish;
+TRUNCATE TABLE option;
+TRUNCATE TABLE product;
+TRUNCATE TABLE member;
+TRUNCATE TABLE category;
+SET REFERENTIAL_INTEGRITY TRUE;
 ```
 
-#### 시나리오별 추가 데이터가 필요한 경우
-- 별도 SQL 파일을 만들어 테스트 메서드/클래스에 `@Sql`을 추가로 지정한다.
-- 또는 테스트 내에서 API 호출로 데이터를 준비한다 (인수 테스트 취지에 부합).
+### H2 컬럼명
+- JPA 기본 네이밍 전략: camelCase → snake_case (예: `imageUrl` → `image_url`)
 
-### 테스트 격리
+## 테스트 격리
 - `RANDOM_PORT`에서 `@Transactional` 롤백은 **동작하지 않는다**. 별도 스레드에서 HTTP 요청을 처리하므로 테스트 트랜잭션과 분리됨.
-- 반드시 `@Sql(cleanup.sql, BEFORE_TEST_METHOD)`로 매 테스트 전 데이터를 초기화한다.
+- Cucumber `@Before` 훅에서 cleanup SQL을 실행하여 시나리오 간 격리를 보장한다.
 
-### 테스트 메서드 네이밍
-- 한글로 행위를 서술한다: `카테고리를_생성한다()`, `선물하기_재고_부족_시_실패한다()`
-- Given-When-Then 구조를 주석으로 명시한다.
+## 에러 응답
+- `GlobalExceptionHandler`가 `IllegalStateException`/`NoSuchElementException`을 **400 BAD_REQUEST**로 처리한다.
+- 재고 부족, 존재하지 않는 엔티티 조회 시 400 응답을 기대한다.
 
 ## 실행 예시
 
-사용자: "상품 생성 테스트 작성해줘"
+사용자: "선물하기 시나리오 작성해줘"
 
 → 수행할 작업:
-1. cleanup.sql / test-data.sql 존재 여부 확인 (없으면 생성)
-2. `ProductAcceptanceTest` 클래스 생성 (또는 기존 파일에 추가)
-3. 상품 생성 + 목록 조회로 검증하는 테스트 작성
-4. `./gradlew test --tests "gift.ProductAcceptanceTest"` 실행하여 통과 확인
+1. Cucumber 인프라 파일 존재 여부 확인 (없으면 생성)
+2. `src/test/resources/features/gift.feature` 작성 (비즈니스 언어로 시나리오 정의)
+3. `src/test/java/gift/cucumber/steps/GiftSteps.java` 작성 (Step Definition 구현)
+4. `./gradlew test --tests "gift.cucumber.CucumberTest"` 실행하여 통과 확인

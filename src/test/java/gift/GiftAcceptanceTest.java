@@ -98,7 +98,7 @@ class GiftAcceptanceTest {
                 .then().log().all().extract();
 
         // then — 두 번째 요청 실패 (재고 부족)
-        assertThat(secondResponse.statusCode()).isEqualTo(500);
+        assertThat(secondResponse.statusCode()).isEqualTo(400);
     }
 
     /**
@@ -126,7 +126,7 @@ class GiftAcceptanceTest {
                 .then().log().all().extract();
 
         // then
-        assertThat(response.statusCode()).isEqualTo(500);
+        assertThat(response.statusCode()).isEqualTo(400);
     }
 
     /**
@@ -154,7 +154,7 @@ class GiftAcceptanceTest {
                 .then().log().all().extract();
 
         // then
-        assertThat(response.statusCode()).isEqualTo(500);
+        assertThat(response.statusCode()).isEqualTo(400);
     }
 
     /**

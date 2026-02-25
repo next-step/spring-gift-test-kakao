@@ -1,7 +1,6 @@
 package gift;
 
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.jdbc.Sql;
 
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,11 +33,7 @@ class CategoryAcceptanceTest {
     @Test
     void 카테고리를_생성하고_목록에서_확인한다() {
         // when — 카테고리 생성
-        ExtractableResponse<Response> createResponse = RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(Map.of("name", "디저트"))
-                .when().post("/api/categories")
-                .then().log().all().extract();
+        ExtractableResponse<Response> createResponse = AcceptanceTestSupport.카테고리를_생성한다("디저트");
 
         // then — 생성 응답 확인
         assertThat(createResponse.statusCode()).isEqualTo(200);
@@ -61,7 +55,7 @@ class CategoryAcceptanceTest {
      * - test-data.sql로 준비된 2건(간식, 음료)이 조회된다.
      */
     @Test
-    @Sql(scripts = "classpath:test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(scripts = {"classpath:cleanup.sql", "classpath:test-data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void 카테고리_목록을_조회한다() {
         // when
         ExtractableResponse<Response> response = RestAssured.given().log().all()

@@ -6,6 +6,7 @@ import gift.model.Category;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public class CategoryRestController {
     }
 
     @PostMapping
-    public Category create(final CreateCategoryRequest request) {
+    public Category create(@RequestBody final CreateCategoryRequest request) {
         return categoryService.create(request);
     }
 

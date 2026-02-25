@@ -22,10 +22,67 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.22.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.22.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/cucumber/**'
+}
+
+// Docker 소켓 자동 탐색: DOCKER_HOST > 런타임별 소켓 경로 > /var/run/docker.sock
+def detectDockerHost() {
+	def dockerHost = System.getenv('DOCKER_HOST')
+	if (dockerHost) return dockerHost
+
+	def home = System.getProperty('user.home')
+	def candidates = [
+		"${home}/.docker/run/docker.sock",       // Docker Desktop (macOS)
+		"${home}/.docker/desktop/docker.sock",    // Docker Desktop (Linux)
+		"${home}/.colima/default/docker.sock",    // Colima
+		"${home}/.orbstack/run/docker.sock",      // OrbStack
+		"${home}/.rd/docker.sock",                // Rancher Desktop
+		'/var/run/docker.sock',                   // Linux native / symlink
+	]
+	def found = candidates.find { new File(it).exists() }
+	return found ? "unix://${found}" : null
+}
+
+def dockerHostEnv() {
+	def dockerHost = detectDockerHost()
+	return dockerHost ? ['DOCKER_HOST': dockerHost] : [:]
+}
+
+tasks.register('dockerBuild', Exec) {
+	group = 'docker'
+	description = 'Docker 이미지 빌드'
+	commandLine 'docker', 'build', '-t', 'spring-gift-test:latest', '.'
+	environment dockerHostEnv()
+}
+
+tasks.register('dockerUp', Exec) {
+	group = 'docker'
+	description = 'Docker Compose 시작'
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+	environment dockerHostEnv()
+}
+
+tasks.register('dockerDown', Exec) {
+	group = 'docker'
+	description = 'Docker Compose 종료'
+	commandLine 'docker', 'compose', 'down'
+	environment dockerHostEnv()
+}
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform()
+	include 'gift/cucumber/CucumberTest.class'
+	group = 'verification'
+	description = 'Cucumber 인수 테스트 (Docker PostgreSQL)'
 }
