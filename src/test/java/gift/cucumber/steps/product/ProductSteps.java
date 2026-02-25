@@ -105,4 +105,9 @@ public class ProductSteps {
     public void 데이터베이스에_상품이_저장되어_있다(String name) {
         productRepositorySupport.assertSavedByName(name);
     }
+
+    @Then("데이터베이스에 {string} 상품이 저장되어 있지 않다")
+    public void 데이터베이스에_상품이_저장되어_있지_않다(String name) {
+        productRepositorySupport.assertNotSavedByName(name);
+    }
 }

@@ -38,3 +38,4 @@ Feature: 관리자가 상품을 관리할 수 있다
       | name | price   | imageUrl                         | categoryId |
       | 노트북  | 1500000 | https://example.com/notebook.png | 9999       |
     Then 응답 상태 코드는 500이다
+    And 데이터베이스에 "노트북" 상품이 저장되어 있지 않다

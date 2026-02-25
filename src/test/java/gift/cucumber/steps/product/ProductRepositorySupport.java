@@ -33,4 +33,10 @@ public class ProductRepositorySupport {
             .extracting(Product::getName)
             .contains(name);
     }
+
+    public void assertNotSavedByName(final String name) {
+        assertThat(productRepository.findAll())
+            .extracting(Product::getName)
+            .doesNotContain(name);
+    }
 }
