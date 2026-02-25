@@ -10,13 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 ./gradlew build          # 프로젝트 빌드
-./gradlew test           # 전체 테스트 실행
-./gradlew bootRun        # 애플리케이션 실행
-./gradlew test --tests "gift.SomeTestClass.someMethod"  # 단일 테스트 실행
+./gradlew test           # 단위 테스트 실행
+./gradlew cucumberTest   # 인수 테스트 실행 (PostgreSQL 자동 시작)
+./gradlew dockerBuild    # Docker 이미지 빌드
+./gradlew dockerUp       # Docker Compose 전체 기동
+./gradlew dockerDown     # Docker Compose 종료
+./gradlew bootRun        # 애플리케이션 로컬 실행
 ```
 
 - Java 21, Gradle 8.4, Spring Boot 3.5.8
-- H2 인메모리 데이터베이스 (별도 DB 설정 불필요)
 
 ## 아키텍처
 
@@ -76,13 +78,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ 최종 재고 수량, DB 상태, API 응답, 비즈니스 결과
 - ❌ decrease() 호출 여부, 특정 Repository 호출 여부, 특정 클래스 존재 여부
 
+## 인수 테스트 규칙
+
+### 테스트 형식
+- **Cucumber BDD + Gherkin** 형식으로 작성
+- 한글 Given/When/Then 사용 (`io.cucumber.java.ko`)
+- 기술 용어(HTTP, JSON, status code) 대신 **비즈니스 도메인 언어** 사용
+- Feature 파일 위치: `src/test/resources/features/`
+
+### 데이터 및 격리
+- 테스트 데이터는 **Repository로 직접 삽입** (다른 API로 데이터 준비 금지)
+- 각 시나리오마다 DatabaseCleaner로 **DB 초기화** (Cucumber `@Before` hook)
+- `@Transactional` 자동 롤백에 의존하지 않는다 (서버와 테스트가 별도 스레드)
+- Step Definition 간 상태 공유는 **ScenarioContext**(`@ScenarioScope`)로만 한다
+
+### 의존성 격리
+- 외부 의존(배송 등)은 **Fake/Stub**으로 격리
+- 내부 컴포넌트에 `@MockBean` 사용 금지 — Mock하면 해당 구간이 검증에서 빠짐
+- **DB 최종 상태 검증 우선** (`verify(mock)` 지양)
+
+### 환경
+- 테스트 DB는 **PostgreSQL** (Production Parity — H2 사용 금지)
+- **Docker Compose**로 테스트 인프라 관리
+- 애플리케이션은 **Docker 컨테이너**로 실행하여 E2E 테스트
+- 단일 커맨드(`./gradlew cucumberTest`)로 전체 테스트 실행 가능해야 한다
+
 ### 테스트 전략
-
-인수 테스트를 최우선 보호 장치로 사용한다.
-
-- 시스템 경계(API)에서 사용자 시나리오 기준으로 테스트
-- 최종 상태 기준 검증, Mock verify에 의존하지 않음
-- BDD 도구(Cucumber, Karate 등) 사용하지 않음
+- **리스크 기반**으로 자동화 대상 선택: Risk = Impact × Likelihood × Detection Cost
+- High Risk → Cucumber 자동화 / Medium → 선택적 / Low → 수동 QA
 
 ## 요구 사항
 
@@ -121,3 +144,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - DB 최종 상태, 재고 수량, 잔액 수치, 선물 상태 값
 
 내부 메서드 호출 여부는 보호 대상이 아니다.
+
+## 상세 참고자료
+
+- 프로젝트 구조/API/엔티티 상세 분석: `.claude/docs/project-analysis.md`
+- 1단계 테스트 시나리오 상세 설계: `.claude/docs/test-strategy.md`
+- 2단계 고도화 가이드 (Cucumber, PostgreSQL, Docker): `.claude/docs/acceptance-testing-guide.md`

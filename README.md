@@ -5,8 +5,9 @@
 ## 기술 스택
 
 - Java 21, Spring Boot 3.5.8, Gradle 8.4
-- Spring Data JPA + H2 인메모리 DB
-- RestAssured (인수 테스트)
+- Spring Data JPA + H2 (단위 테스트) / PostgreSQL (인수 테스트)
+- RestAssured + Cucumber BDD (인수 테스트)
+- Docker Compose (테스트 인프라 자동화)
 
 ## 주요 기능
 
@@ -19,9 +20,15 @@
 ## 실행
 
 ```bash
-./gradlew bootRun        # 애플리케이션 실행
-./gradlew test           # 전체 테스트 실행
+./gradlew bootRun          # 애플리케이션 실행
+./gradlew cucumberTest     # Cucumber 인수 테스트 (Docker: App + PostgreSQL)
+./gradlew restAssuredTest  # RestAssured 인수 테스트 (H2 인메모리)
+./gradlew dockerBuild      # Docker 이미지 빌드
+./gradlew dockerUp         # Docker Compose 전체 기동
+./gradlew dockerDown       # Docker Compose 종료
 ```
+
+`cucumberTest`는 Docker Compose로 PostgreSQL + App을 자동으로 빌드/시작하고, 테스트 완료 후 종료합니다.
 
 ## 프로젝트 구조
 
@@ -33,11 +40,125 @@ gift/
 └── infrastructure/  # 외부 연동 (FakeGiftDelivery, 카카오 API 설정)
 ```
 
+## 테스트 구조
+
+```
+src/test/java/gift/
+├── DatabaseCleaner.java          # DB 초기화 (공유)
+├── Fixtures.java                 # 테스트 팩토리 메서드 (공유)
+├── restassured/                  # RestAssured 기반 인수 테스트
+│   ├── AcceptanceTest.java       # 공통 설정 추상 클래스
+│   ├── GiftAcceptanceTest.java
+│   ├── CategoryAcceptanceTest.java
+│   ├── ProductAcceptanceTest.java
+│   ├── CategoryRetrieveAcceptanceTest.java
+│   └── ProductRetrieveAcceptanceTest.java
+└── cucumber/                     # Cucumber BDD 인수 테스트
+    ├── CucumberTest.java         # JUnit Suite 러너
+    ├── CucumberSpringConfig.java # Spring Boot 통합 설정
+    ├── CucumberHooks.java        # @Before: port 설정 + DB 초기화
+    ├── ScenarioContext.java      # 시나리오 간 상태 공유
+    └── steps/                    # Step Definitions
+        ├── GiftStepDefinitions.java
+        ├── CategoryStepDefinitions.java
+        └── ProductStepDefinitions.java
+
+src/test/resources/features/      # Gherkin Feature 파일
+├── gift.feature
+├── category.feature
+└── product.feature
+```
+
+### RestAssured vs Cucumber
+
+동일한 11개 시나리오를 두 가지 방식으로 검증합니다.
+
+- **RestAssured** — 코드 기반. 개발자가 빠르게 읽고 디버깅하기 좋음
+- **Cucumber** — Gherkin 기반. 비개발자도 시나리오를 이해할 수 있음
+
+## 테스트 데이터 전략
+
+### Repository + Fixtures 팩토리 방식 채택
+
+```java
+// 테스트에서 중요한 값만 노출, 나머지는 기본값
+var opt = optionRepository.save(option(10, product));  // 재고 10개
+var sender = memberRepository.save(member("보내는사람"));
+```
+
+### SQL 파일 방식(`@Sql`, `data.sql`)을 채택하지 않은 이유
+
+| 기준 | Repository + Fixtures | SQL 파일 |
+|------|----------------------|----------|
+| 컴파일 안전성 | 엔티티 변경 시 컴파일 에러로 즉시 발견 | 런타임에서만 실패 확인 |
+| ID 관리 | auto-generated ID를 자연스럽게 사용 | 하드코딩 필요, 테스트 간 충돌 위험 |
+| 시나리오별 유연성 | 재고 10개, 5개, 1개 등 테스트마다 자유롭게 변경 | 시나리오마다 별도 SQL 파일 필요 |
+| DB 전환 | JPA가 방언 처리 (H2 → PostgreSQL 영향 없음) | SQL 방언 차이로 파일 수정 필요 |
+| 가독성 | 팩토리 메서드로 의도가 드러남 | SQL이 장황하고 테스트 코드와 분리됨 |
+
+### 테스트 격리
+
+- `DatabaseCleaner` — 각 테스트 전 `TRUNCATE`로 DB 초기화 (H2/PostgreSQL 양쪽 호환)
+- `@Transactional` 롤백에 의존하지 않음 (서버와 테스트가 별도 스레드)
+
+### 테스트 환경 비교
+
+| 구분 | RestAssured (`./gradlew restAssuredTest`) | Cucumber (`./gradlew cucumberTest`) |
+|------|------------------------------------------|-------------------------------------|
+| App 실행 | Embedded (`@SpringBootTest RANDOM_PORT`) | Docker 컨테이너 (`localhost:28080`) |
+| DB | H2 인메모리 | Docker PostgreSQL (`localhost:5432`) |
+| 용도 | 빠른 피드백 | Production Parity E2E 검증 |
+| 프로파일 | 기본 | `cucumber` |
+
+## 테스트 시나리오
+
+### 선물하기 (POST /api/gifts)
+- 정상 선물 보내기: 재고 차감 검증
+- 재고 부족 시 실패: 롤백으로 재고 불변 검증
+- 재고 경계값: 첫 번째 성공 → 두 번째 실패, 음수 방지
+- 존재하지 않는 옵션: 에러 응답
+
+### 카테고리 (POST/GET /api/categories)
+- 정상 등록: 응답 + DB 검증
+- 빈 목록 반환
+- 등록 후 목록 조회
+
+### 상품 (POST/GET /api/products)
+- 정상 등록: 카테고리 연결 검증
+- 존재하지 않는 카테고리로 등록 실패
+- 빈 목록 반환
+- 등록 후 목록 조회 + 카테고리 중첩 응답
+
 ## 과제 진행 과정
 
+### 1단계: RestAssured 기반 인수 테스트
 1. CLAUDE.md 작성 — 프로젝트 요구사항 및 개발 제약사항 정리
-2. 기능 분석 — 선물하기, 카테고리/상품 등록, 카테고리/상품 조회 흐름 파악
+2. 기능 분석 — 선물하기, 카테고리/상품 등록·조회 흐름 파악
 3. 테스트 전략 수립 — 인수 테스트 시나리오 및 데이터 준비 전략 설계
 4. 테스트 코드 작성 — `@SpringBootTest` + RestAssured 기반 인수 테스트 구현
 
-상세 개발 과정은 [docs/PROJECT_HISTORY.md](docs/PROJECT_HISTORY.md) 참고
+### 2단계
+
+#### 요구사항 1: Cucumber BDD 적용
+1. Cucumber 의존성 추가 및 Spring Boot 통합 (`@CucumberContextConfiguration`)
+2. Gherkin Feature 파일 작성 (한글 Given-When-Then)
+3. Step Definitions 구현 (`ScenarioContext`로 상태 공유)
+4. 테스트 패키지 분리 (`restassured/`, `cucumber/`)
+
+#### 요구사항 2: PostgreSQL + Docker Compose 통합
+5. Docker Compose로 PostgreSQL 테스트 환경 구성
+6. Spring 프로파일 분리 (`application-cucumber.properties`)
+7. DatabaseCleaner H2/PostgreSQL 양쪽 호환
+8. `cucumberTest` Gradle task로 자동화 (DB 시작 → 테스트 → DB 종료)
+
+#### 요구사항 3: Application 컨테이너화
+9. Multi-stage Dockerfile 작성 (빌드 + 경량 런타임)
+10. Docker Compose에 App 서비스 추가 (`depends_on: service_healthy`)
+11. `webEnvironment = NONE` — embedded 서버 제거, Docker 앱에 HTTP 요청
+12. `dockerBuild`/`dockerUp`/`dockerDown` Gradle task 추가
+
+## 참고 문서
+
+- [Cucumber BDD 학습 가이드](step2docs/cucumber.md) — Cucumber 설정, Gherkin 문법, Step Definitions 작성법 정리
+- [PostgreSQL + Docker Compose 학습 가이드](step2docs/postgresql-docker.md) — Docker Compose, Spring 프로파일, Gradle 자동화 정리
+- [Application 컨테이너화 학습 가이드](step2docs/docker-app.md) — Multi-stage build, Docker 네트워크, E2E 아키텍처 정리
