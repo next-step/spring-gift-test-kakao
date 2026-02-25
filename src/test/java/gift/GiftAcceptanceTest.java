@@ -24,7 +24,7 @@ class GiftAcceptanceTest extends AcceptanceTest {
 
         // Then: 나머지 5개를 선물하면 실패해야 한다 (잔여 3개 < 요청 5개)
         선물_보내기(SENDER_ID, TALL_OPTION_ID, 5, RECEIVER_ID).then()
-                .statusCode(500); // TODO: 에러 핸들링 구현 후 적절한 상태 코드로 변경
+                .statusCode(409);
     }
 
     @Test
@@ -32,7 +32,7 @@ class GiftAcceptanceTest extends AcceptanceTest {
     void 재고보다_많은_수량으로_선물을_보내면_실패한다() {
         // When & Then: 재고 10개인데 11개를 선물
         선물_보내기(SENDER_ID, TALL_OPTION_ID, INITIAL_STOCK + 1, RECEIVER_ID).then()
-                .statusCode(500); // TODO: 에러 핸들링 구현 후 적절한 상태 코드로 변경
+                .statusCode(409);
     }
 
     @Test
@@ -40,7 +40,7 @@ class GiftAcceptanceTest extends AcceptanceTest {
     void 존재하지_않는_옵션으로_선물을_보내면_실패한다() {
         // When & Then
         선물_보내기(SENDER_ID, NON_EXISTENT_OPTION_ID, 1, RECEIVER_ID).then()
-                .statusCode(500); // TODO: 에러 핸들링 구현 후 적절한 상태 코드로 변경
+                .statusCode(404);
     }
 
     @Test
@@ -52,7 +52,7 @@ class GiftAcceptanceTest extends AcceptanceTest {
 
         // Then: 잔여 3개이므로 4개 요청은 실패해야 한다
         선물_보내기(SENDER_ID, TALL_OPTION_ID, 4, RECEIVER_ID).then()
-                .statusCode(500); // TODO: 에러 핸들링 구현 후 적절한 상태 코드로 변경
+                .statusCode(409);
 
         // 잔여 3개이므로 3개 요청은 성공해야 한다
         선물_보내기(SENDER_ID, TALL_OPTION_ID, 3, RECEIVER_ID).then().statusCode(200);
