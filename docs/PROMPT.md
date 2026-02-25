@@ -1,0 +1,145 @@
+# 프롬프트 기록
+
+### 프롬프트 1
+- 어떤 프로젝트인가? → 카카오 선물하기 백엔드 프로젝트
+- 왜 분석하는가? → 사용자 관점에서 행위를 검증하는 테스트를 작성하기 위함
+- 사용자 행동 시나리오로 어떤 것이 있는지 파악해야 함
+따라서 프로젝트의 핵심 기능을 파악하고, 사용자 행동 시나리오를 도출하고 리스트업하여 REPORT.md에 보고서를 작성하라.
+
+### 프롬프트 2
+1. 옵션이 무엇인지 명확하게 이해되지 않았음
+    1. 옵션이 무엇인지 상세하게 설명해 주고, 실제 사용 예제도 함께 포함하여 설명해 달라.
+
+### 프롬프트 3
+- 어떤 프로젝트인가? → 카카오 선물하기 백엔드 프로젝트
+- 왜 분석하는가? → 사용자 관점에서 행위를 검증하는 테스트를 작성하기 위함
+- 사용자 행동 시나리오로 어떤 것이 있는지 파악해야 함
+- 따라서 프로젝트의 핵심 기능을 파악하고, 사용자 행동 시나리오를 도출하고 리스트업하여 REPORT2.md에 보고서를 작성하라.
+- 일부 기능들은 현재 미지원 상태이다. API로 노출되어 현재 사용자가 수행 가능한 시나리오에 대해서만 정리해야 한다. 구체적인 예외 케이스들에 대한 시나리오도 모두 정리하라.
+
+### 프롬프트 4
+REPORT.md 파일의 사용자 행동 시나리오 항목에서, 카테고리에 해당되는 '시나리오 1' 인수 테스트를 작성해줘.
+
+### 프롬프트 5
+REPORT.md 파일의 사용자 행동 시나리오 항목에서, 상품에 해당되는 '시나리오 1'과 '시나리오 2' 인수 테스트를 작성해줘.
+
+### 프롬프트 6
+REPORT.md 파일의 사용자 행동 시나리오 항목에서, 선물에 해당되는 '시나리오 1~4' 인수 테스트를 작성해줘.
+
+### 프롬프트 7
+REPORT.md 파일의 사용자 행동 시나리오 항목에서, 상품에 해당되는 '시나리오 1'과 '시나리오 2' 인수 테스트를 작성해줘.
+
+### 프롬프트 8
+REPORT.md 파일의 사용자 행동 시나리오 항목에서, 선물에 해당되는 '시나리오 1~4' 인수 테스트를 작성해줘.
+
+### 프롬프트 9
+formParam 안쓰고 지금 구조에서 API를 사용하는 방법이 전혀 없어?
+
+### 프롬프트 10
+레거시 코드 인수 테스트 전략을 정리하여 TEST_STRATEGY.md(테스트 전략 문서)와 PROMPT_STRATEGY.md(프롬프트 및 AI 활용 방법 문서)를 작성하라. 프로젝트 분석부터 시나리오 도출, 테스트 작성까지의 전 과정을 문서화한다.
+
+### 프롬프트 11
+84ddc1f6dee62931f39e8d4af42dff6d19c19982
+
+여기서 @RequestBody 이슈를 해결했다. Category, Product 테스트에 대해 수정하고 테스트를 통과시켜라.
+
+### 프롬프트 12
+테스트 데이터 준비 전략을 @Sql로 결정하신 이유를 다시 나눠주실 수 있을까요?                                                                                                             
+개인적인 의견으로 프로젝트가 커질수록 @Sql은 보통 한계가 온다고 생각하거든요.                                                                                                           
+혹시 다른 대안들(예)Test Fixture Builder + Repository저장)의 장단점을 검토해 보셨는지 궁금합니다.
+                                                                                                                                                                                          
+---                                                                                                                                                                                         
+
+Java 코드로 작성하면 다음 이점이 있는 것 같습니다.
+- id같은 숫자를 매직넘버 없이 코드로 표현할 수 있습니다.
+- SQL은 각 테스트마다 그 조합을 작성해주어야 하므로, 확장성에 한계가 있습니다.
+- 특정 데이터 상태를 나타내는(e.g. 비활성화된 유저, 활성화된 유저) Fixture를 만들어 놓고, 재사용할 수 있습니다.
+- 테스트코드를 읽을 때, SQL 파일을 읽어볼 필요가 없습니다.
+
+확실히 여러 면에서 Java 코드로 나타내는게 효율적인 것 같아, 이 점을 반영해보겠습니다.
+                                                                                                                                                                                          
+---                                                                                                                                                                                     
+
+내 리뷰 답변을 검토하고, 이를 바탕으로 먼저 문서부터 적절하게 수정해 달라. SKILL, TEST 전략 등 수정에 필요한 문서들을 식별한 후 수정하라.
+
+### 프롬프트 13
+Fixture로 데이터를 준비할 때, Repository로 저장하지 말고 JdbcTemplate등을 활용하도록 해야 한다. 문서들에 이 내용을 추가로 반영해야 한다.
+
+### 프롬프트 14
+Fixture 클래스가 JdbcTemplate을 직접 받아서 삽입까지 하는 설계는, 값 정의의 변경과 영속화 로직의 변경이 항상 같은 클래스에서 동시에 일어나는 문제를 만든다. Fixture는 "어떤 데이터인가"만 표현하고, "어떻게 저장하는가"는 TestDataInitializer 같은 별도 계층에 위임하도록 문서에 반영하라.
+
+### 프롬프트 15
+리뷰에서 제시한 전략을 구체적으로 문서에 명시하라. Fixture는 도메인 객체를 반환하되 시나리오별 메서드명(일반회원(), VIP회원() 등)으로 의도를 표현한다. TestDataInitializer는 도메인 객체를 받아 JdbcTemplate으로 영속화한다. 분리의 구체적 이점(컬럼 추가 시 변경 격리, 시나리오 추가 시 변경 격리, 가독성)을 포함한다.
+
+### 프롬프트 16
+이제 실제 테스트 코드에 반영하라.
+
+### 프롬프트 17
+GiftAcceptanceTest에서 수량 관련 매직넘버(3, 7, 10, 100)를 제거하라. Fixture가 반환하는 Option 도메인 객체를 보관하고 option.getQuantity()를 활용하여 수량 관계를 명시적으로 표현하라.
+
+### 프롬프트 18
+리뷰 반영: "ID만 검증하면 충분한가?" — id가 일치하는지 확인하는 것만으로 테스트 성공이 완벽하게 보장되는 걸까? 카테고리 이름도 정상적으로 DB에 들어갔는지 확인은 필요 없을까? ID 존재 여부만이 아닌 핵심 필드(name, price 등)도 함께 검증해야 한다는 원칙을 TEST_STRATEGY.md와 SKILL.md에 반영하라.
+
+## 프롬프트 19
+실제 테스트에 반영하라.
+
+### 프롬프트 20
+기존 RestAssured 기반 인수 테스트(7개 시나리오)를 Cucumber BDD 형식으로 전환하라. 한글 Gherkin으로 .feature 파일을 작성하여 비개발자도 시나리오를 읽을 수 있는 테스트 체계를 구축한다. 기존 Fixture, DatabaseCleaner, TestDataInitializer는 재사용한다.
+
+Gherkin 작성 원칙:
+- Feature/Scenario/Given/When/Then 키워드는 영어로 작성
+- Step 텍스트는 도메인 언어(한글)로 표현 — 기술 용어(HTTP, JSON, API) 대신 비즈니스 용어 사용
+- 구현이 바뀌어도 Gherkin은 유지되어야 함
+- 적절한 추상화 수준 (너무 구체적이지도, 너무 일반적이지도 않게)
+
+### 프롬프트 21
+기존 RestAssured 기반 인수테스트를 제거하라. 불필요한 fixture도 함께 제거하라.
+
+### 프롬프트 22
+현재 H2 인메모리 DB를 사용하는 테스트 환경을 PostgreSQL + Docker Compose로 전환하라. Spring Boot 3.5.8의 `spring-boot-docker-compose` 모듈을 활용하여 테스트 시 Docker Compose를 자동 시작/종료하고, datasource를 자동 구성한다. `test` 프로파일에서 PostgreSQL을, `default` 프로파일에서 H2를 유지하는 전략을 사용한다.
+
+### 프롬프트 23
+각 변경사항을 매우 구체적으로 설명하라. 왜 그렇게 했는지, 각 설정값들은 무엇인지 매우 구체적으로 작성해야 한다. 나의 공부 문서를 CUCUMBER.md처럼, DOCKER_COMPOSE.md에 작성하여 보고서를 완성해라.
+
+### 프롬프트 24
+개발 환경도 PostgreSQL을 사용하도록 전환하라. H2를 제거하고 모든 환경에서 PostgreSQL + Docker Compose를 사용한다. 프로파일은 `default`(개발)와 `test`(테스트)로 명시적으로 분리한다.
+
+### 프롬프트 25
+compose 파일을 프로파일별로 분리하라. `compose.yaml`(개발, named volume)과 `compose-test.yaml`(테스트, tmpfs)로 나누어 데이터 영속성 전략을 환경별로 다르게 가져간다.
+
+### 프롬프트 26
+개발 환경도 앱 종료 시 컨테이너가 내려가게 하되, 데이터는 유지되도록 하라. 또한 개발/테스트 컨테이너가 동시 실행 시 충돌하지 않도록 Docker Compose 프로젝트 이름(`name`)을 분리하라. 포트 매핑 방식(랜덤/고정/미지정)의 차이를 문서에 반영하라.
+
+### 프롬프트 27
+`test`와 `cucumberTest` 태스크의 역할을 분리하라. `test` 태스크는 Cucumber를 제외한 모든 테스트, `cucumberTest`는 Cucumber 인수 테스트 전용으로 분리한다. 두 태스크 모두 `test` 프로파일을 사용하되, 차이는 프로파일이 아니라 어떤 테스트를 실행하느냐이다. Docker 컨테이너는 Spring 컨텍스트가 실제로 로드될 때만 시작된다.
+
+### 프롬프트 28
+Spring Boot 앱 자체도 Docker 컨테이너로 실행하여, 프로덕션과 동일한 환경에서 End-to-End 테스트를 수행하라. Multi-stage Dockerfile로 이미지를 빌드하고, compose-docker.yaml로 App + DB를 함께 실행한다. Cucumber 테스트는 임베디드 서버 대신 Docker 컨테이너(localhost:28080)로 요청을 보내도록 변경한다. `dockerBuild`, `dockerUp`, `dockerDown` Gradle 태스크를 추가하여 Docker 라이프사이클을 관리한다.
+
+### 프롬프트 29
+`docker` 프로파일을 제거하고, `docker-test`를 `e2e`로 개명하여 4개 프로파일 체계를 3개로 단순화하라. `docker` 프로파일의 `create-drop` 설정은 `compose-docker.yaml`의 환경변수(`SPRING_JPA_HIBERNATE_DDL_AUTO`)로 대체한다. `docker.compose.enabled=false`는 `spring-boot-docker-compose`가 `developmentOnly`로 선언되어 bootJar에 포함되지 않으므로 불필요하다. 앱 컨테이너는 `default` + 환경변수 오버라이드로 동작한다.
+
+### 프롬프트 30
+다음 세 가지 주제를 분석하고, 그 결과를 기존 문서에 반영하라:
+1. Application 컨테이너화 테스트의 의미 — 컨테이너화 테스트의 대안(Testcontainers, 임베디드 모드)과 비교하여 현재 Docker Compose + Gradle Exec 방식의 적합성을 평가하라.
+2. Test code에 적용되는 프로파일 — step2 전환 후 문서에 반영되지 않은 프로파일 오류(`test` → `e2e`, `RANDOM_PORT` → `NONE` 등)를 수정하고, 프로파일 활성화 방식의 대안(@ActiveProfiles vs systemProperty)을 분석하라.
+3. Test code에 Spring이 필요한 이유 — `@SpringBootTest(NONE)`에서 사용하는 4개 빈(JdbcTemplate, DatabaseCleaner, TestDataInitializer, ScenarioContext)을 명시하고, Spring 없이 순수 JDBC로 대체하는 방안의 장단점을 분석하라.
+분석 결과 코드 변경은 없으며, 각 구성요소의 대안(pros/cons)을 문서에 추가한다.
+
+### 프롬프트 31
+`compose-test.yaml`과 `application-test.properties`를 제거하고, 3개 프로파일(`default`, `test`, `e2e`)을 2개 프로파일(`default`, `e2e`)로 축소하라. `test` 태스크는 현재 0개의 테스트를 실행하며, 향후 추가될 단위 테스트도 Spring 컨텍스트를 로드하지 않으므로 Docker Compose가 불필요하다. `build.gradle`의 `test` 태스크에서 `systemProperty 'spring.profiles.active', 'test'`를 제거하고, 관련 문서를 2프로파일 체계로 재정리한다.
+
+### 프롬프트 32
+`compose.yaml`(DB만)과 `compose-docker.yaml`(App+DB)을 하나의 `compose.yaml`(App+DB, 익명 볼륨)으로 통합하라. `spring-boot-docker-compose` 의존성을 제거하고, 개발 서버도 `dockerUp`/`dockerDown`으로 실행하도록 변경한다. App 포트를 28080에서 8080으로 변경하고, DDL을 `create-drop`에서 `update`로 통일한다.
+
+### 프롬프트 33
+7개 문서(~1570줄) + SKILL.md(361줄)를 통합·간소화하라. DOCKER_COMPOSE.md + APP_CONTAINERIZATION.md → DOCKER.md, TEST_STRATEGY.md + CUCUMBER.md → TEST.md로 통합하고, SKILL.md를 현재 설정(PostgreSQL, Cucumber, Docker)에 맞게 전면 재작성한다. PROMPT_STRATEGY.md는 핵심 워크플로우만 유지하여 축소하고, REPORT.md는 TEST.md에 흡수하여 삭제한다. 각 설정에 대한 설명·대안·장단점·선택 근거를 간결한 표 형식으로 정리한다.
+
+### 프롬프트 34
+DOCKER.md의 컨테이너 관리 방식 비교에서, Testcontainers의 단점과 선택 근거가 모호하다. Testcontainers가 더 나은 선택이라면 더 낫다고 표현하고, 향후 변경할만한 포인트로 제시하라.
+
+### 프롬프트 35
+프로파일 활성화 방식을 `systemProperty`에서 `@ActiveProfiles`로 변경하라. Cucumber 테스트는 항상 `e2e` 프로파일을 사용하므로 런타임 유연성이 불필요하다. 코드와 문서 모두 반영한다.
+
+### 프롬프트 36
+시나리오-구현 필드 불일치를 해소하라. `product.feature` 시나리오는 name과 price만 표현하지만, `ProductStepDefinitions.java`는 imageUrl과 categoryId도 전송/검증한다. 시나리오만 읽으면 실제로 어떤 필드가 테스트되는지 알 수 없어 BDD의 "문서로서의 시나리오" 역할이 약화된다. 문서에 이런 불일치를 방지하는 원칙을 추가하고, 시나리오를 구체화한다.
