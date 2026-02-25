@@ -1,8 +1,8 @@
 package gift.cucumber;
 
 import io.cucumber.java.Before;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
+import io.cucumber.java.ko.그러면;
+import io.cucumber.java.ko.조건;
 import io.restassured.RestAssured;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +35,7 @@ public class CommonStepDefinitions {
         jdbcTemplate.execute("TRUNCATE TABLE wish, option, product, category, member RESTART IDENTITY CASCADE");
     }
 
-    @Given("^회원 \"([^\"]*)\"과 \"([^\"]*)\"이 존재한다$")
+    @조건("^회원 \"([^\"]*)\"과 \"([^\"]*)\"이 존재한다$")
     public void 회원이_존재한다(String name1, String name2) {
         long id1 = insertAndReturnId(
                 "INSERT INTO member (name, email) VALUES (?, ?)",
@@ -48,14 +48,14 @@ public class CommonStepDefinitions {
         scenarioContext.storeId(name2, id2);
     }
 
-    @Given("^카테고리 \"([^\"]*)\"이 존재한다$")
+    @조건("^카테고리 \"([^\"]*)\"이 존재한다$")
     public void 카테고리가_존재한다(String name) {
         long id = insertAndReturnId(
                 "INSERT INTO category (name) VALUES (?)", name);
         scenarioContext.storeId(name, id);
     }
 
-    @Given("^상품 \"([^\"]*)\"\\(가격: (\\d+), 카테고리: \"([^\"]*)\"\\)이 존재한다$")
+    @조건("^상품 \"([^\"]*)\"\\(가격: (\\d+), 카테고리: \"([^\"]*)\"\\)이 존재한다$")
     public void 상품이_존재한다(String name, int price, String categoryName) {
         long categoryId = scenarioContext.getId(categoryName);
         long id = insertAndReturnId(
@@ -64,7 +64,7 @@ public class CommonStepDefinitions {
         scenarioContext.storeId(name, id);
     }
 
-    @Then("^응답 상태 코드는 (\\d+)이다$")
+    @그러면("^응답 상태 코드는 (\\d+)이다$")
     public void 응답_상태_코드를_확인한다(int expectedStatusCode) {
         assertThat(scenarioContext.getResponse().statusCode()).isEqualTo(expectedStatusCode);
     }

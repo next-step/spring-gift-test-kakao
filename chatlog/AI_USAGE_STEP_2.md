@@ -128,3 +128,12 @@
   - `CommonStepDefinitions.java`: `@Value("${test.app.host}") String appHost`, `@Value("${test.app.port}") int appPort` 필드 추가. `@Before`에서 `RestAssured.baseURI = "http://" + appHost`, `RestAssured.port = appPort`으로 변경.
 - **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). 호스트/포트 변경 시 properties 파일만 수정하면 되며 Java 코드 변경 불필요.
 - **참고**: `.env` 단일 소스 방안도 검토했으나, `.env`는 `.gitignore` 대상이라 clone 후 실행이 안 되는 문제로 properties 방식 유지.
+
+## 2-10. `# language: ko` 한글 키워드 적용
+- **Prompt**: 피드백 반영. 요구사항 키워드 `io.cucumber.java.ko`에 맞춰 Feature 파일과 Step Definition의 영어 키워드를 한글로 전환. 비개발자가 Feature 파일을 읽을 때 영어 키워드(Given/When/Then)로 흐름이 끊기지 않도록 개선.
+- **Action**:
+  - `gift.feature`, `product.feature`: `# language: ko` 선언 추가. `Feature` → `기능`, `Background` → `배경`, `Scenario` → `시나리오`, `Given` → `조건`, `When` → `만일`, `Then` → `그러면`, `And` → `그리고`로 전환.
+  - `CommonStepDefinitions.java`: `io.cucumber.java.en.Given/Then` → `io.cucumber.java.ko.조건/그러면`으로 변경.
+  - `GiftStepDefinitions.java`: `io.cucumber.java.en.Given/When` → `io.cucumber.java.ko.조건/만일`로 변경.
+  - `ProductStepDefinitions.java`: `io.cucumber.java.en.Then/When` → `io.cucumber.java.ko.그러면/만일`로 변경.
+- **Outcome**: `./gradlew cucumberTest` BUILD SUCCESSFUL (7 시나리오). Feature 파일이 완전한 한글 문서로 읽히게 됨.

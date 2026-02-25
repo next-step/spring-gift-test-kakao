@@ -1,7 +1,7 @@
 package gift.cucumber;
 
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.When;
+import io.cucumber.java.ko.만일;
+import io.cucumber.java.ko.조건;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -20,7 +20,7 @@ public class GiftStepDefinitions {
     @Autowired
     ScenarioContext scenarioContext;
 
-    @Given("^상품 \"([^\"]*)\"에 옵션 \"([^\"]*)\"의 재고가 (\\d+)개이다$")
+    @조건("^상품 \"([^\"]*)\"에 옵션 \"([^\"]*)\"의 재고가 (\\d+)개이다$")
     public void 옵션의_재고가_존재한다(String productName, String optionName, int quantity) {
         long productId = scenarioContext.getId(productName);
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -36,7 +36,7 @@ public class GiftStepDefinitions {
         scenarioContext.storeId(optionName, keyHolder.getKey().longValue());
     }
 
-    @When("^\"([^\"]*)\"이 옵션 \"([^\"]*)\"을 (\\d+)개 \"([^\"]*)\"에게 \"([^\"]*)\" 메시지와 함께 선물하면$")
+    @만일("^\"([^\"]*)\"이 옵션 \"([^\"]*)\"을 (\\d+)개 \"([^\"]*)\"에게 \"([^\"]*)\" 메시지와 함께 선물하면$")
     public void 선물을_보낸다(String senderName, String optionName, int quantity, String receiverName, String message) {
         long senderId = scenarioContext.getId(senderName);
         long optionId = scenarioContext.getId(optionName);
