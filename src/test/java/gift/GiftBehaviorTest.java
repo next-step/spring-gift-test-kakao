@@ -3,59 +3,49 @@ package gift;
 import gift.model.OptionRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GiftBehaviorTest {
-
-    @LocalServerPort
-    int port;
+class GiftBehaviorTest extends BaseBehaviorTest {
 
     @Autowired
     private OptionRepository optionRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     /**
      * Behavior 1: 선물하기 성공 시 옵션 재고가 감소한다
      *
      * Given: 카테고리, 상품, 옵션(수량=10), 보내는 회원, 받는 회원이 존재
      * When:  POST /api/gifts + Header Member-Id + Body { optionId, quantity: 3, receiverId, message }
-     * Then:  HTTP 200 OK / 옵션 수량이 10→7로 감소
+     * Then:  HTTP 200 OK / 옵션 수량이 10→7로 감소, 옵션의 다른 속성은 불변
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
-    void should_decrease_option_quantity_when_gift_is_sent_successfully() {
+    void 재고가_충분할_때_선물하기를_하면_옵션_수량이_감소한다() {
         // When
         RestAssured.given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", 1)
-            .body(Map.of(
-                "optionId", 1,
-                "quantity", 3,
-                "receiverId", 2,
-                "message", "선물입니다"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
-            .statusCode(200);
+                .contentType(ContentType.JSON)
+                .header("Member-Id", 1)
+                .body(Map.of(
+                        "optionId", 1,
+                        "quantity", 3,
+                        "receiverId", 2,
+                        "message", "선물입니다"
+                ))
+                .when()
+                .post("/api/gifts")
+                .then()
+                .statusCode(200);
 
-        // Then — DB 상태 변화 검증 (조회 API 미노출이므로 Repository 직접 조회)
+        // Then — DB 상태 변화 검증: 수량만 감소하고 나머지 속성은 불변
         var updatedOption = optionRepository.findById(1L).orElseThrow();
         assertThat(updatedOption.getQuantity()).isEqualTo(7);
+        assertThat(updatedOption.getName()).isEqualTo("테스트옵션");
+        assertThat(updatedOption.getProduct().getId()).isEqualTo(1L);
     }
 
     /**
@@ -63,29 +53,31 @@ class GiftBehaviorTest {
      *
      * Given: 카테고리, 상품, 옵션(수량=2), 보내는 회원, 받는 회원이 존재
      * When:  POST /api/gifts + Body { optionId, quantity: 5, ... } (재고 초과)
-     * Then:  HTTP 500 / 옵션 수량이 2로 유지 (변화 없음)
+     * Then:  HTTP 500 / 옵션 수량이 2로 유지, 옵션의 다른 속성도 불변
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup-low-stock.sql"})
-    void should_reject_gift_and_keep_stock_when_quantity_exceeds_inventory() {
+    void 재고가_부족할_때_선물하기를_하면_거부되고_재고가_유지된다() {
         // When
         RestAssured.given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", 1)
-            .body(Map.of(
-                "optionId", 1,
-                "quantity", 5,
-                "receiverId", 2,
-                "message", "선물입니다"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
-            .statusCode(500);
+                .contentType(ContentType.JSON)
+                .header("Member-Id", 1)
+                .body(Map.of(
+                        "optionId", 1,
+                        "quantity", 5,
+                        "receiverId", 2,
+                        "message", "선물입니다"
+                ))
+                .when()
+                .post("/api/gifts")
+                .then()
+                .statusCode(500);
 
-        // Then — DB 상태 변화 검증 (재고 불변 확인 — 트랜잭션 롤백 보장)
+        // Then — DB 상태 불변 검증: 재고 및 옵션 전체 속성 유지
         var unchangedOption = optionRepository.findById(1L).orElseThrow();
         assertThat(unchangedOption.getQuantity()).isEqualTo(2);
+        assertThat(unchangedOption.getName()).isEqualTo("저재고옵션");
+        assertThat(unchangedOption.getProduct().getId()).isEqualTo(1L);
     }
 
     /**
@@ -93,25 +85,28 @@ class GiftBehaviorTest {
      *
      * Given: 테이블이 비어 있는 상태 (옵션 ID 9999는 존재하지 않음)
      * When:  POST /api/gifts + Body { optionId: 9999, ... }
-     * Then:  HTTP 500
+     * Then:  HTTP 500 / DB에 옵션이 생성되지 않음 (빈 상태 유지)
      */
     @Test
     @Sql("/sql/cleanup.sql")
-    void should_fail_when_option_does_not_exist() {
+    void 옵션이_존재하지_않을_때_선물하기를_하면_실패한다() {
         // When & Then
         RestAssured.given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", 1)
-            .body(Map.of(
-                "optionId", 9999,
-                "quantity", 1,
-                "receiverId", 2,
-                "message", "선물입니다"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
-            .statusCode(500);
+                .contentType(ContentType.JSON)
+                .header("Member-Id", 1)
+                .body(Map.of(
+                        "optionId", 9999,
+                        "quantity", 1,
+                        "receiverId", 2,
+                        "message", "선물입니다"
+                ))
+                .when()
+                .post("/api/gifts")
+                .then()
+                .statusCode(500);
+
+        // Then — DB 상태 불변 검증: 옵션 테이블에 아무것도 생성되지 않음
+        assertThat(optionRepository.findAll()).isEmpty();
     }
 
     /**
@@ -123,28 +118,31 @@ class GiftBehaviorTest {
      *
      * Given: 카테고리, 상품, 옵션(수량=10), 받는 회원이 존재 / 보내는 회원(ID=9999) 미존재
      * When:  POST /api/gifts + Header Member-Id: 9999 + Body { optionId, quantity: 3, ... }
-     * Then:  HTTP 500 / 옵션 수량이 10으로 유지 (트랜잭션 원자성 보장)
+     * Then:  HTTP 500 / 옵션 수량이 10으로 유지, 옵션의 다른 속성도 불변 (트랜잭션 원자성 보장)
      */
     @Test
     @Sql({"/sql/cleanup.sql", "/sql/gift-setup.sql"})
-    void should_fail_and_rollback_stock_when_sender_does_not_exist() {
+    void 보내는_회원이_존재하지_않을_때_선물하기를_하면_실패하고_재고가_롤백된다() {
         // When
         RestAssured.given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", 9999)
-            .body(Map.of(
-                "optionId", 1,
-                "quantity", 3,
-                "receiverId", 2,
-                "message", "선물입니다"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
-            .statusCode(500);
+                .contentType(ContentType.JSON)
+                .header("Member-Id", 9999)
+                .body(Map.of(
+                        "optionId", 1,
+                        "quantity", 3,
+                        "receiverId", 2,
+                        "message", "선물입니다"
+                ))
+                .when()
+                .post("/api/gifts")
+                .then()
+                .statusCode(500);
 
-        // Then — DB 상태 변화 검증 (재고 원복 확인 — 트랜잭션 롤백 보장)
+        // Then — DB 상태 불변 검증: 트랜잭션 롤백으로 재고 및 옵션 전체 속성 원복
         var unchangedOption = optionRepository.findById(1L).orElseThrow();
         assertThat(unchangedOption.getQuantity()).isEqualTo(10);
+        assertThat(unchangedOption.getName()).isEqualTo("테스트옵션");
+        assertThat(unchangedOption.getProduct().getId()).isEqualTo(1L);
     }
 }
+

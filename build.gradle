@@ -21,11 +21,40 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-database-postgresql'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.22.0'
+	testImplementation 'io.cucumber:cucumber-spring:7.22.0'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.0'
+	testImplementation 'org.junit.platform:junit-platform-suite:1.11.4'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/cucumber/**'
 }
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform()
+	include 'gift/cucumber/**'
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'compose', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker', 'compose', 'down'
+}
+
+cucumberTest.dependsOn(dockerUp)
+cucumberTest.finalizedBy(dockerDown)
