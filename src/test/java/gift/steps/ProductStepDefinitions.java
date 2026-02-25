@@ -3,7 +3,6 @@ package gift.steps;
 import gift.application.CreateProductRequest;
 import gift.fixture.ProductFixture;
 import gift.model.CategoryRepository;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -12,7 +11,6 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -21,19 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProductStepDefinitions {
 
-    @Value("${app.port}")
-    int appPort;
-
     @Autowired
     CategoryRepository categoryRepository;
 
     private ProductFixture fixture;
     private Response response;
-
-    @Before
-    public void setUp() {
-        RestAssured.port = appPort;
-    }
 
     @Given("{string} 카테고리가 준비되어 있다")
     public void 카테고리가_준비되어_있다(String categoryName) {

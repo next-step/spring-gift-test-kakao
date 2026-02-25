@@ -6,7 +6,6 @@ import gift.model.CategoryRepository;
 import gift.model.MemberRepository;
 import gift.model.OptionRepository;
 import gift.model.ProductRepository;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -15,16 +14,12 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GiftStepDefinitions {
-
-    @Value("${app.port}")
-    int appPort;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -43,11 +38,6 @@ public class GiftStepDefinitions {
 
     private GiftFixture fixture;
     private Response response;
-
-    @Before
-    public void setUp() {
-        RestAssured.port = appPort;
-    }
 
     @Given("재고가 {int}개인 옵션이 준비되어 있다")
     public void 재고가_N개인_옵션이_준비되어_있다(int quantity) {
