@@ -10,19 +10,19 @@
 
 ### 검증 대상 행위 (우선순위순)
 
-| 순위 | 대상 | 행위 | 이유 |
-|------|------|------|------|
-| 1 | Option | 재고 차감 성공 | 핵심 비즈니스 로직 |
-| 2 | Option | 재고 부족 예외 | 데이터 무결성 보호 |
-| 3 | GiftService | 선물 전송 전체 흐름 | End-to-End 검증 |
-| 4 | GiftService | 트랜잭션 롤백 | 실패 시 일관성 보장 |
-| 5 | GiftRestController | API 요청/응답 검증 | HTTP 계층 검증 |
-| 6 | ProductService | 상품 생성 (카테고리 검증) | 참조 무결성 |
-| 7 | OptionService | 옵션 생성 (상품 검증) | 참조 무결성 |
-| 8 | WishService | 위시 생성 (회원/상품 검증) | 참조 무결성 |
-| 9 | CategoryService | 카테고리 생성 | 기본 기능 확인 |
-| 10 | 각 Service | 조회 기능 | 기본 기능 확인 |
-| 11 | FakeGiftDelivery | 선물 전달 동작 | 인프라 구현체 검증 |
+| 순위 | 대상 | 행위 | 테스트 유형 | 이유 |
+|------|------|------|------------|------|
+| 1 | Option | 재고 차감 성공 | 단위 | 핵심 비즈니스 로직 |
+| 2 | Option | 재고 부족 예외 | 단위 | 데이터 무결성 보호 |
+| 3 | 카테고리 API | 카테고리 생성 → 조회 | 인수 | 사용자 관점 기본 CRUD |
+| 4 | 상품 API | 상품 생성 → 조회 | 인수 | 사용자 관점 기본 CRUD |
+| 5 | 선물 API | 선물 전송 전체 흐름 | 인수 | End-to-End 검증 |
+| 6 | 선물 API | 재고 부족 시 실패 및 롤백 | 인수 | 실패 시 일관성 보장 |
+| 7 | GiftService | 선물 전송 서비스 흐름 | 통합 | 트랜잭션 검증 |
+| 8 | ProductService | 상품 생성 (카테고리 검증) | 통합 | 참조 무결성 |
+| 9 | OptionService | 옵션 생성 (상품 검증) | 통합 | 참조 무결성 |
+| 10 | WishService | 위시 생성 (회원/상품 검증) | 통합 | 참조 무결성 |
+| 11 | FakeGiftDelivery | 선물 전달 동작 | 통합 | 인프라 구현체 검증 |
 
 ---
 
@@ -52,9 +52,19 @@ void setUp() {
     option = optionRepository.save(new Option("기본", 10, product));
 }
 
-// 인수 테스트: API 호출
-ResponseEntity<Category> response = restTemplate.postForEntity(
-    "/api/categories", new CreateCategoryRequest("테스트"), Category.class);
+// 인수 테스트: 모든 선행 데이터를 API 호출로 준비
+// 1. 카테고리 생성 API
+Category category = restTemplate.postForEntity(
+    "/api/categories", Map.of("name", "교환권"), Category.class).getBody();
+
+// 2. 상품 생성 API (카테고리 API 응답 활용)
+Product product = restTemplate.postForEntity(
+    "/api/products", Map.of("name", "커피", "price", 5000, "imageUrl", "url",
+        "categoryId", category.getId()), Product.class).getBody();
+
+// 3. API 미제공 데이터(옵션, 회원)만 Repository 사용
+option = optionRepository.save(new Option("기본", 10, product));
+member = memberRepository.save(new Member("회원", "test@test.com"));
 ```
 
 ### 2.3 데이터 정리 (격리) 전략
@@ -165,8 +175,8 @@ assertThat(list.getBody()).hasSize(1);
 
 | 결정 | 선택 | 이유 |
 |------|------|------|
-| 인수 테스트 | API 호출 우선 | 사용자 관점, 실제 흐름 |
-| 보조 | Repository 직접 | API 미구현 (옵션, 회원) |
+| 인수 테스트 | API 호출로 통일 | 사용자 관점, 실제 흐름과 동일한 방식으로 데이터 준비 |
+| API 미제공 데이터 | Repository 직접 (옵션, 회원) | API 엔드포인트 미구현으로 불가피 |
 
 ### 4.4 테스트 네이밍
 

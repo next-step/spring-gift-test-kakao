@@ -4,6 +4,7 @@ import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.Member;
 import gift.model.MemberRepository;
+import gift.model.OptionRepository;
 import gift.model.Product;
 import gift.model.ProductRepository;
 import gift.model.Wish;
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.lang.reflect.Field;
 import java.util.NoSuchElementException;
@@ -23,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-@Transactional
+@ActiveProfiles("test")
 class WishServiceTest {
 
     @Autowired
@@ -31,6 +32,9 @@ class WishServiceTest {
 
     @Autowired
     private WishRepository wishRepository;
+
+    @Autowired
+    private OptionRepository optionRepository;
 
     @Autowired
     private MemberRepository memberRepository;
@@ -47,6 +51,7 @@ class WishServiceTest {
     @BeforeEach
     void setUp() {
         wishRepository.deleteAll();
+        optionRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
         memberRepository.deleteAll();

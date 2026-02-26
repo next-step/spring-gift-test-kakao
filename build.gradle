@@ -22,9 +22,48 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.20.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.20.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+	testImplementation 'org.junit.platform:junit-platform-suite'
+}
+
+tasks.register('startDb', Exec) {
+	commandLine 'docker', 'compose', 'up', 'postgres', '-d', '--wait'
+}
+
+tasks.register('stopDb', Exec) {
+	commandLine 'docker', 'compose', 'down'
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'compose', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	dependsOn 'dockerBuild'
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker', 'compose', 'down'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude '**/acceptance/**'
+}
+
+tasks.register('cucumberTest', Test) {
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
+	useJUnitPlatform {
+		includeEngines 'junit-platform-suite'
+	}
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	include '**/CucumberTest*'
 }
