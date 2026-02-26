@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: gift-postgres
+    environment:
+      POSTGRES_DB: gift_test
+      POSTGRES_USER: gift
+      POSTGRES_PASSWORD: gift
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gift -d gift_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: gift-app
+    ports:
+      - "28080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gift_test
+      SPRING_DATASOURCE_USERNAME: gift
+      SPRING_DATASOURCE_PASSWORD: gift
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/categories"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

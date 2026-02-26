@@ -22,10 +22,77 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured:5.4.0'
+
+	// Cucumber BDD
+	testImplementation 'io.cucumber:cucumber-java:7.15.0'
+	testImplementation 'io.cucumber:cucumber-spring:7.15.0'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.15.0'
+	testImplementation 'org.junit.platform:junit-platform-suite:1.10.2'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Docker 소켓 경로 (Colima 지원)
+def dockerSocket = System.getenv('DOCKER_HOST') ?:
+    file("${System.getProperty('user.home')}/.colima/docker.sock").exists()
+        ? "unix://${System.getProperty('user.home')}/.colima/docker.sock"
+        : "unix:///var/run/docker.sock"
+
+// Docker 이미지 빌드
+tasks.register('dockerBuild') {
+	description = 'Build Docker image'
+	group = 'docker'
+	doLast {
+		exec {
+			environment 'DOCKER_HOST', dockerSocket
+			commandLine 'docker', 'compose', 'build'
+		}
+	}
+}
+
+// Docker 컨테이너 시작 (App + DB)
+tasks.register('dockerUp') {
+	description = 'Start all Docker containers'
+	group = 'docker'
+	dependsOn 'bootJar'
+	doLast {
+		exec {
+			environment 'DOCKER_HOST', dockerSocket
+			commandLine 'docker', 'compose', 'up', '-d', '--build', '--wait'
+		}
+	}
+}
+
+// Docker 컨테이너 중지
+tasks.register('dockerDown') {
+	description = 'Stop all Docker containers'
+	group = 'docker'
+	doLast {
+		exec {
+			environment 'DOCKER_HOST', dockerSocket
+			commandLine 'docker', 'compose', 'down'
+		}
+	}
+}
+
+// Cucumber 테스트 (Docker 환경)
+tasks.register('cucumberTest', Test) {
+	description = 'Run Cucumber tests with Docker'
+	group = 'verification'
+
+	useJUnitPlatform()
+	filter {
+		includeTestsMatching 'gift.cucumber.*'
+	}
+
+	// E2E 테스트는 항상 실행 (Docker 상태에 의존)
+	outputs.upToDateWhen { false }
+
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
 }
