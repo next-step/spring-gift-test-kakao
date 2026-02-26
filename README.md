@@ -38,46 +38,104 @@ AI: [커밋] → test(option): Option.decrease() 단위 테스트 추가
 
 ## 학습 과정에서 발견한 것들
 
-### 1. AI의 한계: 리플렉션 workaround
+자세한 내용은 [LEARNING.md](LEARNING.md)를 참고하세요.
 
-Request DTO에 생성자가 없어서 AI가 리플렉션으로 우회했습니다.
+- AI의 한계: 리플렉션 workaround
+- 프롬프트 설계의 중요성
+- Skill 자동 호출 설정
+- Cucumber BDD 도입 과정
+- PostgreSQL + Docker Compose 전환
 
-```java
-// AI가 사용한 workaround (23개 인스턴스)
-private void setField(Object obj, String fieldName, Object value) throws Exception {
-    Field field = obj.getClass().getDeclaredField(fieldName);
-    field.setAccessible(true);
-    field.set(obj, value);
-}
+## 요구사항 2: PostgreSQL + Docker Compose 통합
+
+### 목표
+
+H2 in-memory DB를 PostgreSQL로 전환하고, Docker Compose로 테스트 환경을 자동화합니다.
+
+### 변경 사항
+
+| 순서 | 파일 | 변경 내용 |
+|------|------|----------|
+| 1 | `compose.yml` (신규) | PostgreSQL 16 컨테이너 정의 |
+| 2 | `build.gradle` | H2 제거, PostgreSQL 드라이버 + spring-boot-docker-compose 추가 |
+| 3 | `application.properties` | 공통 JPA 설정 (dev 기본값) |
+| 4 | `application-test.properties` (신규) | 테스트 프로파일 설정 |
+| 5 | `Option.java` | `@Table(name = "options")` 추가 (PostgreSQL 호환) |
+| 6 | `DatabaseCleaner.java` (신규) | TRUNCATE CASCADE 기반 테이블 초기화 |
+| 7 | 모든 테스트 클래스 | `@ActiveProfiles("test")` 추가 |
+| 8 | `CommonStepDefinitions.java` | DatabaseCleaner 사용으로 전환 |
+
+### 실행
+
+```bash
+./gradlew cucumberTest    # Cucumber 인수 테스트
+./gradlew test            # 전체 테스트
 ```
 
-**교훈**: AI가 생성한 코드도 반드시 리뷰해야 합니다. "테스트가 통과한다"와 "올바른 테스트다"는 다릅니다.
+## 요구사항 3: Application 컨테이너화
 
-### 2. 프롬프트 설계의 중요성
+### 목표
 
-Claude.md에 역할과 규칙을 명확히 정의했습니다:
+애플리케이션을 Docker 컨테이너로 빌드하고, Cucumber 테스트가 컨테이너에 HTTP 요청을 보내도록 전환합니다.
 
-```markdown
-## 너의 역할
-너는 **시니어 테스트 엔지니어**야.
+### 변경 사항
 
-### 테스트 작성 원칙
-- **행위 중심**: 구현이 아닌 행위를 테스트해
-- **가독성**: 한글 메서드명, given-when-then 구조
+| 순서 | 파일 | 변경 내용 |
+|------|------|----------|
+| 1 | `Dockerfile` (신규) | Multi-stage build (JDK 빌드 → JRE 실행) |
+| 2 | `.dockerignore` (신규) | 빌드 불필요 파일 제외 |
+| 3 | `compose.yml` | app 서비스 추가 (e2e 프로파일, 28080 포트) |
+| 4 | `application-e2e.properties` (신규) | E2E 프로파일 설정 |
+| 5 | `E2eRestTemplateConfig.java` (신규) | RestTemplate (localhost:28080) |
+| 6 | `CucumberSpringConfig.java` | WebEnvironment.NONE + e2e 프로파일 |
+| 7 | StepDefinitions 3개 | TestRestTemplate → RestTemplate |
+| 8 | `GiftAcceptanceTest.java` | WebEnvironment.NONE + e2e 프로파일 |
+| 9 | `build.gradle` | dockerBuild/dockerUp/dockerDown 태스크 추가 |
+
+### 실행
+
+```bash
+./gradlew dockerBuild                      # Docker 이미지 빌드
+./gradlew dockerUp                         # 컨테이너 시작
+curl http://localhost:28080/api/categories  # 응답 확인
+./gradlew cucumberTest                     # Docker 환경에서 테스트
+./gradlew dockerDown                       # 컨테이너 정리
 ```
 
-### 3. Skill 자동 호출 설정
+## 실행 방법
 
-Claude.md에 자동 트리거 조건을 추가했습니다:
+### 요구사항
 
-```markdown
-**`/test-behavior` 자동 호출:**
-- "XXX 테스트 어떻게 짜야해?"
-- "XXX 테스트 목록 뽑아줘"
+- Java 21
+- Gradle 8.x (Wrapper 포함)
+- Docker / Docker Compose (Cucumber 테스트 시)
 
-**`/generate-test` 자동 호출:**
-- "XXX 테스트 코드 짜줘"
+### 방법 1: 단위/통합 테스트 (H2, Docker 불필요)
+
+```bash
+./gradlew test
 ```
+
+H2 in-memory DB를 사용합니다. Docker 없이 빠르게 실행됩니다.
+
+### 방법 2: Cucumber 인수 테스트 (PostgreSQL, Docker 자동)
+
+```bash
+./gradlew cucumberTest
+```
+
+Docker 이미지 빌드 → 컨테이너 시작 → 테스트 → 컨테이너 종료가 자동으로 실행됩니다.
+
+### 방법 3: Cucumber 인수 테스트 (PostgreSQL, Docker 수동)
+
+```bash
+./gradlew dockerUp                         # 컨테이너 시작
+curl http://localhost:28080/api/categories  # 응답 확인
+./gradlew e2eTest                          # 테스트 실행
+./gradlew dockerDown                       # 컨테이너 종료
+```
+
+Docker를 직접 관리하면서 테스트합니다. 디버깅이나 반복 실행 시 유용합니다.
 
 ## 결과물
 
@@ -88,11 +146,13 @@ Claude.md에 자동 트리거 조건을 추가했습니다:
 | Domain 단위 | 5 | `OptionTest` |
 | Service 통합 | 18 | `GiftServiceTest`, `ProductServiceTest` |
 | Controller 인수 | 4 | `GiftAcceptanceTest` |
+| Cucumber 인수 | 10 | `gift.feature`, `category.feature`, `product.feature` |
 | Infrastructure | 2 | `FakeGiftDeliveryTest` |
-| **총합** | **29** | |
+| **총합** | **39** | |
 
 ### 문서
 
 - [TEST_STRATEGY.md](TEST_STRATEGY.md) - 테스트 전략
 - [AI_USAGE.md](AI_USAGE.md) - AI 활용 상세 기록
+- [LEARNING.md](LEARNING.md) - 학습 과정에서 발견한 것들
 - [.claude/skills/](/.claude/skills/) - Custom Skill 정의

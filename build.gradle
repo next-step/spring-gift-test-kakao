@@ -21,10 +21,48 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
+	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+	testImplementation 'org.springframework.boot:spring-boot-docker-compose'
+	testImplementation 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.cucumber:cucumber-java:7.20.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.20.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	systemProperty 'cucumber.features', 'src/test/resources/no-features'
+	exclude '**/GiftAcceptanceTest.class'
+	exclude '**/CucumberTest.class'
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'compose', '--profile', 'e2e', 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker', 'compose', '--profile', 'e2e', 'up', '-d', '--build', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker', 'compose', '--profile', 'e2e', 'down'
+}
+
+tasks.register('e2eTest', Test) {
+	useJUnitPlatform()
+	filter {
+		includeTestsMatching 'gift.acceptance.CucumberTest'
+	}
+}
+
+tasks.register('cucumberTest', Test) {
+	dependsOn 'dockerUp'
+	finalizedBy 'dockerDown'
+	useJUnitPlatform()
+	filter {
+		includeTestsMatching 'gift.acceptance.CucumberTest'
+	}
 }

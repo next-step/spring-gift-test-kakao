@@ -13,9 +13,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import gift.acceptance.E2eRestTemplateConfig;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -25,11 +28,13 @@ import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = WebEnvironment.NONE)
+@ActiveProfiles("e2e")
+@Import(E2eRestTemplateConfig.class)
 class GiftAcceptanceTest {
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private RestTemplate restTemplate;
 
     @Autowired
     private OptionRepository optionRepository;
@@ -68,7 +73,7 @@ class GiftAcceptanceTest {
     class GiveGift {
 
         @Test
-        void 선물_전송_API_성공() {
+        void 선물이_전송되면_재고가_감소한다() {
             // given
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -94,7 +99,6 @@ class GiftAcceptanceTest {
             // then
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-            // 재고 감소 확인 (다음 행동 검증)
             Option updated = optionRepository.findById(option.getId()).orElseThrow();
             assertThat(updated.getQuantity()).isEqualTo(7);
         }
@@ -128,7 +132,7 @@ class GiftAcceptanceTest {
         }
 
         @Test
-        void 존재하지_않는_옵션이면_500_에러() {
+        void 존재하지_않는_옵션이면_404_에러() {
             // given
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -152,11 +156,11 @@ class GiftAcceptanceTest {
             );
 
             // then
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         }
 
         @Test
-        void 재고가_부족하면_500_에러() {
+        void 재고가_부족하면_400_에러() {
             // given
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -180,7 +184,7 @@ class GiftAcceptanceTest {
             );
 
             // then
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
             // 재고 변경 없음 확인
             Option updated = optionRepository.findById(option.getId()).orElseThrow();
