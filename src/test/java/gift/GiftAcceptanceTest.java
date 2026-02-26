@@ -9,13 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD;
 
 /**
  * 선물하기 시스템 인수 테스트
@@ -33,7 +33,7 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
  * 10. 선물하기 - 실패 후 정상 선물로 불변성 검증
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
+@Import(TestcontainersConfiguration.class)
 class GiftAcceptanceTest {
 
     @LocalServerPort
@@ -54,12 +54,17 @@ class GiftAcceptanceTest {
     @Autowired
     private MemberRepository memberRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private String baseUrl;
     private Member sender;
     private Member receiver;
 
     @BeforeEach
     void setUp() {
+        // 새 엔티티 추가 시 이 목록도 업데이트 필요 (JPA 엔티티: Wish, Option, Product, Category, Member)
+        jdbcTemplate.execute("TRUNCATE TABLE wish, option, product, category, member RESTART IDENTITY CASCADE");
         baseUrl = "http://localhost:" + port + "/api";
         sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
         receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
@@ -202,12 +207,12 @@ class GiftAcceptanceTest {
     }
 
     @Nested
-    @DisplayName("행위 8: 음수 수량으로 선물 시도 (버그 검출)")
+    @DisplayName("행위 8: 음수 수량으로 선물 시도")
     class GiftWithNegativeQuantity {
 
         @Test
-        @DisplayName("음수 수량으로 선물하면 재고가 증가하는 버그가 있다")
-        void negativeQuantityIncreasesStock_BUG() {
+        @DisplayName("음수 수량으로 선물하면 실패하고 재고가 변하지 않는다")
+        void failsWithNegativeQuantity() {
             // given
             Option option = createOptionWithStock(10);
 
@@ -215,11 +220,8 @@ class GiftAcceptanceTest {
             ResponseEntity<Void> response = sendGift(option.getId(), -5);
 
             // then
-            // 버그 문서화: 현재 구현에서 음수 수량은 재고를 증가시킨다
-            // decrease(-5) -> this.quantity -= (-5) -> this.quantity += 5
-            // 이 테스트는 버그를 발견하고 문서화하는 역할
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(getStock(option.getId())).isEqualTo(15); // 10 + 5 = 15 (버그!)
+            assertThat(response.getStatusCode().is5xxServerError()).isTrue();
+            assertThat(getStock(option.getId())).isEqualTo(10);
         }
     }
 

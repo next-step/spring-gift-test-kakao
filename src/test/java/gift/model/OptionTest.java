@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 4. 재고 감소 - 재고 0에서 감소 시도
  * 5. 재고 감소 - 수량 0 입력
  * 6. 재고 감소 - 최소 단위 (수량 1)
- * 7. 재고 감소 - 음수 입력 (버그 문서화)
+ * 7. 재고 감소 - 음수 입력 시 예외
  */
 @DisplayName("Option 도메인")
 class OptionTest {
@@ -105,19 +105,14 @@ class OptionTest {
         }
 
         @Test
-        @DisplayName("음수 수량으로 감소하면 재고가 증가하는 버그가 있다")
-        void negativeQuantityIncreasesStock_BUG() {
+        @DisplayName("음수 수량으로 감소하면 IllegalArgumentException이 발생한다")
+        void throwsIllegalArgumentExceptionWhenQuantityIsNegative() {
             // given
             Option option = createOption(10);
 
-            // when
-            // 버그: decrease(-5)는 this.quantity -= (-5) = this.quantity += 5
-            option.decrease(-5);
-
-            // then
-            // 버그 문서화: 음수 입력에 대한 방어 로직이 없어 재고가 증가함
-            // 올바른 동작: IllegalArgumentException을 던져야 함
-            assertThat(option.getQuantity()).isEqualTo(15); // 10 + 5 = 15 (버그!)
+            // when / then
+            assertThatThrownBy(() -> option.decrease(-5))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 }

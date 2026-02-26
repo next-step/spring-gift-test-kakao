@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2단계 - 인수 테스트 체계 고도화 | 학습 가이드</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-pink: #ec4899;
+            --accent-cyan: #06b6d4;
+            --accent-red: #ef4444;
+            --accent-yellow: #eab308;
+            --accent-lime: #84cc16;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-cucumber: linear-gradient(135deg, #84cc16 0%, #10b981 100%);
+            --gradient-postgres: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --gradient-docker: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .presentation { width: 100%; height: 100vh; position: relative; }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(100px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active { opacity: 1; visibility: visible; transform: translateX(0); }
+        .slide.prev { transform: translateX(-100px); }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Section Header */
+        .section-header {
+            text-align: center;
+        }
+
+        .section-number {
+            font-size: 8rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        .section-header .subtitle {
+            max-width: 700px;
+            line-height: 1.8;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-dot.active { background: var(--accent-blue); transform: scale(1.4); }
+        .nav-dot:hover { background: var(--accent-purple); }
+
+        .nav-dot.section-cucumber.active { background: var(--accent-lime); }
+        .nav-dot.section-postgres.active { background: var(--accent-blue); }
+        .nav-dot.section-docker.active { background: var(--accent-cyan); }
+        .nav-dot.section-step1.active { background: var(--accent-red); }
+
+        .slide-number {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .nav-arrows {
+            position: fixed;
+            bottom: 30px;
+            left: 40px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .nav-arrow:hover { background: var(--accent-blue); transform: scale(1.1); }
+
+        /* Section indicator */
+        .section-indicator {
+            position: fixed;
+            top: 20px;
+            right: 40px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .section-pill {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.3;
+            transition: all 0.3s;
+        }
+
+        .section-pill.active { opacity: 1; }
+        .section-pill.overview { background: rgba(139, 92, 246, 0.3); color: var(--accent-purple); }
+        .section-pill.cucumber { background: rgba(132, 204, 22, 0.3); color: var(--accent-lime); }
+        .section-pill.postgres { background: rgba(59, 130, 246, 0.3); color: var(--accent-blue); }
+        .section-pill.docker { background: rgba(6, 182, 212, 0.3); color: var(--accent-cyan); }
+        .section-pill.summary { background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); }
+        .section-pill.step1 { background: rgba(239, 68, 68, 0.3); color: var(--accent-red); }
+
+        /* Title Slide */
+        .title-slide { text-align: center; }
+        .title-slide h1 { font-size: 4rem; margin-bottom: 0.5rem; }
+
+        .phase-badges {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .phase-badge {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .phase-badge:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .phase-badge.p1 { background: rgba(132, 204, 22, 0.15); border: 1px solid var(--accent-lime); color: var(--accent-lime); }
+        .phase-badge.p2 { background: rgba(59, 130, 246, 0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+        .phase-badge.p3 { background: rgba(6, 182, 212, 0.15); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); }
+
+        /* Why cards */
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            max-width: 1100px;
+        }
+
+        .why-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px 25px;
+            text-align: center;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .why-card:hover { transform: translateY(-5px); }
+        .why-card .icon { font-size: 2.5rem; margin-bottom: 15px; }
+        .why-card h3 { font-size: 1.1rem; margin-bottom: 10px; }
+        .why-card p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; }
+
+        .why-card.c1 { border-color: var(--accent-green); }
+        .why-card.c1 h3 { color: var(--accent-green); }
+        .why-card.c2 { border-color: var(--accent-blue); }
+        .why-card.c2 h3 { color: var(--accent-blue); }
+        .why-card.c3 { border-color: var(--accent-purple); }
+        .why-card.c3 h3 { color: var(--accent-purple); }
+        .why-card.c4 { border-color: var(--accent-orange); }
+        .why-card.c4 h3 { color: var(--accent-orange); }
+
+        /* Roadmap */
+        .roadmap {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .roadmap-item {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 30px;
+            border-radius: 16px;
+            background: var(--bg-secondary);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .roadmap-item:hover { transform: translateX(10px); }
+
+        .roadmap-num {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .roadmap-item.r1 { border-left: 4px solid var(--accent-lime); }
+        .roadmap-item.r1 .roadmap-num { background: rgba(132, 204, 22, 0.2); color: var(--accent-lime); }
+        .roadmap-item.r2 { border-left: 4px solid var(--accent-blue); }
+        .roadmap-item.r2 .roadmap-num { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        .roadmap-item.r3 { border-left: 4px solid var(--accent-cyan); }
+        .roadmap-item.r3 .roadmap-num { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+
+        .roadmap-content h3 { margin-bottom: 5px; }
+        .roadmap-content p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        .roadmap-arrow {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin: -10px 0;
+        }
+
+        .roadmap-deps {
+            margin-left: auto;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+        }
+
+        /* Concept card */
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            max-width: 1000px;
+        }
+
+        .concept-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .concept-card h4 {
+            font-size: 1.15rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .concept-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .concept-card.cucumber { border-left-color: var(--accent-lime); }
+        .concept-card.cucumber h4 { color: var(--accent-lime); }
+        .concept-card.postgres { border-left-color: var(--accent-blue); }
+        .concept-card.postgres h4 { color: var(--accent-blue); }
+        .concept-card.docker { border-left-color: var(--accent-cyan); }
+        .concept-card.docker h4 { color: var(--accent-cyan); }
+
+        /* Code Block */
+        .code-block {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 850px;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--bg-card);
+        }
+
+        .code-title { color: var(--accent-purple); font-weight: 600; }
+        .code-lang { color: var(--text-secondary); font-size: 0.85rem; }
+
+        pre {
+            font-family: 'Fira Code', 'Consolas', 'Menlo', monospace;
+            font-size: 0.88rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            white-space: pre;
+        }
+
+        .kw { color: var(--accent-purple); }
+        .ty { color: var(--accent-cyan); }
+        .fn { color: var(--accent-orange); }
+        .str { color: var(--accent-green); }
+        .cm { color: var(--text-secondary); font-style: italic; }
+        .ann { color: var(--accent-yellow); }
+        .tag { color: var(--accent-pink); }
+        .val { color: var(--accent-lime); }
+
+        /* Compare layout */
+        .compare {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .compare-arrow {
+            font-size: 2.5rem;
+            color: var(--accent-green);
+            text-align: center;
+        }
+
+        .compare .code-block { max-width: none; }
+
+        /* Diagram: Architecture */
+        .arch-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .arch-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .arch-box {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-align: center;
+            min-width: 180px;
+            transition: all 0.3s;
+        }
+
+        .arch-box:hover { transform: scale(1.05); }
+
+        .arch-box.host { border: 2px solid var(--accent-orange); }
+        .arch-box.host h4 { color: var(--accent-orange); }
+        .arch-box.container { border: 2px solid var(--accent-cyan); }
+        .arch-box.container h4 { color: var(--accent-cyan); }
+        .arch-box.docker-net { border: 2px dashed var(--accent-purple); background: rgba(139, 92, 246, 0.05); }
+        .arch-box.docker-net h4 { color: var(--accent-purple); }
+
+        .arch-arrow {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .arch-arrow-down {
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+        }
+
+        /* Steps list */
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 850px;
+            width: 100%;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 20px 25px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .step-item:hover { transform: translateX(5px); }
+
+        .step-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .step-item.cucumber .step-num { background: rgba(132, 204, 22, 0.2); color: var(--accent-lime); }
+        .step-item.postgres .step-num { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        .step-item.docker .step-num { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+
+        .step-content h4 { font-size: 1rem; margin-bottom: 4px; }
+        .step-content p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; }
+
+        /* Keyword pills */
+        .keyword-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            max-width: 900px;
+        }
+
+        .kw-pill {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.82rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-card);
+            transition: all 0.3s;
+        }
+
+        .kw-pill:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .kw-pill.lime { border-color: var(--accent-lime); color: var(--accent-lime); }
+        .kw-pill.blue { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .kw-pill.cyan { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .kw-pill.purple { border-color: var(--accent-purple); color: var(--accent-purple); }
+        .kw-pill.orange { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .kw-pill.green { border-color: var(--accent-green); color: var(--accent-green); }
+        .kw-pill.pink { border-color: var(--accent-pink); color: var(--accent-pink); }
+
+        /* Question cards */
+        .question-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 950px;
+        }
+
+        .question-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 22px;
+            border: 1px solid var(--bg-card);
+            transition: all 0.3s;
+        }
+
+        .question-card:hover { border-color: var(--accent-purple); }
+
+        .question-card .q {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-purple);
+            font-size: 0.95rem;
+        }
+
+        .question-card .hint {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.6;
+            padding-left: 12px;
+            border-left: 2px solid var(--bg-card);
+        }
+
+        /* Flow diagram */
+        .flow {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1100px;
+        }
+
+        .flow-box {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 18px 24px;
+            text-align: center;
+            min-width: 140px;
+        }
+
+        .flow-box h4 { font-size: 0.9rem; margin-bottom: 5px; }
+        .flow-box p { color: var(--text-secondary); font-size: 0.75rem; }
+        .flow-arrow { color: var(--text-secondary); font-size: 1.5rem; }
+
+        .flow-box.gherkin { border: 2px solid var(--accent-lime); }
+        .flow-box.gherkin h4 { color: var(--accent-lime); }
+        .flow-box.step { border: 2px solid var(--accent-green); }
+        .flow-box.step h4 { color: var(--accent-green); }
+        .flow-box.spring { border: 2px solid var(--accent-purple); }
+        .flow-box.spring h4 { color: var(--accent-purple); }
+        .flow-box.result { border: 2px solid var(--accent-orange); }
+        .flow-box.result h4 { color: var(--accent-orange); }
+
+        /* Network diagram */
+        .network-box {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 35px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .network-layer {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .network-layer.host-layer {
+            border: 2px solid var(--accent-orange);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .network-layer.docker-layer {
+            border: 2px dashed var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .network-layer h4 { font-size: 0.9rem; margin-bottom: 12px; }
+        .network-layer.host-layer h4 { color: var(--accent-orange); }
+        .network-layer.docker-layer h4 { color: var(--accent-cyan); }
+
+        .network-nodes {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .network-node {
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: var(--bg-card);
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .network-node.test { border: 1px solid var(--accent-orange); color: var(--accent-orange); }
+        .network-node.app { border: 1px solid var(--accent-green); color: var(--accent-green); }
+        .network-node.db { border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+
+        .network-conn {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        /* Checklist */
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 750px;
+            width: 100%;
+        }
+
+        .check-item {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            padding: 16px 22px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+
+        .check-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .check-icon.pass { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .check-icon.goal { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+
+        /* Tips */
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+        }
+
+        .tip-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+            border-top: 3px solid var(--accent-orange);
+        }
+
+        .tip-card:hover { transform: translateY(-5px); }
+        .tip-card .tip-icon { font-size: 2rem; margin-bottom: 12px; }
+        .tip-card h4 { color: var(--accent-orange); margin-bottom: 10px; font-size: 1rem; }
+        .tip-card p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; }
+
+        /* Multistage diagram */
+        .stage-diagram {
+            display: flex;
+            gap: 25px;
+            max-width: 1000px;
+            align-items: stretch;
+        }
+
+        .stage-box {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 25px;
+            position: relative;
+        }
+
+        .stage-box h4 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--bg-card);
+        }
+
+        .stage-box.builder { border: 2px solid var(--accent-orange); }
+        .stage-box.builder h4 { color: var(--accent-orange); }
+        .stage-box.runtime { border: 2px solid var(--accent-green); }
+        .stage-box.runtime h4 { color: var(--accent-green); }
+
+        .stage-list {
+            list-style: none;
+        }
+
+        .stage-list li {
+            padding: 8px 0;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            padding-left: 18px;
+            position: relative;
+        }
+
+        .stage-list li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: var(--accent-blue);
+        }
+
+        .stage-arrow-between {
+            display: flex;
+            align-items: center;
+            font-size: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .stage-size {
+            margin-top: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .stage-box.builder .stage-size { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+        .stage-box.runtime .stage-size { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+
+        /* Summary card wide */
+        .summary-wide {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            max-width: 1100px;
+        }
+
+        .summary-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        .summary-card h3 {
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+
+        .summary-card ul { list-style: none; }
+        .summary-card li {
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            padding-left: 18px;
+            position: relative;
+        }
+        .summary-card li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+        }
+
+        .summary-card.s1 { border-top: 3px solid var(--accent-lime); }
+        .summary-card.s1 h3 { color: var(--accent-lime); }
+        .summary-card.s1 li::before { color: var(--accent-lime); }
+        .summary-card.s2 { border-top: 3px solid var(--accent-blue); }
+        .summary-card.s2 h3 { color: var(--accent-blue); }
+        .summary-card.s2 li::before { color: var(--accent-blue); }
+        .summary-card.s3 { border-top: 3px solid var(--accent-cyan); }
+        .summary-card.s3 h3 { color: var(--accent-cyan); }
+        .summary-card.s3 li::before { color: var(--accent-cyan); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .slide { padding: 30px; }
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 1.8rem; }
+            .why-grid { grid-template-columns: repeat(2, 1fr); }
+            .concept-grid, .question-grid { grid-template-columns: 1fr; }
+            .compare { grid-template-columns: 1fr; }
+            .tips-grid { grid-template-columns: 1fr; }
+            .summary-wide { grid-template-columns: 1fr; }
+            .stage-diagram { flex-direction: column; }
+            .stage-arrow-between { transform: rotate(90deg); justify-content: center; }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide.active .animate { animation: fadeInUp 0.6s ease forwards; }
+        .slide.active .animate-delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .slide.active .animate-delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .slide.active .animate-delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .slide.active .animate-delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+        /* Inline highlight */
+        .hi { background: var(--bg-card); padding: 2px 8px; border-radius: 4px; font-family: 'Fira Code', monospace; font-size: 0.85em; }
+        .hi-lime { color: var(--accent-lime); }
+        .hi-blue { color: var(--accent-blue); }
+        .hi-cyan { color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+    <div class="presentation">
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 1: 타이틀                                                -->
+        <!-- ================================================================ -->
+        <div class="slide active title-slide" data-slide="1" data-section="overview">
+            <h1 class="animate">2단계: 인수 테스트 체계 고도화</h1>
+            <p class="subtitle animate animate-delay-1">누구나 동일하게, 프로덕션과 동일하게, 자동으로</p>
+            <p class="animate animate-delay-2" style="color: var(--text-secondary); margin-bottom: 1.5rem; max-width: 600px; text-align: center; line-height: 1.7;">
+                개인 로컬 설정에 의존하지 않고<br>
+                반복 실행 가능하며 자동화된 테스트 환경을 구축하기 위한<br>
+                <strong style="color: var(--text-primary);">개념 이해 & 학습 로드맵</strong>
+            </p>
+            <div class="animate animate-delay-2" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); border-radius: 12px; padding: 12px 24px; margin-bottom: 1rem;">
+                <span style="color: var(--accent-green); font-size: 0.9rem;">1단계 리뷰 피드백 반영 완료 &mdash; 음수 수량 버그 수정, 테스트 상태 기준 @Nested 재구성</span>
+            </div>
+            <div class="phase-badges animate animate-delay-3">
+                <span class="phase-badge p1">1. Cucumber BDD</span>
+                <span class="phase-badge p2">2. PostgreSQL + Docker Compose</span>
+                <span class="phase-badge p3">3. Application Docker</span>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 2: 왜 이것이 중요한가?                                     -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="2" data-section="overview">
+            <h2 class="animate">왜 이것이 중요한가?</h2>
+            <div class="why-grid">
+                <div class="why-card c1 animate animate-delay-1">
+                    <div class="icon">&#128257;</div>
+                    <h3>재현 가능성</h3>
+                    <p>다른 개발자가<br><strong>같은 명령어</strong>로<br>같은 결과를 얻는다</p>
+                </div>
+                <div class="why-card c2 animate animate-delay-2">
+                    <div class="icon">&#127981;</div>
+                    <h3>Production Parity</h3>
+                    <p>개발/테스트/프로덕션<br>환경을<br><strong>최대한 동일</strong>하게</p>
+                </div>
+                <div class="why-card c3 animate animate-delay-3">
+                    <div class="icon">&#9881;</div>
+                    <h3>자동화</h3>
+                    <p>환경 준비부터<br>정리까지<br><strong>자동으로 처리</strong></p>
+                </div>
+                <div class="why-card c4 animate animate-delay-4">
+                    <div class="icon">&#128737;</div>
+                    <h3>격리</h3>
+                    <p>로컬 환경 오염 없이<br><strong>독립적</strong>으로<br>실행</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 3: 핵심 개념 4가지                                        -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="3" data-section="overview">
+            <h2 class="animate">머릿속에 넣어야 할 4가지 핵심 개념</h2>
+            <div class="concept-grid">
+                <div class="concept-card animate animate-delay-1">
+                    <h4 style="color: var(--accent-green);">Production Parity</h4>
+                    <p>
+                        "내 컴퓨터에서는 되는데?"를 없애는 원칙.<br><br>
+                        개발 환경에서 H2를 쓰면서 프로덕션에서 PostgreSQL을 쓰면,
+                        <strong>SQL 방언 차이</strong>로 예상치 못한 버그가 발생한다.<br>
+                        테스트도 프로덕션과 <strong>같은 DB</strong>를 쓰면 이 문제가 사라진다.
+                    </p>
+                </div>
+                <div class="concept-card animate animate-delay-2">
+                    <h4 style="color: var(--accent-blue);">Test Isolation</h4>
+                    <p>
+                        각 테스트가 <strong>독립적으로 실행</strong> 가능해야 한다.<br><br>
+                        테스트 A가 만든 데이터가 테스트 B에 영향을 주면 안 된다.
+                        현재 <span class="hi">@DirtiesContext</span>로 해결하고 있지만,
+                        DB 초기화로 더 효율적으로 격리할 수 있다.
+                    </p>
+                </div>
+                <div class="concept-card animate animate-delay-3">
+                    <h4 style="color: var(--accent-purple);">Idempotency (멱등성)</h4>
+                    <p>
+                        <strong>몇 번을 실행해도 같은 결과</strong>가 나와야 한다.<br><br>
+                        테스트를 10번 돌려도 10번 다 통과해야 한다.
+                        이를 위해 매 시나리오마다 DB를 깨끗하게 초기화한다.
+                    </p>
+                </div>
+                <div class="concept-card animate animate-delay-4">
+                    <h4 style="color: var(--accent-orange);">BDD (Behavior-Driven Development)</h4>
+                    <p>
+                        <strong>비즈니스 언어</strong>로 테스트를 작성하는 방법론.<br><br>
+                        "선물하면 재고가 감소한다"를 코드가 아닌
+                        <strong>자연어(한글)</strong>로 표현하여
+                        개발자가 아닌 사람도 테스트를 읽고 이해할 수 있다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 4: 로드맵 (3단계)                                         -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="4" data-section="overview">
+            <h2 class="animate">학습 로드맵: 순차 진행</h2>
+            <div class="roadmap">
+                <div class="roadmap-item animate" style="border-left: 4px solid var(--accent-green); opacity: 0.7;">
+                    <div class="roadmap-num" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-green);">&#10003;</div>
+                    <div class="roadmap-content">
+                        <h3 style="color: var(--accent-green);">1단계 리뷰 피드백 반영</h3>
+                        <p>음수 수량 버그 수정 (Option.decrease), 테스트 상태 기준 @Nested 재구성, 버그 보호 테스트 제거</p>
+                    </div>
+                    <div class="roadmap-deps" style="color: var(--accent-green);">완료</div>
+                </div>
+                <div class="roadmap-arrow animate">&#8595; 다음 단계</div>
+                <div class="roadmap-item r1 animate animate-delay-1">
+                    <div class="roadmap-num">1</div>
+                    <div class="roadmap-content">
+                        <h3 style="color: var(--accent-lime);">Cucumber BDD 적용</h3>
+                        <p>RestAssured 인수 테스트를 Gherkin 한글 시나리오로 전환</p>
+                    </div>
+                    <div class="roadmap-deps">선행 조건 없음</div>
+                </div>
+                <div class="roadmap-arrow animate animate-delay-1">&#8595; 결과물이 다음 단계의 입력</div>
+                <div class="roadmap-item r2 animate animate-delay-2">
+                    <div class="roadmap-num">2</div>
+                    <div class="roadmap-content">
+                        <h3 style="color: var(--accent-blue);">PostgreSQL + Docker Compose</h3>
+                        <p>H2를 PostgreSQL로 전환, Docker Compose로 DB 자동 관리</p>
+                    </div>
+                    <div class="roadmap-deps">1단계 완료 필요</div>
+                </div>
+                <div class="roadmap-arrow animate animate-delay-2">&#8595; 결과물이 다음 단계의 입력</div>
+                <div class="roadmap-item r3 animate animate-delay-3">
+                    <div class="roadmap-num">3</div>
+                    <div class="roadmap-content">
+                        <h3 style="color: var(--accent-cyan);">Application 컨테이너화</h3>
+                        <p>앱까지 Docker로 실행, 완전한 E2E 테스트 환경 구축</p>
+                    </div>
+                    <div class="roadmap-deps">2단계 완료 필요</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  1단계 테스트 전략 섹션                                              -->
+        <!-- ================================================================ -->
+        <div class="slide section-header" data-slide="5" data-section="step1">
+            <div class="section-number animate" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">00</div>
+            <h2 class="animate animate-delay-1">1단계 테스트 시나리오 전략</h2>
+            <p class="subtitle animate animate-delay-2">
+                각 테스트는 왜 존재하는가?<br>경계값 분석과 위험 기반 테스트 설계
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  경계값 분석: Option.decrease()                                     -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="6" data-section="step1">
+            <h2 class="animate">Option.decrease() 경계값 분석</h2>
+            <p class="animate animate-delay-1" style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                stock = 10일 때, quantity 값에 따른 <strong style="color: var(--text-primary);">5개 동치 구간</strong>과 테스트 배치
+            </p>
+            <div class="animate animate-delay-2" style="display: flex; gap: 4px; max-width: 1050px; width: 100%; align-items: stretch;">
+                <div style="flex: 1.2; padding: 18px 12px; border-radius: 12px; text-align: center; background: rgba(239, 68, 68, 0.1); border: 2px solid var(--accent-red);">
+                    <h4 style="color: var(--accent-red); font-size: 0.9rem; margin-bottom: 8px;">음수 입력</h4>
+                    <div style="font-family: monospace; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px;">-5, -1, ...</div>
+                    <div style="font-size: 0.7rem; padding: 3px 10px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: var(--accent-red); display: inline-block; margin-bottom: 6px;">IllegalArgumentException</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">방어적 프로그래밍<br>비정상 입력 차단</div>
+                </div>
+                <div style="flex: 0.8; padding: 18px 12px; border-radius: 12px; text-align: center; background: rgba(245, 158, 11, 0.1); border: 2px solid var(--accent-orange);">
+                    <h4 style="color: var(--accent-orange); font-size: 0.9rem; margin-bottom: 8px;">경계: 0</h4>
+                    <div style="font-family: monospace; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px;">0</div>
+                    <div style="font-size: 0.7rem; padding: 3px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); display: inline-block; margin-bottom: 6px;">재고 무변경 (10&rarr;10)</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">"아무것도 안 함"의<br>정확성 검증</div>
+                </div>
+                <div style="flex: 2; padding: 18px 12px; border-radius: 12px; text-align: center; background: rgba(16, 185, 129, 0.1); border: 2px solid var(--accent-green);">
+                    <h4 style="color: var(--accent-green); font-size: 0.9rem; margin-bottom: 8px;">정상 범위</h4>
+                    <div style="font-family: monospace; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px;">1, 2, 3, ..., 9</div>
+                    <div style="font-size: 0.7rem; padding: 3px 10px; border-radius: 10px; background: rgba(16, 185, 129, 0.2); color: var(--accent-green); display: inline-block; margin-bottom: 6px;">재고 감소 (10&rarr;7, 10&rarr;9)</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">핵심 비즈니스 로직<br>이게 실패하면 시스템 자체가 무의미</div>
+                </div>
+                <div style="flex: 0.8; padding: 18px 12px; border-radius: 12px; text-align: center; background: rgba(245, 158, 11, 0.1); border: 2px solid var(--accent-orange);">
+                    <h4 style="color: var(--accent-orange); font-size: 0.9rem; margin-bottom: 8px;">경계: stock</h4>
+                    <div style="font-family: monospace; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px;">10 (= stock)</div>
+                    <div style="font-size: 0.7rem; padding: 3px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); display: inline-block; margin-bottom: 6px;">정확히 0 (10&rarr;0)</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">Off-by-one 검출<br>&lt; vs &lt;= 구분</div>
+                </div>
+                <div style="flex: 1.2; padding: 18px 12px; border-radius: 12px; text-align: center; background: rgba(239, 68, 68, 0.1); border: 2px solid var(--accent-red);">
+                    <h4 style="color: var(--accent-red); font-size: 0.9rem; margin-bottom: 8px;">초과</h4>
+                    <div style="font-family: monospace; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px;">11, 15, ...</div>
+                    <div style="font-size: 0.7rem; padding: 3px 10px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: var(--accent-red); display: inline-block; margin-bottom: 6px;">IllegalStateException</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">비즈니스 규칙 보호<br>재고 없이 선물 불가</div>
+                </div>
+            </div>
+            <div class="animate animate-delay-3" style="margin-top: 1.5rem; text-align: center; max-width: 800px;">
+                <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.7;">
+                    <strong style="color: var(--text-primary);">경계값 분석(BVA)</strong>: 구간의 <strong style="color: var(--accent-orange);">경계</strong>에서 버그가 가장 많이 발생한다<br>
+                    그래서 <span style="color: var(--accent-green);">정상 범위 내부</span>보다 <span style="color: var(--accent-orange);">0, stock, stock+1</span> 같은 경계에 더 많은 테스트를 배치한다
+                </p>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  단위 테스트 (OptionTest): 왜 이 7가지인가?                          -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="7" data-section="step1">
+            <h2 class="animate">단위 테스트 (OptionTest): 왜 이 7가지인가?</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1050px; width: 100%;">
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 22px; border-top: 3px solid var(--accent-green);" class="animate animate-delay-1">
+                    <h3 style="color: var(--accent-green); font-size: 1.1rem; margin-bottom: 15px;">재고가 충분할 때 (3)</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">수량만큼 재고가 줄어든다</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? 핵심 로직. 이게 실패하면 전체 시스템이 무의미</div>
+                        </div>
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">stock == quantity면 정확히 0</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? Off-by-one 버그 검출. &lt; vs &lt;= 혼동 방지</div>
+                        </div>
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">최소 단위(1)로 감소</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? 가장 작은 유효 입력의 정확성 보장</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 22px; border-top: 3px solid var(--accent-red);" class="animate animate-delay-2">
+                    <h3 style="color: var(--accent-red); font-size: 1.1rem; margin-bottom: 15px;">재고가 부족할 때 (2)</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">초과 시 IllegalStateException</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? 비즈니스 규칙 보호. 없는 재고를 팔면 안 됨</div>
+                        </div>
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">재고 0에서 시도 시 예외</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? 재고 소진 상태의 경계값 검증</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 22px; border-top: 3px solid var(--accent-purple);" class="animate animate-delay-3">
+                    <h3 style="color: var(--accent-purple); font-size: 1.1rem; margin-bottom: 15px;">잘못된 입력 (2)</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">수량 0이면 무변경</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? 음수/양수 경계. "아무것도 안 함"이 정확한지</div>
+                        </div>
+                        <div style="padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; margin-bottom: 4px;">음수면 IllegalArgumentException</div>
+                            <div style="font-size: 0.75rem; color: var(--accent-orange);">왜? 음수로 재고가 늘어나는 버그 방지 (수정됨)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="animate animate-delay-4" style="color: var(--text-secondary); margin-top: 1.5rem; font-size: 0.85rem; text-align: center; max-width: 700px;">
+                <strong style="color: var(--text-primary);">원칙</strong>: 정상/경계/예외를 골고루 커버 &mdash; <span style="color: var(--accent-green);">Happy Path</span>만으로는 버그를 잡을 수 없다
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  인수 테스트: API 흐름과 테스트 배치                                  -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="8" data-section="step1">
+            <h2 class="animate">인수 테스트: API 흐름 &times; 테스트 배치</h2>
+            <p class="animate animate-delay-1" style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                각 테스트는 API 처리 흐름의 <strong style="color: var(--text-primary);">특정 실패 지점</strong>을 검증한다
+            </p>
+            <div class="code-block animate animate-delay-2" style="max-width: 980px;">
+                <div class="code-header">
+                    <span class="code-title">POST /api/gifts 처리 흐름 &times; 테스트 매핑</span>
+                    <span class="code-lang">10 scenarios</span>
+                </div>
+                <pre>
+<span class="kw">POST /api/gifts</span> + <span class="ann">Member-Id</span> 헤더
+  <span class="cm">│</span>
+  <span class="cm">├─</span> <span class="ty">Member-Id 검증</span> ──────── <span class="val">&#9320; 존재하지 않는 발신자 &rarr; 실패</span>
+  <span class="cm">│</span>                         <span class="str">  왜? 인증되지 않은 사용자의 선물 차단</span>
+  <span class="cm">│</span>
+  <span class="cm">├─</span> <span class="ty">Option 조회</span> ──────────── <span class="val">&#9316; 없는 옵션 &rarr; 실패</span>
+  <span class="cm">│</span>                         <span class="str">  왜? 존재하지 않는 상품 참조 방어</span>
+  <span class="cm">│</span>
+  <span class="cm">├─</span> <span class="ty">입력값 검증</span>
+  <span class="cm">│</span>   <span class="cm">├─</span> quantity &lt; 0? ───── <span class="val">&#9319; 음수 수량 &rarr; 실패 + 재고 보존</span>
+  <span class="cm">│</span>   <span class="cm">│</span>                      <span class="str">  왜? 재고 증가 버그 방지 (수정됨)</span>
+  <span class="cm">│</span>   <span class="cm">└─</span> quantity == 0? ──── <span class="val">&#9318; 수량 0 &rarr; 성공, 재고 무변경</span>
+  <span class="cm">│</span>                         <span class="str">  왜? 경계값에서 부작용 없음 확인</span>
+  <span class="cm">│</span>
+  <span class="cm">├─</span> <span class="ty">재고 확인 &amp; 차감</span>
+  <span class="cm">│</span>   <span class="cm">├─</span> stock &lt; qty ─────── <span class="val">&#9314; 재고 부족 &rarr; 실패 + 재고 보존</span>
+  <span class="cm">│</span>   <span class="cm">│</span>                      <span class="str">  왜? 핵심 비즈니스 규칙 검증</span>
+  <span class="cm">│</span>   <span class="cm">├─</span> stock == 0 ──────── <span class="val">&#9315; 재고 소진 &rarr; 추가 선물 실패</span>
+  <span class="cm">│</span>   <span class="cm">│</span>                      <span class="str">  왜? 재고 0 경계 상태에서의 동작</span>
+  <span class="cm">│</span>   <span class="cm">├─</span> stock == qty ────── <span class="val">&#9317; 정확히 소진 &rarr; 성공, 재고 0</span>
+  <span class="cm">│</span>   <span class="cm">│</span>                      <span class="str">  왜? 경계값. off-by-one 버그 검출</span>
+  <span class="cm">│</span>   <span class="cm">├─</span> 정상 차감 ─────────── <span class="val">&#9312; 단일 선물 &rarr; 재고 감소</span>
+  <span class="cm">│</span>   <span class="cm">│</span>                      <span class="str">  왜? 가장 기본적인 Happy Path</span>
+  <span class="cm">│</span>   <span class="cm">└─</span> 연속 차감 ─────────── <span class="val">&#9313; 누적 선물 &rarr; 누적 감소</span>
+  <span class="cm">│</span>                         <span class="str">  왜? 상태 누적의 정확성 검증</span>
+  <span class="cm">│</span>
+  <span class="cm">└─</span> <span class="ty">트랜잭션 무결성</span> ────────── <span class="val">&#9321; 실패 후 성공 &rarr; 재고 정합성</span>
+                            <span class="str">  왜? 롤백 후 정상 상태 복원 확인</span></pre>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드: PHASE 1 타이틀 (Cucumber)                                -->
+        <!-- ================================================================ -->
+        <div class="slide section-header" data-slide="5" data-section="cucumber">
+            <div class="section-number animate" style="background: var(--gradient-cucumber); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">01</div>
+            <h2 class="animate animate-delay-1">Cucumber BDD 적용</h2>
+            <p class="subtitle animate animate-delay-2">
+                비개발자도 읽을 수 있는 테스트 시나리오를 작성한다
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 6: BDD란 무엇인가?                                        -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="6" data-section="cucumber">
+            <h2 class="animate">BDD: 행위 중심 개발</h2>
+            <p class="subtitle animate animate-delay-1" style="max-width: 700px; text-align: center; line-height: 1.7; font-size: 1.1rem;">
+                "이 시스템은 <strong style="color: var(--accent-lime);">어떻게 행동해야 하는가?</strong>"를<br>
+                비즈니스 언어로 먼저 정의하고, 그걸 자동화하는 방법론
+            </p>
+            <div class="flow animate animate-delay-2" style="margin-top: 2rem;">
+                <div class="flow-box gherkin">
+                    <h4>.feature 파일</h4>
+                    <p>Gherkin 한글 시나리오</p>
+                </div>
+                <div class="flow-arrow">&#8594;</div>
+                <div class="flow-box step">
+                    <h4>Step Definitions</h4>
+                    <p>Java 코드가 시나리오 실행</p>
+                </div>
+                <div class="flow-arrow">&#8594;</div>
+                <div class="flow-box spring">
+                    <h4>Spring Boot</h4>
+                    <p>실제 앱에 HTTP 요청</p>
+                </div>
+                <div class="flow-arrow">&#8594;</div>
+                <div class="flow-box result">
+                    <h4>결과 검증</h4>
+                    <p>기대 결과와 비교</p>
+                </div>
+            </div>
+            <div style="margin-top: 2rem; text-align: center;" class="animate animate-delay-3">
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                    핵심: <span class="hi hi-lime">.feature</span> 파일은 <strong style="color: var(--text-primary);">사람이 읽는 명세서</strong>이고,<br>
+                    <span class="hi" style="color: var(--accent-green);">Step Definitions</span>는 그 명세서를 <strong style="color: var(--text-primary);">기계가 실행하는 코드</strong>로 연결하는 다리
+                </p>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 7: Gherkin 문법                                           -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="7" data-section="cucumber">
+            <h2 class="animate">Gherkin 문법: 한글로 쓰는 테스트</h2>
+            <div class="compare animate animate-delay-1">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">현재: Java 테스트 코드</span>
+                        <span class="code-lang">GiftAcceptanceTest.java</span>
+                    </div>
+                    <pre>
+<span class="ann">@Nested</span>
+<span class="ann">@DisplayName</span>(<span class="str">"재고가 충분할 때"</span>)
+<span class="kw">class</span> <span class="ty">WhenStockIsSufficient</span> {
+
+    <span class="ann">@Test</span>
+    <span class="ann">@DisplayName</span>(<span class="str">"수량만큼 재고가 줄어든다"</span>)
+    <span class="kw">void</span> <span class="fn">decreasesQuantity</span>() {
+        <span class="cm">// given</span>
+        <span class="ty">Option</span> option = createOption(<span class="val">10</span>);
+        <span class="cm">// when</span>
+        option.decrease(<span class="val">3</span>);
+        <span class="cm">// then</span>
+        assertThat(option.getQuantity())
+            .isEqualTo(<span class="val">7</span>);
+    }
+}</pre>
+                </div>
+                <div class="compare-arrow">&#10132;</div>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">전환 후: Gherkin 시나리오</span>
+                        <span class="code-lang">gift.feature</span>
+                    </div>
+                    <pre>
+<span class="tag">기능:</span> 선물하기
+  선물하기 시스템의 핵심 기능을 검증한다
+
+  <span class="tag">시나리오:</span> 선물하면 재고가 감소한다
+    <span class="kw">조건</span> 재고가 <span class="val">10</span>개인 옵션이 있다
+    <span class="kw">만일</span> <span class="val">3</span>개를 선물한다
+    <span class="kw">그러면</span> 재고가 <span class="val">7</span>개여야 한다
+
+
+  <span class="tag">시나리오:</span> 재고보다 많이 선물할 수 없다
+    <span class="kw">조건</span> 재고가 <span class="val">5</span>개인 옵션이 있다
+    <span class="kw">만일</span> <span class="val">10</span>개를 선물한다
+    <span class="kw">그러면</span> 에러가 발생해야 한다
+
+  <span class="tag">시나리오:</span> 음수 수량으로 선물할 수 없다
+    <span class="kw">조건</span> 재고가 <span class="val">10</span>개인 옵션이 있다
+    <span class="kw">만일</span> <span class="val">-5</span>개를 선물한다
+    <span class="kw">그러면</span> 에러가 발생해야 한다</pre>
+                </div>
+            </div>
+            <p class="animate animate-delay-2" style="color: var(--text-secondary); margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
+                왼쪽은 <strong style="color: var(--text-primary);">개발자만</strong> 이해할 수 있고, 오른쪽은 <strong style="color: var(--accent-lime);">누구나</strong> 이해할 수 있다
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 8: Given-When-Then 의미                                   -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="8" data-section="cucumber">
+            <h2 class="animate">Given-When-Then 의미 매핑</h2>
+            <div style="display: flex; flex-direction: column; gap: 20px; max-width: 800px; width: 100%;">
+                <div class="concept-card cucumber animate animate-delay-1">
+                    <h4><span class="hi hi-lime">Given (조건)</span> = 사전 조건 설정</h4>
+                    <p>
+                        테스트가 시작되기 전 <strong>세상의 상태</strong>를 정의한다.<br>
+                        "재고가 10개인 옵션이 있다" = DB에 옵션 데이터를 생성하는 것<br>
+                        Java 코드의 <span class="hi">// given</span> 섹션과 동일
+                    </p>
+                </div>
+                <div class="concept-card cucumber animate animate-delay-2">
+                    <h4><span class="hi hi-lime">When (만일)</span> = 행위 실행</h4>
+                    <p>
+                        테스트 대상 <strong>행위(Action)</strong>를 실행한다.<br>
+                        "3개를 선물한다" = POST /api/gifts API 호출<br>
+                        Java 코드의 <span class="hi">// when</span> 섹션과 동일
+                    </p>
+                </div>
+                <div class="concept-card cucumber animate animate-delay-3">
+                    <h4><span class="hi hi-lime">Then (그러면)</span> = 결과 검증</h4>
+                    <p>
+                        행위의 <strong>결과가 기대와 일치</strong>하는지 확인한다.<br>
+                        "재고가 7개여야 한다" = assertThat().isEqualTo(7)<br>
+                        Java 코드의 <span class="hi">// then</span> 섹션과 동일
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 9: Cucumber + Spring 통합 구조                             -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="9" data-section="cucumber">
+            <h2 class="animate">Cucumber + Spring Boot 통합 구조</h2>
+            <p class="animate animate-delay-1" style="color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center; max-width: 700px;">
+                머릿속에 그려야 할 파일 구조와 각 파일의 역할
+            </p>
+            <div class="code-block animate animate-delay-2" style="max-width: 750px;">
+                <div class="code-header">
+                    <span class="code-title">프로젝트 구조 (추가될 파일들)</span>
+                    <span class="code-lang">tree</span>
+                </div>
+                <pre>
+<span class="kw">src/test/</span>
+  <span class="kw">resources/</span>
+    <span class="str">features/</span>                     <span class="cm">-- Gherkin 파일들의 집</span>
+      <span class="val">gift.feature</span>                <span class="cm">-- 선물하기 시나리오</span>
+
+  <span class="kw">java/gift/</span>
+    <span class="str">cucumber/</span>                     <span class="cm">-- Cucumber 관련 Java 코드</span>
+      <span class="ty">CucumberSpringConfig</span>.java   <span class="cm">-- Spring Boot 연결 설정</span>
+      <span class="ty">GiftStepDefs</span>.java            <span class="cm">-- Step Definitions (Given/When/Then)</span>
+      <span class="ty">RunCucumberTest</span>.java         <span class="cm">-- 테스트 실행기 (Suite)</span>
+
+<span class="cm">핵심 어노테이션:</span>
+  <span class="ann">@CucumberContextConfiguration</span> <span class="cm">-- "Cucumber야, Spring Boot를 써!"</span>
+  <span class="ann">@SpringBootTest(RANDOM_PORT)</span>   <span class="cm">-- "실제 서버를 띄워!"</span>
+  <span class="ann">@ScenarioScope</span>                 <span class="cm">-- "시나리오마다 새 Bean 만들어!"</span>
+  <span class="ann">io.cucumber.java.ko.*</span>          <span class="cm">-- "한글 Given/When/Then 지원!"</span>
+</pre>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 10: Phase 1 핵심 키워드                                    -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="10" data-section="cucumber">
+            <h2 class="animate">Phase 1: 검색해봐야 할 키워드</h2>
+            <div class="keyword-grid animate animate-delay-1">
+                <span class="kw-pill lime">io.cucumber:cucumber-spring</span>
+                <span class="kw-pill lime">io.cucumber:cucumber-java</span>
+                <span class="kw-pill green">@CucumberContextConfiguration</span>
+                <span class="kw-pill green">@ScenarioScope</span>
+                <span class="kw-pill purple">io.cucumber.java.ko.조건</span>
+                <span class="kw-pill purple">io.cucumber.java.ko.만일</span>
+                <span class="kw-pill purple">io.cucumber.java.ko.그러면</span>
+                <span class="kw-pill orange">JUnit Platform Suite API</span>
+                <span class="kw-pill orange">@Suite @SelectClasspathResource</span>
+                <span class="kw-pill pink">Cucumber Expressions: {int} {string}</span>
+                <span class="kw-pill blue">io.cucumber.java.Before</span>
+                <span class="kw-pill blue">Feature / Scenario / Background</span>
+            </div>
+            <div class="question-grid animate animate-delay-2" style="margin-top: 2rem;">
+                <div class="question-card">
+                    <div class="q">Step Definitions에서 파라미터를 어떻게 추출하는가?</div>
+                    <div class="hint">{int}는 정수, {string}은 문자열을 자동 추출해서 메서드 인자로 전달한다</div>
+                </div>
+                <div class="question-card">
+                    <div class="q">시나리오 간 Response 객체를 어떻게 공유하는가?</div>
+                    <div class="hint">@ScenarioScope Bean에 상태를 저장하면 같은 시나리오 내에서 공유 가능</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 11: Phase 1 학습 절차                                      -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="11" data-section="cucumber">
+            <h2 class="animate">Phase 1: 학습 절차 (이렇게 하면 된다)</h2>
+            <div class="steps-list">
+                <div class="step-item cucumber animate animate-delay-1">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>build.gradle에 Cucumber 의존성 추가하기</h4>
+                        <p>cucumber-java, cucumber-spring, cucumber-junit-platform-engine, junit-platform-suite 4개를 추가</p>
+                    </div>
+                </div>
+                <div class="step-item cucumber animate animate-delay-1">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>feature 파일 작성하기</h4>
+                        <p>src/test/resources/features/ 에 .feature 파일 생성. 기존 GiftAcceptanceTest의 10가지 행위를 한글 시나리오로 번역</p>
+                    </div>
+                </div>
+                <div class="step-item cucumber animate animate-delay-2">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>Spring 통합 설정 클래스 만들기</h4>
+                        <p>@CucumberContextConfiguration + @SpringBootTest(RANDOM_PORT) 로 Cucumber가 Spring Boot를 사용하도록 설정</p>
+                    </div>
+                </div>
+                <div class="step-item cucumber animate animate-delay-3">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <h4>Step Definitions 작성하기</h4>
+                        <p>조건/만일/그러면 한글 어노테이션으로 메서드를 만들고, 기존 테스트의 given/when/then 로직을 옮기기</p>
+                    </div>
+                </div>
+                <div class="step-item cucumber animate animate-delay-4">
+                    <div class="step-num">5</div>
+                    <div class="step-content">
+                        <h4>실행 & 격리 확인</h4>
+                        <p>./gradlew test로 Cucumber 시나리오 실행. @Before hook으로 시나리오마다 DB 초기화 확인</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 12: PHASE 2 타이틀                                         -->
+        <!-- ================================================================ -->
+        <div class="slide section-header" data-slide="12" data-section="postgres">
+            <div class="section-number animate" style="background: var(--gradient-postgres); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">02</div>
+            <h2 class="animate animate-delay-1">PostgreSQL + Docker Compose</h2>
+            <p class="subtitle animate animate-delay-2">
+                프로덕션과 동일한 DB로 테스트하고,<br>Docker Compose로 환경을 자동화한다
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 13: 왜 PostgreSQL인가?                                     -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="13" data-section="postgres">
+            <h2 class="animate">왜 H2 대신 PostgreSQL인가?</h2>
+            <div class="compare animate animate-delay-1">
+                <div class="code-block" style="border: 2px solid var(--accent-red);">
+                    <div class="code-header">
+                        <span class="code-title" style="color: var(--accent-red);">H2 (현재)</span>
+                        <span class="code-lang">문제점</span>
+                    </div>
+                    <pre>
+<span class="cm">-- H2에서는 통과하지만...</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> product
+<span class="kw">WHERE</span> name <span class="fn">ILIKE</span> <span class="str">'%선물%'</span>;
+<span class="cm">       ^^^^^ PostgreSQL 전용!</span>
+
+<span class="cm">-- H2의 MySQL 호환 모드도</span>
+<span class="cm">-- PostgreSQL과 100% 동일하지 않다</span>
+
+<span class="cm">문제:</span>
+  <span class="ann">- SQL 방언 차이</span>
+  <span class="ann">- 트랜잭션 동작 차이</span>
+  <span class="ann">- 타입 시스템 차이</span>
+  <span class="ann">- 제약조건 검증 차이</span></pre>
+                </div>
+                <div class="compare-arrow">&#10132;</div>
+                <div class="code-block" style="border: 2px solid var(--accent-green);">
+                    <div class="code-header">
+                        <span class="code-title" style="color: var(--accent-green);">PostgreSQL (전환 후)</span>
+                        <span class="code-lang">장점</span>
+                    </div>
+                    <pre>
+<span class="cm">-- 프로덕션과 동일한 SQL!</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> product
+<span class="kw">WHERE</span> name <span class="fn">ILIKE</span> <span class="str">'%선물%'</span>;
+<span class="cm">       ^^^^^ 동일하게 동작!</span>
+
+<span class="cm">-- Docker로 누구나 쉽게 실행</span>
+<span class="cm">-- 설치 필요 없음 (컨테이너)</span>
+
+<span class="str">장점:</span>
+  <span class="val">+ Production Parity 달성</span>
+  <span class="val">+ 실제 DB로 통합 테스트</span>
+  <span class="val">+ 환경 차이 버그 제거</span>
+  <span class="val">+ 누구나 동일한 환경</span></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 14: Docker Compose란?                                      -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="14" data-section="postgres">
+            <h2 class="animate">Docker Compose: 한 줄로 환경 구축</h2>
+            <div class="code-block animate animate-delay-1" style="max-width: 750px;">
+                <div class="code-header">
+                    <span class="code-title">docker-compose.yml 구조 이해</span>
+                    <span class="code-lang">YAML</span>
+                </div>
+                <pre>
+<span class="kw">services:</span>                       <span class="cm"># 어떤 컨테이너를 띄울 것인가?</span>
+  <span class="ty">postgres:</span>                     <span class="cm"># 서비스 이름 (= hostname)</span>
+    <span class="fn">image:</span> <span class="str">postgres:16</span>          <span class="cm"># 어떤 이미지를 쓸 것인가?</span>
+    <span class="fn">ports:</span>
+      - <span class="str">"5432:5432"</span>             <span class="cm"># Host:Container 포트 매핑</span>
+    <span class="fn">environment:</span>                  <span class="cm"># 환경변수 = DB 설정</span>
+      <span class="ann">POSTGRES_DB:</span> <span class="str">gift_test</span>
+      <span class="ann">POSTGRES_USER:</span> <span class="str">test</span>
+      <span class="ann">POSTGRES_PASSWORD:</span> <span class="str">test</span>
+    <span class="fn">healthcheck:</span>                  <span class="cm"># 준비됐는지 어떻게 확인?</span>
+      <span class="ann">test:</span> [<span class="str">"CMD-SHELL"</span>, <span class="str">"pg_isready"</span>]
+      <span class="ann">interval:</span> <span class="val">5s</span>              <span class="cm"># 5초마다 체크</span>
+      <span class="ann">retries:</span> <span class="val">5</span>                <span class="cm"># 5번까지 재시도</span>
+    <span class="fn">volumes:</span>                      <span class="cm"># 데이터 저장소</span>
+      - <span class="str">pgdata:/var/lib/postgresql/data</span>
+
+<span class="kw">volumes:</span>                         <span class="cm"># 볼륨 정의</span>
+  <span class="ty">pgdata:</span>                        <span class="cm"># 컨테이너 삭제해도 데이터 유지</span></pre>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 15: Spring Profile 이해                                    -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="15" data-section="postgres">
+            <h2 class="animate">Spring Profile: 환경별 설정 분리</h2>
+            <div class="compare animate animate-delay-1">
+                <div class="code-block" style="max-width: none;">
+                    <div class="code-header">
+                        <span class="code-title">application.properties</span>
+                        <span class="code-lang">기본 (H2)</span>
+                    </div>
+                    <pre>
+<span class="cm"># 기본 개발용 - H2 인메모리</span>
+<span class="kw">spring.datasource.url</span>=
+  <span class="str">jdbc:h2:mem:testdb</span>
+<span class="kw">spring.jpa.database-platform</span>=
+  <span class="str">H2Dialect</span></pre>
+                </div>
+                <div class="compare-arrow" style="font-size: 1.5rem;">VS</div>
+                <div class="code-block" style="max-width: none;">
+                    <div class="code-header">
+                        <span class="code-title">application-cucumber.properties</span>
+                        <span class="code-lang">테스트 (PostgreSQL)</span>
+                    </div>
+                    <pre>
+<span class="cm"># Cucumber 테스트용 - PostgreSQL</span>
+<span class="kw">spring.datasource.url</span>=
+  <span class="str">jdbc:postgresql://localhost:5432/gift_test</span>
+<span class="kw">spring.datasource.username</span>=<span class="str">test</span>
+<span class="kw">spring.datasource.password</span>=<span class="str">test</span>
+<span class="kw">spring.jpa.database-platform</span>=
+  <span class="str">PostgreSQLDialect</span></pre>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem; text-align: center;" class="animate animate-delay-2">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;">
+                    <span class="hi hi-blue">@ActiveProfiles("cucumber")</span>을 테스트 클래스에 붙이면<br>
+                    Spring이 자동으로 <span class="hi" style="color: var(--accent-green);">application-cucumber.properties</span>를 읽는다<br><br>
+                    핵심: 파일 이름이 <strong style="color: var(--text-primary);">application-{프로파일명}.properties</strong> 규칙을 따른다
+                </p>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 16: Health Check & Gradle Task                            -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="16" data-section="postgres">
+            <h2 class="animate">Health Check & Gradle 자동화</h2>
+            <div class="concept-grid animate animate-delay-1">
+                <div class="concept-card postgres">
+                    <h4>Health Check가 왜 필요한가?</h4>
+                    <p>
+                        <span class="hi">docker compose up</span> 명령이 끝나도<br>
+                        PostgreSQL이 <strong>아직 준비 안 됐을 수 있다.</strong><br><br>
+                        Health Check = "DB야, 진짜 준비됐어?"<br>
+                        <span class="hi hi-blue">pg_isready</span> 명령이 OK를 반환할 때까지 기다린다.<br><br>
+                        이것 없이 테스트를 시작하면<br>
+                        <strong style="color: var(--accent-red);">Connection refused</strong> 에러가 난다.
+                    </p>
+                </div>
+                <div class="concept-card postgres">
+                    <h4>Gradle Task로 자동화하기</h4>
+                    <p>
+                        <span class="hi hi-blue">Gradle Exec Task</span>로 쉘 명령을 실행할 수 있다.<br><br>
+                        <strong>doFirst</strong> = "테스트 전에 DB 띄워!"<br>
+                        <strong>finalizedBy</strong> = "테스트 후에 DB 내려!"<br>
+                        (테스트가 실패해도 반드시 실행)<br><br>
+                        이렇게 하면 <span class="hi">./gradlew cucumberTest</span> 한 줄로<br>
+                        DB 시작 → 테스트 → DB 정리가 <strong>자동</strong>으로 된다.
+                    </p>
+                </div>
+                <div class="concept-card postgres">
+                    <h4>테스트 격리: DB 초기화</h4>
+                    <p>
+                        시나리오마다 DB를 깨끗하게 만들어야 한다.<br><br>
+                        방법: Cucumber <span class="hi">@Before</span> hook에서<br>
+                        <strong>TRUNCATE TABLE</strong>로 모든 테이블을 비운다.<br><br>
+                        현재의 <span class="hi">@DirtiesContext</span>보다<br>
+                        <strong style="color: var(--accent-green);">훨씬 빠르다</strong> (Spring 컨텍스트 재시작 없이).
+                    </p>
+                </div>
+                <div class="concept-card postgres">
+                    <h4>H2 vs PostgreSQL 테스트 분리</h4>
+                    <p>
+                        단위 테스트(OptionTest)는 <strong>H2 그대로</strong> 유지.<br>
+                        인수 테스트(Cucumber)만 <strong>PostgreSQL</strong> 사용.<br><br>
+                        분리 방법:<br>
+                        - <span class="hi">./gradlew test</span> = H2 단위 테스트<br>
+                        - <span class="hi hi-blue">./gradlew cucumberTest</span> = PostgreSQL<br><br>
+                        Gradle에 별도 태스크를 만들면 된다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 17: Phase 2 핵심 키워드 & 질문                              -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="17" data-section="postgres">
+            <h2 class="animate">Phase 2: 검색해봐야 할 키워드</h2>
+            <div class="keyword-grid animate animate-delay-1">
+                <span class="kw-pill blue">docker-compose.yml</span>
+                <span class="kw-pill blue">services / volumes / ports</span>
+                <span class="kw-pill green">healthcheck: pg_isready</span>
+                <span class="kw-pill purple">@ActiveProfiles("cucumber")</span>
+                <span class="kw-pill purple">application-cucumber.properties</span>
+                <span class="kw-pill orange">Gradle Exec task</span>
+                <span class="kw-pill orange">doFirst / finalizedBy</span>
+                <span class="kw-pill pink">TRUNCATE TABLE</span>
+                <span class="kw-pill lime">spring.datasource.url (JDBC)</span>
+                <span class="kw-pill cyan">depends_on: condition: service_healthy</span>
+            </div>
+            <div class="question-grid animate animate-delay-2" style="margin-top: 1.5rem;">
+                <div class="question-card">
+                    <div class="q">테스트 코드는 어디서 실행되는가?</div>
+                    <div class="hint">Host (내 컴퓨터)에서 실행. PostgreSQL만 Docker 컨테이너 안. 그래서 localhost:5432로 접근한다.</div>
+                </div>
+                <div class="question-card">
+                    <div class="q">테스트 실패해도 DB가 정리되는가?</div>
+                    <div class="hint">finalizedBy를 쓰면 테스트가 실패해도 docker compose down이 반드시 실행된다.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 18: Phase 2 학습 절차                                      -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="18" data-section="postgres">
+            <h2 class="animate">Phase 2: 학습 절차</h2>
+            <div class="steps-list">
+                <div class="step-item postgres animate animate-delay-1">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>docker-compose.yml 작성</h4>
+                        <p>PostgreSQL 서비스 정의, 포트 매핑(5432:5432), healthcheck 설정, 환경변수(DB명, 사용자, 비밀번호) 세팅</p>
+                    </div>
+                </div>
+                <div class="step-item postgres animate animate-delay-1">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>application-cucumber.properties 생성</h4>
+                        <p>PostgreSQL JDBC URL, 사용자 정보, JPA 방언 설정. spring.jpa.hibernate.ddl-auto=create-drop 으로 스키마 자동 생성</p>
+                    </div>
+                </div>
+                <div class="step-item postgres animate animate-delay-2">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>build.gradle에 PostgreSQL 드라이버 추가</h4>
+                        <p>runtimeOnly 'org.postgresql:postgresql' 의존성 추가. cucumberTest 태스크 정의</p>
+                    </div>
+                </div>
+                <div class="step-item postgres animate animate-delay-3">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <h4>Gradle 자동화 태스크 구현</h4>
+                        <p>dockerUp (compose up -d --wait), cucumberTest (실제 테스트), dockerDown (compose down). finalizedBy로 연결</p>
+                    </div>
+                </div>
+                <div class="step-item postgres animate animate-delay-4">
+                    <div class="step-num">5</div>
+                    <div class="step-content">
+                        <h4>DB 초기화 로직 추가</h4>
+                        <p>@Before hook에서 JdbcTemplate으로 TRUNCATE 실행. @ActiveProfiles("cucumber") 적용 확인</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 19: PHASE 3 타이틀                                         -->
+        <!-- ================================================================ -->
+        <div class="slide section-header" data-slide="19" data-section="docker">
+            <div class="section-number animate" style="background: var(--gradient-docker); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">03</div>
+            <h2 class="animate animate-delay-1">Application 컨테이너화</h2>
+            <p class="subtitle animate animate-delay-2">
+                앱까지 Docker로 실행하여<br>프로덕션과 완전히 동일한 E2E 테스트
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 20: Multi-stage build                                     -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="20" data-section="docker">
+            <h2 class="animate">Multi-stage Build: 왜 필요한가?</h2>
+            <div class="stage-diagram animate animate-delay-1">
+                <div class="stage-box builder">
+                    <h4>Stage 1: Builder</h4>
+                    <ul class="stage-list">
+                        <li>JDK 21 (빌드 도구 포함)</li>
+                        <li>소스 코드 복사</li>
+                        <li>./gradlew build 실행</li>
+                        <li>JAR 파일 생성</li>
+                        <li>테스트, 컴파일러 등 포함</li>
+                    </ul>
+                    <div class="stage-size">~800MB (무거움)</div>
+                </div>
+                <div class="stage-arrow-between">&#10132;</div>
+                <div class="stage-box runtime">
+                    <h4>Stage 2: Runtime</h4>
+                    <ul class="stage-list">
+                        <li>JRE 21 Alpine (실행만 가능)</li>
+                        <li>JAR 파일만 복사</li>
+                        <li>java -jar app.jar 실행</li>
+                        <li>빌드 도구 없음</li>
+                        <li>경량 Linux 기반</li>
+                    </ul>
+                    <div class="stage-size">~150MB (가벼움!)</div>
+                </div>
+            </div>
+            <p class="animate animate-delay-2" style="color: var(--text-secondary); margin-top: 2rem; text-align: center; font-size: 0.9rem; max-width: 700px;">
+                핵심: Builder에서 만든 <strong style="color: var(--accent-orange);">JAR 파일만</strong> Runtime으로 복사한다.<br>
+                <span class="hi">COPY --from=builder</span> 명령이 이 "복사" 역할을 한다.<br>
+                결과: 프로덕션 이미지에는 <strong style="color: var(--accent-green);">불필요한 빌드 도구가 없다</strong>
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 21: Docker 네트워크 이해                                    -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="21" data-section="docker">
+            <h2 class="animate">핵심 개념: Docker 네트워크</h2>
+            <div class="network-box animate animate-delay-1">
+                <div class="network-layer host-layer">
+                    <h4>Host (내 컴퓨터)</h4>
+                    <div class="network-nodes">
+                        <div class="network-node test">
+                            <strong>테스트 코드</strong><br>
+                            <span style="font-size: 0.75rem;">./gradlew cucumberTest</span>
+                        </div>
+                        <div class="network-conn">
+                            &#8594; HTTP &#8594;<br>
+                            <span class="hi-cyan">localhost:28080</span>
+                        </div>
+                        <div style="border: 2px dashed var(--accent-cyan); border-radius: 12px; padding: 15px;">
+                            <div style="color: var(--accent-cyan); font-size: 0.8rem; margin-bottom: 10px;">Docker Network</div>
+                            <div class="network-nodes" style="gap: 15px;">
+                                <div class="network-node app">
+                                    <strong>Spring App</strong><br>
+                                    <span style="font-size: 0.75rem;">:8080 (내부)</span>
+                                </div>
+                                <div class="network-conn">
+                                    &#8594; JDBC &#8594;<br>
+                                    <span class="hi-blue">postgres:5432</span>
+                                </div>
+                                <div class="network-node db">
+                                    <strong>PostgreSQL</strong><br>
+                                    <span style="font-size: 0.75rem;">:5432 (내부)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 15px; justify-content: center;">
+                    <div class="network-node test" style="font-size: 0.75rem;">
+                        DB cleanup: <span class="hi-blue">localhost:5432</span>
+                    </div>
+                </div>
+            </div>
+            <p class="animate animate-delay-2" style="color: var(--text-secondary); margin-top: 1.5rem; text-align: center; font-size: 0.85rem; max-width: 750px;">
+                <strong style="color: var(--accent-orange);">Host</strong>에서 접근: <span class="hi">localhost:28080</span> (포트 매핑 28080 &#8594; 8080)<br>
+                <strong style="color: var(--accent-cyan);">Container 간</strong> 접근: <span class="hi">postgres:5432</span> (서비스 이름 = hostname)<br>
+                <strong style="color: var(--accent-orange);">테스트 DB 정리</strong>: <span class="hi">localhost:5432</span> (Host에서 직접 DB 접근)
+            </p>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 22: webEnvironment = NONE                                 -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="22" data-section="docker">
+            <h2 class="animate">왜 webEnvironment = NONE인가?</h2>
+            <div class="concept-grid animate animate-delay-1">
+                <div class="concept-card docker" style="grid-column: 1 / -1;">
+                    <h4>Phase 2 vs Phase 3: 테스트 방식의 차이</h4>
+                    <p style="font-size: 1rem; line-height: 2;">
+                        <strong style="color: var(--accent-blue);">Phase 2</strong>: <span class="hi">@SpringBootTest(RANDOM_PORT)</span> - 테스트가 직접 Spring Boot 서버를 띄움<br>
+                        <strong style="color: var(--accent-cyan);">Phase 3</strong>: <span class="hi">@SpringBootTest(NONE)</span> - Docker가 이미 서버를 띄워놓았으므로, 테스트는 <strong>HTTP 클라이언트만</strong> 되면 됨
+                    </p>
+                </div>
+                <div class="concept-card docker">
+                    <h4>NONE을 쓰는 이유</h4>
+                    <p>
+                        앱이 <strong>Docker 컨테이너 안</strong>에서 이미 실행 중이다.<br><br>
+                        테스트 코드에서 또 서버를 띄우면<br>
+                        <strong style="color: var(--accent-red);">서버가 2개</strong>가 되어 혼란스럽다.<br><br>
+                        테스트 코드는 순수하게<br>
+                        "HTTP 요청 보내고 응답 확인"만 하면 된다.
+                    </p>
+                </div>
+                <div class="concept-card docker">
+                    <h4>JdbcTemplate이 필요한 이유</h4>
+                    <p>
+                        앱은 Docker 안에서 돌지만,<br>
+                        <strong>DB 초기화는 테스트 코드</strong>에서 해야 한다.<br><br>
+                        테스트 코드가 <span class="hi">localhost:5432</span>로<br>
+                        직접 DB에 접근하여 TRUNCATE 하려면<br>
+                        <span class="hi hi-blue">JdbcTemplate</span>이 필요하다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 23: Phase 3 핵심 키워드                                    -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="23" data-section="docker">
+            <h2 class="animate">Phase 3: 검색해봐야 할 키워드</h2>
+            <div class="keyword-grid animate animate-delay-1">
+                <span class="kw-pill cyan">Multi-stage build (FROM ... AS builder)</span>
+                <span class="kw-pill cyan">COPY --from=builder</span>
+                <span class="kw-pill blue">eclipse-temurin:21-jre-alpine</span>
+                <span class="kw-pill green">depends_on: condition: service_healthy</span>
+                <span class="kw-pill purple">SPRING_DATASOURCE_URL (환경변수)</span>
+                <span class="kw-pill orange">Port mapping 28080:8080</span>
+                <span class="kw-pill pink">webEnvironment = NONE</span>
+                <span class="kw-pill lime">.dockerignore</span>
+                <span class="kw-pill blue">Docker network (서비스명 = hostname)</span>
+                <span class="kw-pill orange">JdbcTemplate (DB cleanup)</span>
+            </div>
+            <div class="question-grid animate animate-delay-2" style="margin-top: 1.5rem;">
+                <div class="question-card">
+                    <div class="q">컨테이너 안에서 postgres:5432인 이유는?</div>
+                    <div class="hint">Docker Compose가 같은 네트워크에 컨테이너를 배치하고, 서비스 이름을 DNS로 등록한다. "postgres"가 IP 대신 사용됨.</div>
+                </div>
+                <div class="question-card">
+                    <div class="q">.dockerignore는 왜 필요한가?</div>
+                    <div class="hint">.gradle, build, .git 등을 제외해서 Docker 빌드 컨텍스트를 줄인다. 빌드 속도가 크게 향상됨.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 24: Phase 3 학습 절차                                      -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="24" data-section="docker">
+            <h2 class="animate">Phase 3: 학습 절차</h2>
+            <div class="steps-list">
+                <div class="step-item docker animate animate-delay-1">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>Dockerfile 작성 (Multi-stage)</h4>
+                        <p>Stage 1: gradle:jdk21로 빌드 & JAR 생성. Stage 2: eclipse-temurin:21-jre-alpine에 JAR만 복사하여 실행</p>
+                    </div>
+                </div>
+                <div class="step-item docker animate animate-delay-1">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>docker-compose.yml에 앱 서비스 추가</h4>
+                        <p>app 서비스 정의, depends_on으로 postgres 의존, 환경변수로 DB URL 주입(postgres:5432), 포트 28080:8080 매핑</p>
+                    </div>
+                </div>
+                <div class="step-item docker animate animate-delay-2">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>.dockerignore 작성</h4>
+                        <p>.gradle, build, .git, .idea 등 불필요한 파일 제외하여 빌드 컨텍스트 최적화</p>
+                    </div>
+                </div>
+                <div class="step-item docker animate animate-delay-3">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <h4>Gradle 태스크 추가 (dockerBuild, dockerUp, dockerDown)</h4>
+                        <p>docker compose build, up -d --wait, down 명령을 Gradle Exec 태스크로 감싸기</p>
+                    </div>
+                </div>
+                <div class="step-item docker animate animate-delay-4">
+                    <div class="step-num">5</div>
+                    <div class="step-content">
+                        <h4>Cucumber 테스트를 Docker 앱에 연결</h4>
+                        <p>webEnvironment=NONE으로 변경. base URL을 localhost:28080으로 설정. JdbcTemplate으로 DB 초기화 유지</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 25: 전체 아키텍처 요약                                      -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="25" data-section="docker">
+            <h2 class="animate">최종 아키텍처: 전체 그림</h2>
+            <div class="code-block animate animate-delay-1" style="max-width: 850px;">
+                <div class="code-header">
+                    <span class="code-title">최종 실행 흐름</span>
+                    <span class="code-lang">Architecture</span>
+                </div>
+                <pre>
+<span class="cm">  ┌─────────────────────────────────────────────────────┐</span>
+<span class="cm">  │</span>  <span class="ann">Host (내 컴퓨터)</span>                                     <span class="cm">│</span>
+<span class="cm">  │</span>                                                       <span class="cm">│</span>
+<span class="cm">  │</span>   <span class="kw">./gradlew cucumberTest</span>                              <span class="cm">│</span>
+<span class="cm">  │</span>      <span class="str">│</span>                                                <span class="cm">│</span>
+<span class="cm">  │</span>      <span class="str">├── HTTP ──→ localhost:28080 ──┐</span>                 <span class="cm">│</span>
+<span class="cm">  │</span>      <span class="str">│</span>                              <span class="str">│</span>                 <span class="cm">│</span>
+<span class="cm">  │</span>      <span class="str">└── JDBC ──→ localhost:5432 ──┼─┐</span>               <span class="cm">│</span>
+<span class="cm">  │</span>              <span class="ty">(DB cleanup)</span>           <span class="str">│ │</span>               <span class="cm">│</span>
+<span class="cm">  │</span>  ┌───────────────────────────────<span class="str">┼─┼</span>────────────┐  <span class="cm">│</span>
+<span class="cm">  │</span>  │  <span class="fn">Docker Network</span>                <span class="str">│ │</span>            │  <span class="cm">│</span>
+<span class="cm">  │</span>  │                               <span class="str">│ │</span>            │  <span class="cm">│</span>
+<span class="cm">  │</span>  │  <span class="val">┌──────────┐</span>   JDBC    <span class="val">┌───┼─┼──────┐</span>  │  <span class="cm">│</span>
+<span class="cm">  │</span>  │  <span class="val">│ App:8080 │──────────→│ PostgreSQL │</span>  │  <span class="cm">│</span>
+<span class="cm">  │</span>  │  <span class="val">│ (Spring) │</span> postgres <span class="val">│    :5432   │</span>  │  <span class="cm">│</span>
+<span class="cm">  │</span>  │  <span class="val">└──────────┘</span>  :5432   <span class="val">└────────────┘</span>  │  <span class="cm">│</span>
+<span class="cm">  │</span>  │                                            │  <span class="cm">│</span>
+<span class="cm">  │</span>  └────────────────────────────────────────────┘  <span class="cm">│</span>
+<span class="cm">  └─────────────────────────────────────────────────────┘</span></pre>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 26: 검증 체크리스트                                         -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="26" data-section="summary">
+            <h2 class="animate">최종 검증 체크리스트</h2>
+            <div class="checklist">
+                <div class="check-item animate animate-delay-1">
+                    <div class="check-icon goal" style="background: rgba(132, 204, 22, 0.2); color: var(--accent-lime);">1</div>
+                    <div>
+                        <span class="hi hi-lime">./gradlew test</span> - Cucumber 시나리오가 실행되고 통과하는가?
+                    </div>
+                </div>
+                <div class="check-item animate animate-delay-1">
+                    <div class="check-icon goal" style="background: rgba(59, 130, 246, 0.2); color: var(--accent-blue);">2</div>
+                    <div>
+                        <span class="hi hi-blue">./gradlew cucumberTest</span> - PostgreSQL이 자동으로 준비되고 테스트가 실행되는가?
+                    </div>
+                </div>
+                <div class="check-item animate animate-delay-2">
+                    <div class="check-icon goal" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan);">3</div>
+                    <div>
+                        <span class="hi hi-cyan">./gradlew dockerBuild</span> - Docker 이미지가 빌드되는가?
+                    </div>
+                </div>
+                <div class="check-item animate animate-delay-2">
+                    <div class="check-icon goal" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan);">4</div>
+                    <div>
+                        <span class="hi hi-cyan">./gradlew dockerUp</span> + <span class="hi">curl localhost:28080</span> - 앱이 응답하는가?
+                    </div>
+                </div>
+                <div class="check-item animate animate-delay-3">
+                    <div class="check-icon goal" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan);">5</div>
+                    <div>
+                        <span class="hi hi-cyan">./gradlew cucumberTest</span> (Docker 환경) - E2E 테스트가 통과하는가?
+                    </div>
+                </div>
+                <div class="check-item animate animate-delay-3">
+                    <div class="check-icon goal" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan);">6</div>
+                    <div>
+                        <span class="hi hi-cyan">./gradlew dockerDown</span> - 깔끔하게 정리되는가?
+                    </div>
+                </div>
+                <div class="check-item animate animate-delay-4">
+                    <div class="check-icon pass">&#10003;</div>
+                    <div>
+                        다른 개발자의 컴퓨터에서도 <strong>동일한 명령으로 동일한 결과</strong>가 나오는가?
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 27: 트러블슈팅 가이드                                       -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="27" data-section="summary">
+            <h2 class="animate">막혔을 때: 트러블슈팅 키워드</h2>
+            <div class="concept-grid animate animate-delay-1">
+                <div class="concept-card" style="border-left-color: var(--accent-red);">
+                    <h4 style="color: var(--accent-red);">Connection refused</h4>
+                    <p>
+                        DB가 아직 준비 안 됐을 가능성이 높다.<br>
+                        <span class="hi">docker ps</span>로 컨테이너 상태 확인.<br>
+                        healthcheck가 제대로 설정됐는지 확인.
+                    </p>
+                </div>
+                <div class="concept-card" style="border-left-color: var(--accent-red);">
+                    <h4 style="color: var(--accent-red);">Port already in use</h4>
+                    <p>
+                        이전 실행이 정리 안 된 것.<br>
+                        <span class="hi">docker compose down</span>으로 정리하거나<br>
+                        <span class="hi">docker ps</span>로 실행 중인 컨테이너 확인.
+                    </p>
+                </div>
+                <div class="concept-card" style="border-left-color: var(--accent-orange);">
+                    <h4 style="color: var(--accent-orange);">Step undefined</h4>
+                    <p>
+                        Feature 파일의 텍스트와<br>
+                        Step Definition의 어노테이션 텍스트가<br>
+                        정확히 일치하지 않을 때 발생.
+                    </p>
+                </div>
+                <div class="concept-card" style="border-left-color: var(--accent-orange);">
+                    <h4 style="color: var(--accent-orange);">Docker 빌드 느림</h4>
+                    <p>
+                        <span class="hi">.dockerignore</span> 확인.<br>
+                        build/, .gradle/ 이 포함되지 않으면<br>
+                        수 GB의 파일이 복사되어 느려진다.
+                    </p>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem;" class="animate animate-delay-2">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; text-align: center;">
+                    디버깅 명령어: <span class="hi">docker ps</span> | <span class="hi">docker logs [컨테이너]</span> | <span class="hi">docker exec -it [컨테이너] bash</span> | <span class="hi">docker system prune</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 28: 학습 팁                                                -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="28" data-section="summary">
+            <h2 class="animate">학습 팁: 이렇게 공부하면 효과적</h2>
+            <div class="tips-grid">
+                <div class="tip-card animate animate-delay-1">
+                    <div class="tip-icon">&#128270;</div>
+                    <h4>에러 메시지를 읽어라</h4>
+                    <p>에러 메시지의 <strong>첫 번째 줄</strong>이 핵심이다.<br>그걸 그대로 구글에 검색하면<br>80%는 답이 나온다.</p>
+                </div>
+                <div class="tip-card animate animate-delay-2">
+                    <div class="tip-icon">&#128221;</div>
+                    <h4>단계별로 커밋하라</h4>
+                    <p>각 요구사항 완료 시마다 커밋.<br>잘못되면 <strong>되돌릴 수 있는</strong><br>세이브 포인트를 만들어라.</p>
+                </div>
+                <div class="tip-card animate animate-delay-3">
+                    <div class="tip-icon">&#129300;</div>
+                    <h4>"왜?"를 물어라</h4>
+                    <p>코드를 따라 치기만 하면 안 된다.<br>"<strong>왜</strong> 이렇게 하는지" 이해한 후<br>다음으로 넘어가라.</p>
+                </div>
+            </div>
+            <div style="margin-top: 2rem; text-align: center;" class="animate animate-delay-4">
+                <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.8;">
+                    Claude Code에게 <strong style="color: var(--accent-orange);">개념 질문</strong>은 OK!<br>
+                    하지만 <strong style="color: var(--accent-red);">코드 작성 요청</strong>은 NO!<br>
+                    <span style="font-size: 0.85rem;">직접 타이핑하면서 에러를 만나고 해결하는 것이 학습이다</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!--  슬라이드 29: 전체 요약                                              -->
+        <!-- ================================================================ -->
+        <div class="slide" data-slide="29" data-section="summary">
+            <h2 class="animate">전체 요약: 3단계 핵심 정리</h2>
+            <div class="summary-wide">
+                <div class="summary-card s1 animate animate-delay-1">
+                    <h3>Phase 1: Cucumber BDD</h3>
+                    <ul>
+                        <li>Gherkin = 사람이 읽는 명세서</li>
+                        <li>Given/When/Then = 조건/만일/그러면</li>
+                        <li>Step Definitions = 명세 &rarr; 코드 연결</li>
+                        <li>@ScenarioScope = 시나리오별 격리</li>
+                        <li>핵심: 비개발자도 읽을 수 있는가?</li>
+                    </ul>
+                </div>
+                <div class="summary-card s2 animate animate-delay-2">
+                    <h3>Phase 2: PostgreSQL</h3>
+                    <ul>
+                        <li>H2 &rarr; PostgreSQL = Production Parity</li>
+                        <li>Docker Compose = 환경 자동화</li>
+                        <li>Health Check = DB 준비 대기</li>
+                        <li>Spring Profile = 환경별 설정 분리</li>
+                        <li>핵심: 한 줄로 환경이 준비되는가?</li>
+                    </ul>
+                </div>
+                <div class="summary-card s3 animate animate-delay-3">
+                    <h3>Phase 3: 컨테이너화</h3>
+                    <ul>
+                        <li>Multi-stage = 빌드/실행 분리</li>
+                        <li>서비스명 = Docker 내 hostname</li>
+                        <li>webEnvironment=NONE 사용</li>
+                        <li>JdbcTemplate으로 DB 초기화</li>
+                        <li>핵심: 프로덕션과 동일한가?</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="animate animate-delay-4" style="color: var(--text-secondary); margin-top: 2rem; text-align: center; font-size: 1rem;">
+                <strong style="color: var(--text-primary);">기억해야 할 한 문장:</strong><br>
+                "다른 개발자도 <span class="hi" style="color: var(--accent-green);">같은 명령어</span>로 <span class="hi" style="color: var(--accent-blue);">같은 환경</span>에서 <span class="hi" style="color: var(--accent-cyan);">같은 결과</span>를 얻을 수 있는가?"
+            </p>
+        </div>
+
+    </div>
+
+    <!-- 네비게이션 -->
+    <div class="section-indicator" id="sectionIndicator">
+        <span class="section-pill overview active">Overview</span>
+        <span class="section-pill step1">Step 1</span>
+        <span class="section-pill cucumber">Cucumber</span>
+        <span class="section-pill postgres">PostgreSQL</span>
+        <span class="section-pill docker">Docker</span>
+        <span class="section-pill summary">Summary</span>
+    </div>
+
+    <div class="nav-arrows">
+        <button class="nav-arrow" onclick="prevSlide()">&#8592;</button>
+        <button class="nav-arrow" onclick="nextSlide()">&#8594;</button>
+    </div>
+
+    <div class="nav" id="nav"></div>
+
+    <div class="slide-number">
+        <span id="currentSlide">1</span> / <span id="totalSlides">29</span>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        // Section mapping
+        const sectionMap = {};
+        slides.forEach((slide, i) => {
+            sectionMap[i + 1] = slide.getAttribute('data-section');
+        });
+
+        // Nav dots
+        const nav = document.getElementById('nav');
+        for (let i = 1; i <= totalSlides; i++) {
+            const dot = document.createElement('div');
+            const section = sectionMap[i];
+            dot.className = 'nav-dot' + (i === 1 ? ' active' : '') + (section ? ' section-' + section : '');
+            dot.onclick = () => goToSlide(i);
+            nav.appendChild(dot);
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index + 1 === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index + 1 < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index + 1 === currentSlide);
+            });
+
+            // Update section indicator
+            const currentSection = sectionMap[currentSlide];
+            document.querySelectorAll('.section-pill').forEach(pill => {
+                pill.classList.toggle('active', pill.classList.contains(currentSection));
+            });
+
+            document.getElementById('currentSlide').textContent = currentSlide;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) { currentSlide++; updateSlide(); }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) { currentSlide--; updateSlide(); }
+        }
+
+        function goToSlide(n) {
+            currentSlide = n;
+            updateSlide();
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+            else if (e.key === 'ArrowLeft') { prevSlide(); }
+            else if (e.key === 'Home') { goToSlide(1); }
+            else if (e.key === 'End') { goToSlide(totalSlides); }
+        });
+
+        // Touch
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+        document.addEventListener('touchend', (e) => {
+            const diff = touchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+        });
+    </script>
+</body>
+</html>
