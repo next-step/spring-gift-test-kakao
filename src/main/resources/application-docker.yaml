@@ -1,0 +1,11 @@
+# 컨테이너 환경에서 돌아가는 프로필
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgresql:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+logging:
+  level:
+    sql: debug

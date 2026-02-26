@@ -1,0 +1,10 @@
+.git
+.gradle
+build
+*.md
+*.env
+docker-compose*.yaml
+cucumber/
+docker-compose/
+containerize/
+.claude/

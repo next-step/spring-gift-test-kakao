@@ -1,0 +1,10 @@
+# 로컬 개발 (docker compose, 컨테이너화 X 한 쌩 로컬) 에 사용되는 프로필
+
+spring:
+# 그냥 local 은 h2 mem 으로 돌아가도록 구성
+# datasource 구성 없으면 spring 이 h2 meme 으로 알아서 굴러감.
+# datasource:
+
+logging:
+  level:
+    sql: debug

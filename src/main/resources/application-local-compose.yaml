@@ -1,0 +1,11 @@
+# (docker compose 로 올려진) psql 과 개발하는 프로필
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgresql:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+logging:
+  level:
+    sql: debug

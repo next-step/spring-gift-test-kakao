@@ -1,0 +1,11 @@
+# 컨테이너 (docker compose 내) 환경에서 테스트를 위한 프로필
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:2345/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+logging:
+  level:
+    sql: debug

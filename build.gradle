@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.8'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.8'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
@@ -14,18 +14,114 @@ java {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	runtimeOnly 'com.h2database:h2'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'io.rest-assured:rest-assured:5.4.0'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    //noinspection VulnerableLibrariesLocal
+    testImplementation 'io.rest-assured:rest-assured:5.4.0'
+
+    testImplementation platform('io.cucumber:cucumber-bom:7.20.1')
+    testImplementation 'io.cucumber:cucumber-java'
+    testImplementation 'io.cucumber:cucumber-spring'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine'
+    testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+    exclude '**/docker/**'
+}
+
+// Docker Compose + Cucumber
+def cucumberTestComposeFile = 'docker-compose.cucumber-test.yaml'
+def cucumberTestEnvFile = 'cucumber-test.env'
+
+tasks.register('cucumberTest', Test) {
+    group = 'verification'
+    description = 'Run Cucumber acceptance tests with composed PostgreSQL container'
+
+    useJUnitPlatform()
+    include '**/cucumber/**'
+
+    systemProperty 'spring.profiles.active', 'cucumber-test'
+    systemProperty 'spring.config.import', "optional:file:./${cucumberTestEnvFile}[.properties]"
+
+    dependsOn cucumberComposeUp
+    finalizedBy cucumberComposeDown
+}
+
+tasks.register('cucumberComposeUp', Exec) {
+    group = 'util'
+    description = 'Start PostgreSQL container for cucumber test'
+
+    commandLine 'docker', 'compose',
+            '--env-file', cucumberTestEnvFile,
+            '-f', cucumberTestComposeFile,
+            'up', '-d', '--wait'
+}
+
+tasks.register('cucumberComposeDown', Exec) {
+    group = 'util'
+    description = 'Stop PostgreSQL container for cucumber test'
+
+    commandLine 'docker', 'compose',
+            '--env-file', cucumberTestEnvFile,
+            '-f', cucumberTestComposeFile,
+            'down'
+}
+
+// Dockerize + test
+def dockerTestComposeFile = 'docker-compose.docker-test.yaml'
+def dockerEnvFile = 'docker.env'
+
+tasks.register('dockerTest', Test) {
+    group = 'verification'
+    description = 'Run Cucumber acceptance tests with containerized application'
+
+    useJUnitPlatform()
+    include '**/docker/**'
+
+    systemProperty 'spring.profiles.active', 'docker-test'
+    systemProperty 'spring.config.import', "optional:file:./${dockerEnvFile}[.properties]"
+
+    dependsOn dockerUp
+    finalizedBy dockerDown
+}
+
+tasks.register('dockerBuild', Exec) {
+    group = 'util'
+    description = 'Build application container image for test'
+
+    commandLine 'docker', 'compose',
+            '--env-file', dockerEnvFile,
+            '-f', dockerTestComposeFile,
+            'build'
+}
+
+tasks.register('dockerUp', Exec) {
+    group = 'util'
+    description = 'Start containerized application for test'
+
+    commandLine 'docker', 'compose',
+            '--env-file', dockerEnvFile,
+            '-f', dockerTestComposeFile,
+            'up', '-d', '--wait'
+    dependsOn dockerBuild
+}
+
+tasks.register('dockerDown', Exec) {
+    group = 'util'
+    description = 'Stop containerized application for test'
+
+    commandLine 'docker', 'compose',
+            '--env-file', dockerEnvFile,
+            '-f', dockerTestComposeFile,
+            'down'
 }

@@ -1,0 +1,17 @@
+name: local-compose
+
+services:
+  postgresql:
+    container_name: postgresql
+    image: postgres:alpine
+
+    env_file: local-compose.env
+
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5

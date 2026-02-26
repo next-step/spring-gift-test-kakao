@@ -1,0 +1,11 @@
+# (docker compose 로 띄워진) postgreSql 을 사용하는 로컬 테스트 프로필
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:2345/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+logging:
+  level:
+    sql: debug
