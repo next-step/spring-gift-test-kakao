@@ -1,4 +1,4 @@
-package gift;
+package gift.legacy;
 
 import gift.model.Category;
 import gift.model.CategoryRepository;
@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
+import io.restassured.response.ValidatableResponse;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -30,6 +31,8 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class GiftRestControllerTest {
+
+    private static final String GIFT_MESSAGE = "생일 축하해!";
 
     @LocalServerPort
     private int port;
@@ -74,20 +77,9 @@ class GiftRestControllerTest {
 
     @Test
     @DisplayName("유효한 요청으로 선물을 보내면 200 OK와 재고가 차감된다")
-    void give_validRequest_returnsOkAndDecreasesStock() {
+    void giveValidRequestReturnsOkAndDecreasesStock() {
         // when
-        given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", sender.getId())
-            .body(Map.of(
-                "optionId", option.getId(),
-                "quantity", 3,
-                "receiverId", 2L,
-                "message", "생일 축하해!"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
+        giveGift(option.getId(), 3)
             .statusCode(200);
 
         // then
@@ -97,38 +89,16 @@ class GiftRestControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 옵션으로 선물을 보내면 500 에러가 발생한다")
-    void give_nonExistentOption_returns500() {
-        given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", sender.getId())
-            .body(Map.of(
-                "optionId", 9999L,
-                "quantity", 3,
-                "receiverId", 2L,
-                "message", "생일 축하해!"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
+    @DisplayName("존재하지 않는 옵션으로 선물을 보내면 실패한다")
+    void giveNonExistentOptionFails() {
+        giveGift(9999L, 3)
             .statusCode(500);
     }
 
     @Test
-    @DisplayName("재고보다 많은 수량을 요청하면 500 에러가 발생한다")
-    void give_insufficientStock_returns500() {
-        given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", sender.getId())
-            .body(Map.of(
-                "optionId", option.getId(),
-                "quantity", 15,
-                "receiverId", 2L,
-                "message", "생일 축하해!"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
+    @DisplayName("재고보다 많은 수량을 요청하면 실패하고 재고가 변하지 않는다")
+    void giveInsufficientStockFailsAndStockUnchanged() {
+        giveGift(option.getId(), 15)
             .statusCode(500);
 
         // 재고 변화 없음 확인 (트랜잭션 롤백)
@@ -138,14 +108,14 @@ class GiftRestControllerTest {
 
     @Test
     @DisplayName("Member-Id 헤더가 없으면 400 에러가 발생한다")
-    void give_missingMemberIdHeader_returns400() {
+    void giveMissingMemberIdHeaderReturns400() {
         given()
             .contentType(ContentType.JSON)
             .body(Map.of(
                 "optionId", option.getId(),
                 "quantity", 3,
                 "receiverId", 2L,
-                "message", "생일 축하해!"
+                "message", GIFT_MESSAGE
             ))
         .when()
             .post("/api/gifts")
@@ -155,24 +125,29 @@ class GiftRestControllerTest {
 
     @Test
     @DisplayName("재고와 동일한 수량을 요청하면 200 OK와 재고가 0이 된다")
-    void give_exactStock_returnsOkAndStockBecomesZero() {
+    void giveExactStockReturnsOkAndStockBecomesZero() {
         // when
-        given()
-            .contentType(ContentType.JSON)
-            .header("Member-Id", sender.getId())
-            .body(Map.of(
-                "optionId", option.getId(),
-                "quantity", 10,
-                "receiverId", 2L,
-                "message", "생일 축하해!"
-            ))
-        .when()
-            .post("/api/gifts")
-        .then()
+        giveGift(option.getId(), 10)
             .statusCode(200);
 
         // then
         Option updatedOption = optionRepository.findById(option.getId()).orElseThrow();
         assertThat(updatedOption.getQuantity()).isEqualTo(0);
+        verify(giftDelivery).deliver(any());
+    }
+
+    private ValidatableResponse giveGift(long optionId, int quantity) {
+        return given()
+            .contentType(ContentType.JSON)
+            .header("Member-Id", sender.getId())
+            .body(Map.of(
+                "optionId", optionId,
+                "quantity", quantity,
+                "receiverId", 2L,
+                "message", GIFT_MESSAGE
+            ))
+        .when()
+            .post("/api/gifts")
+        .then();
     }
 }
