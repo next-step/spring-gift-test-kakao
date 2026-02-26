@@ -3,15 +3,18 @@ package gift.support;
 import gift.model.Option;
 import gift.model.OptionRepository;
 import gift.model.Product;
+import gift.model.ProductRepository;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OptionFixture {
 
     private final OptionRepository optionRepository;
+    private final ProductRepository productRepository;
 
-    public OptionFixture(OptionRepository optionRepository) {
+    public OptionFixture(OptionRepository optionRepository, ProductRepository productRepository) {
         this.optionRepository = optionRepository;
+        this.productRepository = productRepository;
     }
 
     public Builder builder() {
@@ -21,7 +24,7 @@ public class OptionFixture {
     public class Builder {
         private String name = "기본옵션";
         private int quantity = 10;
-        private Product product;
+        private Long productId;
 
         public Builder name(String name) {
             this.name = name;
@@ -33,12 +36,13 @@ public class OptionFixture {
             return this;
         }
 
-        public Builder product(Product product) {
-            this.product = product;
+        public Builder productId(Long productId) {
+            this.productId = productId;
             return this;
         }
 
         public Option build() {
+            Product product = productRepository.findById(productId).orElseThrow();
             return optionRepository.save(new Option(name, quantity, product));
         }
     }
