@@ -1,4 +1,4 @@
-package gift;
+package gift.old;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;

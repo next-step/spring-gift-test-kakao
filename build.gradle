@@ -27,11 +27,59 @@ dependencies {
 
 	// http://localhost:8080/h2-console
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+
+	testImplementation 'io.cucumber:cucumber-java:7.20.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.20.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+	testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('cucumberTest', Test) {
+	description = 'Runs Cucumber tests against Dockerized app and PostgreSQL'
+	group = 'verification'
+	useJUnitPlatform()
+	include '**/cucumber/**'
+	exclude '**/old/**'
+	systemProperty 'cucumber.plugin', 'pretty, html:build/reports/cucumber/cucumber-report.html'
+	systemProperty 'spring.profiles.active', 'test'
+	systemProperty 'test.port', '28080'
+	dependsOn 'dockerBuild'
+	finalizedBy 'dockerDown'
+	doFirst {
+		exec { commandLine 'docker', 'compose', 'up', '-d', '--wait' }
+	}
+}
+
+tasks.register('dockerBuild') {
+	description = 'Builds Docker image for the application'
+	group = 'docker'
+	dependsOn 'bootJar'
+	doLast {
+		exec { commandLine 'docker', 'build', '-t', 'gift-app', '.' }
+	}
+}
+
+tasks.register('dockerUp') {
+	description = 'Starts Docker Compose services'
+	group = 'docker'
+	dependsOn 'dockerBuild'
+	doLast {
+		exec { commandLine 'docker', 'compose', 'up', '-d', '--wait' }
+	}
+}
+
+tasks.register('dockerDown') {
+	description = 'Stops Docker Compose services'
+	group = 'docker'
+	doLast {
+		exec { commandLine 'docker', 'compose', 'down' }
+	}
 }

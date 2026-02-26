@@ -405,6 +405,7 @@ kakao.social.url=https://kapi.kakao.com/v1/api/talk       # 카카오 소셜 API
 
 - Java 25 이상
 - Gradle 8.4 이상 (Gradle Wrapper 포함)
+- Docker & Docker Compose (Docker 기반 테스트 시)
 
 ### 빌드 & 실행
 
@@ -421,13 +422,58 @@ java -jar build/libs/spring-gift-test-0.0.1-SNAPSHOT.jar
 
 서버는 `http://localhost:8080`에서 실행됩니다.
 
-### H2 콘솔 접속
+### 테스트 실행
 
-`application.properties`에 아래 설정을 추가하면 H2 웹 콘솔을 사용할 수 있습니다:
+#### H2 인메모리 테스트 (Docker 불필요)
 
-```properties
-spring.h2.console.enabled=true
+```bash
+./gradlew test
 ```
+
+기존 JUnit 테스트와 Cucumber BDD 시나리오가 H2 인메모리 DB + 임베디드 서버로 실행됩니다.
+
+#### Docker 기반 Cucumber 테스트 (PostgreSQL + 컨테이너 앱)
+
+```bash
+./gradlew cucumberTest
+```
+
+자동으로 다음이 수행됩니다:
+1. Docker 이미지 빌드 (`dockerBuild`)
+2. PostgreSQL + 앱 컨테이너 시작 (`docker compose up`)
+3. Cucumber 테스트 실행 (RestAssured → `localhost:28080`)
+4. 컨테이너 정리 (`dockerDown`, 성공/실패 무관)
+
+#### Docker 수동 제어
+
+```bash
+./gradlew dockerBuild                    # Docker 이미지 빌드
+./gradlew dockerUp                       # PostgreSQL + 앱 컨테이너 시작
+curl http://localhost:28080/api/categories  # 애플리케이션 응답 확인
+./gradlew cucumberTest                   # Docker 환경에서 테스트
+./gradlew dockerDown                     # 컨테이너 종료 및 정리
+```
+
+#### 테스트 리포트
+
+```bash
+# Cucumber HTML 리포트
+open build/reports/cucumber/cucumber-report.html
+
+# JUnit 테스트 리포트
+open build/reports/tests/test/index.html
+```
+
+### 테스트 환경 비교
+
+| 항목 | `./gradlew test` | `./gradlew cucumberTest` |
+|---|---|---|
+| DB | H2 인메모리 | PostgreSQL (Docker) |
+| 앱 서버 | 임베디드 (랜덤 포트) | Docker 컨테이너 (28080) |
+| Docker 필요 | X | O |
+| 용도 | 개발 중 빠른 피드백 | CI/CD, 릴리스 전 검증 |
+
+### H2 콘솔 접속
 
 접속 URL: `http://localhost:8080/h2-console`
 JDBC URL: `jdbc:h2:mem:testdb` (Spring Boot 기본값)
