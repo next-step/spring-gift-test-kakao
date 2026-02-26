@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: gift
+  jpa:
+    open-in-view: false
+
+kakao:
+  message:
+    token: test-token
+    url: https://test.kakao.com
+  social:
+    token: test-token
+    url: https://test.kakao.com
