@@ -1,0 +1,9 @@
+.git
+.gradle
+.idea
+.claude
+build
+docker
+docs
+src/test
+*.md

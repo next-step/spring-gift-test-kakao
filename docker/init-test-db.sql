@@ -1,0 +1,2 @@
+CREATE DATABASE gift_test;
+GRANT ALL PRIVILEGES ON DATABASE gift_test TO gift;
