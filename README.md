@@ -2,95 +2,59 @@
 
 Spring Boot 기반 선물하기 서비스 애플리케이션입니다.
 
-## 기술 스택
+## 테스트 소개
 
-- Java 21
-- Spring Boot 3.5.8
-- Spring Data JPA
-- H2 Database
-- Gradle
+Cucumber + Gherkin 기반 E2E 인수 테스트로 3개 API, 13개 시나리오를 검증합니다.
 
-## 주요 기능
+| API | 시나리오 | 검증 내용 |
+|-----|---------|-----------|
+| POST/GET `/api/categories` | 4개 | 생성, DB 저장 확인, 빈 목록, N개 목록 조회 |
+| POST/GET `/api/products` | 4개 | 생성, 존재하지 않는 카테고리, 빈 목록, N개 목록 조회 |
+| POST `/api/gifts` | 5개 | 선물 전송 성공(재고 감소), 헤더 누락, 없는 옵션, 재고 부족, 발신자 미존재 |
 
-- **상품 관리**: 상품 등록 및 조회
-- **카테고리 관리**: 카테고리 등록 및 조회
-- **옵션 관리**: 상품별 옵션(색상, 사이즈 등) 관리 및 재고 추적
-- **위시리스트**: 회원별 관심 상품 등록
-- **선물하기**: 다른 회원에게 선물 전송 (카카오 메시지 연동)
+## 테스트 실행 방법
 
-## API 엔드포인트
+3가지 모드로 동일한 테스트를 실행할 수 있습니다.
 
-| Method | Path             | 설명              |
-|--------|------------------|-------------------|
-| POST   | /api/products    | 상품 등록         |
-| GET    | /api/products    | 상품 목록 조회    |
-| POST   | /api/categories  | 카테고리 등록     |
-| GET    | /api/categories  | 카테고리 목록 조회|
-| POST   | /api/gifts       | 선물 전송         |
+### 1. H2 모드 (가장 빠름, Docker 불필요)
 
-## 도메인 모델 관계
-
-```
-Category (1) ──── (N) Product (1) ──── (N) Option
-                         │
-                         │ (N)
-                         │
-Member (1) ──── (N) Wish ┘
-   │
-   │ (N)
-   │
-  Gift ──── Option
-```
-
-### 엔티티 설명
-
-| 엔티티   | 설명                                           |
-|----------|------------------------------------------------|
-| Category | 상품 카테고리 (예: 전자기기, 식품)             |
-| Product  | 상품 정보 (이름, 가격, 이미지)                 |
-| Option   | 상품 옵션 및 재고 (색상, 사이즈 등)            |
-| Member   | 회원 정보                                      |
-| Wish     | 회원의 위시리스트                              |
-| Gift     | 선물 전송 정보 (발신자, 수신자, 옵션, 수량, 메시지) |
-
-## 프로젝트 구조
-
-```
-src/main/java/gift/
-├── Application.java        # 애플리케이션 진입점
-├── ui/                     # REST 컨트롤러
-│   ├── ProductRestController.java
-│   ├── CategoryRestController.java
-│   └── GiftRestController.java
-├── application/            # 서비스 및 DTO
-│   ├── ProductService.java
-│   ├── CategoryService.java
-│   ├── OptionService.java
-│   ├── WishService.java
-│   ├── GiftService.java
-│   └── *Request.java       # 요청 DTO들
-├── model/                  # 엔티티 및 레포지토리
-│   ├── Product.java
-│   ├── Category.java
-│   ├── Option.java
-│   ├── Member.java
-│   ├── Wish.java
-│   ├── Gift.java
-│   └── *Repository.java    # JPA 레포지토리들
-└── infrastructure/         # 설정 및 외부 연동
-    ├── KakaoMessageProperties.java
-    ├── KakaoSocialProperties.java
-    └── FakeGiftDelivery.java
-```
-
-## 실행 방법
+H2 인메모리 DB + in-process 앱으로 실행합니다.
 
 ```bash
-# 빌드
-./gradlew build
-
-# 실행
-./gradlew bootRun
+./gradlew test
 ```
 
-애플리케이션은 기본적으로 `http://localhost:8080`에서 실행됩니다.
+### 2. Testcontainers 모드 (Docker 엔진만 필요)
+
+Testcontainers가 PostgreSQL 컨테이너를 자동으로 띄우고, in-process 앱으로 실행합니다.
+
+```bash
+./gradlew cucumberTestAlone
+```
+
+### 3. Docker Compose 모드 (전체 Docker 환경)
+
+Docker Compose로 PostgreSQL + 앱 컨테이너를 띄우고, 컨테이너 앱에 요청합니다.
+
+```bash
+# 1. Docker 이미지 빌드 (JAR 빌드 포함)
+./gradlew dockerBuild
+
+# 2. 컨테이너 실행 (postgres + app)
+./gradlew dockerUp
+
+# 3. 테스트 실행
+./gradlew cucumberTest
+
+# 4. 컨테이너 정리
+./gradlew dockerDown
+```
+
+### 모드 비교
+
+| | `./gradlew test` | `./gradlew cucumberTestAlone` | `./gradlew cucumberTest` |
+|---|---|---|---|
+| DB | H2 (in-memory) | PostgreSQL (Testcontainers) | PostgreSQL (Docker Compose) |
+| 앱 | in-process | in-process | Docker 컨테이너 |
+| Docker | 불필요 | 엔진만 필요 | 전체 필요 (`dockerBuild` + `dockerUp`) |
+| 용도 | 로컬 개발, CI 기본 | DB 호환성 확인 | 배포 환경과 동일한 검증 |
