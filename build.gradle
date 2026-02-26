@@ -22,10 +22,80 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation 'io.cucumber:cucumber-java:7.22.1'
+	testImplementation 'io.cucumber:cucumber-spring:7.22.1'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.22.1'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeEngines 'cucumber'
+	}
+}
+
+task cucumberTest(type: Test) {
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+}
+
+task startDB(type: Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+	doFirst {
+		println 'PostgreSQL 컨테이너 시작 중...'
+	}
+	doLast {
+		println 'PostgreSQL 준비 완료'
+	}
+}
+
+task stopDB(type: Exec) {
+	commandLine 'docker', 'compose', 'down'
+	doFirst {
+		println 'PostgreSQL 컨테이너 종료 중...'
+	}
+}
+
+task cucumberPostgresTest(type: Test) {
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'spring.profiles.active', 'cucumber'
+	dependsOn startDB
+	finalizedBy stopDB
+}
+
+task startContainers(type: Exec) {
+	commandLine 'docker', 'compose', '-f', 'docker-compose.container.yml', 'up', '-d', '--wait', '--build'
+	doFirst {
+		println 'App + PostgreSQL 컨테이너 시작 중...'
+	}
+	doLast {
+		println '컨테이너 준비 완료'
+	}
+}
+
+task stopContainers(type: Exec) {
+	commandLine 'docker', 'compose', '-f', 'docker-compose.container.yml', 'down'
+	doFirst {
+		println '컨테이너 종료 중...'
+	}
+}
+
+task cucumberContainerTest(type: Test) {
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'cucumber.glue', 'gift.container,gift.cucumber.stepdefs'
+	dependsOn startContainers
+	finalizedBy stopContainers
 }

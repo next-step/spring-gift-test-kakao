@@ -1,0 +1,2 @@
+ALTER SEQUENCE member_id_seq RESTART WITH 3;
+ALTER SEQUENCE category_id_seq RESTART WITH 3;
