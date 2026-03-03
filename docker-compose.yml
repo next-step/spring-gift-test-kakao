@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: gift-postgres
+    environment:
+      POSTGRES_DB: gift
+      POSTGRES_USER: gift
+      POSTGRES_PASSWORD: gift
+    ports:
+      - "5432:5432"
+    volumes:
+      - gift-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gift -d gift"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: gift-app
+    ports:
+      - "28080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gift
+      SPRING_DATASOURCE_USERNAME: gift
+      SPRING_DATASOURCE_PASSWORD: gift
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+
+volumes:
+  gift-data:

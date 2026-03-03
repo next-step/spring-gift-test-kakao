@@ -1,16 +1,17 @@
-package gift;
+package gift.ui;
 
 import gift.model.CategoryRepository;
+import gift.model.OptionRepository;
+import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
 
@@ -20,23 +21,25 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = WebEnvironment.NONE)
+@ActiveProfiles("test")
 class CategoryRestControllerTest {
 
-    @LocalServerPort
-    private int port;
+    @Autowired
+    private OptionRepository optionRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Autowired
     private CategoryRepository categoryRepository;
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-    }
-
-    @AfterEach
-    void tearDown() {
+        optionRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
         categoryRepository.deleteAllInBatch();
+        RestAssured.port = 28080;
     }
 
     @Test

@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gift
+    username: gift
+    password: gift
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  docker:
+    compose:
+      enabled: false

@@ -45,8 +45,8 @@ src/main/java/gift/
 - `@LocalServerPort`로 할당된 포트를 받아 `RestAssured.port`에 설정한다.
 
 ### 컨트롤러 바인딩 방식
-- `CategoryRestController.create()`, `ProductRestController.create()`: **`@RequestBody` 없음** → 폼 파라미터로 바인딩됨. RestAssured에서 `.formParam("name", "값")` 사용.
-- `GiftRestController.give()`: **`@RequestBody` 있음** + `@RequestHeader("Member-Id")` → `.contentType(JSON).header("Member-Id", id).body(map)` 사용.
+- `CategoryRestController.create()`, `ProductRestController.create()`, `GiftRestController.give()`: 모두 **`@RequestBody`** 사용 → RestAssured에서 `.contentType(JSON).body(map)` 사용.
+- `GiftRestController.give()`는 추가로 `@RequestHeader("Member-Id")` 필요 → `.header("Member-Id", id)` 사용.
 
 ### GiftDelivery 의존성
 - `GiftService`는 `GiftDelivery` 인터페이스에 의존. 테스트 시 `@MockitoBean`으로 대체하여 외부 의존성(카카오 API 등)을 격리한다.

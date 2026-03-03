@@ -1,0 +1,36 @@
+name: Acceptance Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit & integration tests
+        run: ./gradlew test
+
+      - name: Run Cucumber acceptance tests
+        run: ./gradlew cucumberTest
+
+      - name: Stop containers
+        if: always()
+        run: ./gradlew dockerDown
+
+      - name: Upload Cucumber report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-report
+          path: build/reports/cucumber/
