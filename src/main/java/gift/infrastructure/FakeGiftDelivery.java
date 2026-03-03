@@ -1,5 +1,7 @@
 package gift.infrastructure;
 
+import gift.error.CommonErrorCode;
+import gift.error.CommonException;
 import gift.model.Gift;
 import gift.model.GiftDelivery;
 import gift.model.Member;
@@ -18,7 +20,8 @@ class FakeGiftDelivery implements GiftDelivery {
 
     @Override
     public void deliver(final Gift gift) {
-        final Member member = memberRepository.findById(gift.getFrom()).orElseThrow();
+        final Member member = memberRepository.findById(gift.getFrom())
+                .orElseThrow(() -> new CommonException(CommonErrorCode.MEMBER_NOT_FOUND));
         final Option option = gift.getOption();
         final Product product = option.getProduct();
         System.out.println(member.getName() + product.getName() + option.getName() + option.getQuantity());

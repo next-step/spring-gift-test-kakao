@@ -1,5 +1,9 @@
 package gift.application;
 
+import gift.error.CommonErrorCode;
+import gift.error.CommonException;
+import gift.error.ProductErrorCode;
+import gift.error.ProductException;
 import gift.model.Member;
 import gift.model.MemberRepository;
 import gift.model.Product;
@@ -27,8 +31,10 @@ public class WishService {
     }
 
     public Wish create(final Long memberId, final CreateWishRequest request) {
-        final Member member = memberRepository.findById(memberId).orElseThrow();
-        final Product product = productRepository.findById(request.getProductId()).orElseThrow();
+        final Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CommonException(CommonErrorCode.MEMBER_NOT_FOUND));
+        final Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
         return wishRepository.save(new Wish(member, product));
     }
 }
