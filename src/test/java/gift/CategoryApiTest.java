@@ -16,7 +16,8 @@ class CategoryApiTest extends ApiTest {
     void create_formParam_responds200WithId() {
         // Act & Assert
         RestAssured.given()
-                .formParam("name", "교환권")
+                .contentType(io.restassured.http.ContentType.JSON)
+                .body("{\"name\": \"교환권\"}")
         .when()
                 .post("/api/categories")
         .then()

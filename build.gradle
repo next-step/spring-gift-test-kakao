@@ -21,11 +21,54 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.rest-assured:rest-assured'
+	testImplementation platform('io.cucumber:cucumber-bom:7.20.1')
+	testImplementation 'io.cucumber:cucumber-java'
+	testImplementation 'io.cucumber:cucumber-spring'
+	testImplementation 'io.cucumber:cucumber-junit-platform-engine'
+	testImplementation 'org.junit.platform:junit-platform-suite'
+	runtimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeEngines 'cucumber', 'junit-platform-suite'
+	}
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine 'docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine 'docker', 'compose', '--profile', 'e2e', 'down'
+}
+
+tasks.register('dockerBuild', Exec) {
+	commandLine 'docker', 'compose', '--profile', 'e2e', 'build'
+}
+
+tasks.register('dockerUpE2e', Exec) {
+	commandLine 'docker', 'compose', '--profile', 'e2e', 'up', '-d', '--wait'
+}
+
+tasks.register('cucumberTest', Test) {
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'cucumber.glue', 'gift.steps,gift.cucumber'
+	dependsOn dockerUp
+	finalizedBy dockerDown
+}
+
+tasks.register('e2eTest', Test) {
+	useJUnitPlatform {
+		includeEngines 'cucumber'
+	}
+	systemProperty 'cucumber.glue', 'gift.steps,gift.e2e'
+	dependsOn dockerBuild, dockerUpE2e
+	finalizedBy dockerDown
 }

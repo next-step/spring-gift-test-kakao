@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: gift
+      POSTGRES_USER: gift
+      POSTGRES_PASSWORD: gift
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gift"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "28080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gift
+      SPRING_DATASOURCE_USERNAME: gift
+      SPRING_DATASOURCE_PASSWORD: gift
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_OPEN_IN_VIEW: "false"
+      KAKAO_MESSAGE_TOKEN: test-token
+      KAKAO_MESSAGE_URL: https://kapi.kakao.com/v1/api/talk
+      KAKAO_SOCIAL_TOKEN: test-token
+      KAKAO_SOCIAL_URL: https://kapi.kakao.com/v1/api/talk
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    profiles:
+      - e2e
